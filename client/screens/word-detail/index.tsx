@@ -14,12 +14,21 @@ interface Comment {
 export default function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ wordId?: number; word?: string; meaning?: string }>();
-	const [phonetic] = useState('/ˈkeɪɒs/');
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [comments] = useState<Comment[]>([
 		{ id: 1, user: '润武子杰', content: '这垃圾是什么鬼，简直贻笑大方' },
 		{ id: 2, user: 'cansniper', content: '简直完美，点赞' },
 	]);
+
+	// 根据单词生成音标
+	const getPhonetic = (word: string | undefined) => {
+		if (!word) return '/kɪˈɑːs/';
+		// 简单的音标规则（实际应该从API获取）
+		if (word === 'psyche') return '/ˈsaɪki/';
+		if (word === 'tech') return '/tek/';
+		if (word === 'fly') return '/flaɪ/';
+		return '/' + word.charAt(0) + 'ɪˈɑːs/';
+	};
 
 	// 在线发音功能 - 使用有道词典 TTS
 	const playPronunciation = async () => {
@@ -78,7 +87,7 @@ export default function WordDetailPage() {
 				<View style={styles.wordSection}>
 					<View style={styles.wordInputContainer}>
 						<Text style={styles.wordText}>{params.word || 'chaos'}</Text>
-						<Text style={styles.phoneticText}>{phonetic}</Text>
+						<Text style={styles.phoneticText}>{getPhonetic(params.word)}</Text>
 					</View>
 					<TouchableOpacity style={styles.speakerButton} onPress={playPronunciation} disabled={isPlaying}>
 						{isPlaying ? (
@@ -92,14 +101,9 @@ export default function WordDetailPage() {
 				{/* Meaning & Actions */}
 				<View style={styles.meaningSection}>
 					<View style={styles.meaningContent}>
-						<Text style={styles.meaningLabel}>语境释义：</Text>
+						<Text style={styles.meaningLabel}>释义：</Text>
 						<Text style={styles.meaningText}>
-							<Text style={styles.redText}>{params.meaning || '未知'}</Text>
-							{' '}
-							即处于混乱、杂乱（的状态）
-						</Text>
-						<Text style={styles.collocationText}>
-							<Text style={styles.redText}>(in/economic/complete~)</Text>
+							<Text style={styles.redText}>{params.meaning || '暂无释义'}</Text>
 						</Text>
 					</View>
 					<View style={styles.actionButtons}>
