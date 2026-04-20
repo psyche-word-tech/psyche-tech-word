@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -10,7 +12,13 @@ interface WordBook {
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
-  const boughtBooks: WordBook[] = params.books ? JSON.parse(params.books) : [];
+  const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
+
+  useFocusEffect(() => {
+    if (params.books) {
+      setBoughtBooks(JSON.parse(params.books));
+    }
+  });
 
   return (
     <Screen>
