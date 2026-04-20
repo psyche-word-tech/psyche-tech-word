@@ -21,21 +21,18 @@ export default function UnknownWordsPage() {
 	const fetchUnknownWords = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
-			const result = await response.json();
-			
-			if (result.data) {
-				const allWords = result.data as Word[];
-				// 从后端获取不会状态的单词ID
-				const unknownWordIds: number[] = [];
-				for (const word of allWords) {
-					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
-					const statusData = await statusRes.json();
-					if (statusData.data?.status === 'z') {
-						unknownWordIds.push(word.id);
-					}
-				}
-				setUnknownWords(allWords.filter(w => unknownWordIds.includes(w.id)));
+			const [wordsRes, statusesRes] = await Promise.all([
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
+			]);
+
+			const wordsResult = await wordsRes.json();
+			const statusesResult = await statusesRes.json();
+			const statusMapData = statusesResult.data || {};
+
+			if (wordsResult.data) {
+				const unknown = wordsResult.data.filter((word: Word) => statusMapData[word.id] === 'z');
+				setUnknownWords(unknown);
 			}
 		} catch (error) {
 			console.error('Failed to fetch unknown words:', error);

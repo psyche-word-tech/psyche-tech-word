@@ -107,28 +107,33 @@ export default function LearnPage() {
 
 	const fetchData = async () => {
 		try {
-			// 获取单词列表
-			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
-			const result = await response.json();
-			if (result.data) {
-				setWords(result.data);
+			// 同时获取单词列表和所有状态
+			const [wordsRes, statusesRes] = await Promise.all([
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
+			]);
 
-				// 从数据库获取每个单词的状态
+			const wordsResult = await wordsRes.json();
+			const statusesResult = await statusesRes.json();
+
+			if (wordsResult.data) {
+				setWords(wordsResult.data);
+
 				const usedSet = new Set<number>();
 				const catCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
 				const statusMap: Record<string, number> = { x: 1, y: 2, z: 3 };
+				const statusMapData = statusesResult.data || {};
 
-				for (const word of result.data) {
-					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
-					const statusData = await statusRes.json();
-					if (statusData.data?.status) {
-						const catId = statusMap[statusData.data.status];
+				wordsResult.data.forEach((word: Word) => {
+					const status = statusMapData[word.id];
+					if (status) {
+						usedSet.add(word.id);
+						const catId = statusMap[status];
 						if (catId) {
-							usedSet.add(word.id);
-							catCounts[catId as keyof typeof catCounts]++;
+							catCounts[catId]++;
 						}
 					}
-				}
+				});
 
 				setUsedWords(usedSet);
 				setCategories(cats => cats.map(cat => ({ ...cat, count: catCounts[cat.id] || 0 })));

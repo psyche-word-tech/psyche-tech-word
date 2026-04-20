@@ -85,6 +85,30 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
+// 获取所有单词状态（批量）
+router.get('/statuses/all', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('word_status').select('word_id, status');
+    
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    
+    // 转换为 { wordId: status } 的映射
+    const statusMap: Record<number, string> = {};
+    data.forEach((item: { word_id: number; status: string }) => {
+      statusMap[item.word_id] = item.status;
+    });
+    
+    res.json({ data: statusMap });
+  } catch (err) {
+    console.error('Error fetching all statuses:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // 获取单词状态
 router.get('/:id/status', async (req, res) => {
   try {

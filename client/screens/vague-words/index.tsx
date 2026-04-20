@@ -21,21 +21,18 @@ export default function VagueWordsPage() {
 	const fetchVagueWords = async () => {
 		try {
 			setLoading(true);
-			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
-			const result = await response.json();
-			
-			if (result.data) {
-				const allWords = result.data as Word[];
-				// 从后端获取模糊状态的单词ID
-				const vagueWordIds: number[] = [];
-				for (const word of allWords) {
-					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
-					const statusData = await statusRes.json();
-					if (statusData.data?.status === 'y') {
-						vagueWordIds.push(word.id);
-					}
-				}
-				setVagueWords(allWords.filter(w => vagueWordIds.includes(w.id)));
+			const [wordsRes, statusesRes] = await Promise.all([
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
+			]);
+
+			const wordsResult = await wordsRes.json();
+			const statusesResult = await statusesRes.json();
+			const statusMapData = statusesResult.data || {};
+
+			if (wordsResult.data) {
+				const vague = wordsResult.data.filter((word: Word) => statusMapData[word.id] === 'y');
+				setVagueWords(vague);
 			}
 		} catch (error) {
 			console.error('Failed to fetch vague words:', error);
