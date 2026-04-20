@@ -229,12 +229,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 60,
 	},
 	wordRow: {
-		flexDirection: 'column',
+		flexDirection: 'row',
+		flexWrap: 'wrap',
 		gap: 12,
 		paddingHorizontal: 20,
 	},
 	wordItemContainer: {
-		alignItems: 'stretch',
+		flex: 1,
+		minWidth: 90,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
