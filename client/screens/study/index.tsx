@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 150,
     left: '50%',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   cardRightMiddle: {
     position: 'absolute',
