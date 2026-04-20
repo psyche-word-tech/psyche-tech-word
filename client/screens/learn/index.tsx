@@ -105,7 +105,7 @@ export default function LearnPage() {
 
 	useEffect(() => {
 		fetchWords();
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const fetchWords = async () => {
@@ -121,6 +121,26 @@ export default function LearnPage() {
 	};
 
 	const handleDrop = async (wordId: number, categoryId: number) => {
+		// 获取状态字母
+		const statusMap: Record<number, string> = { 1: 'x', 2: 'y', 3: 'z' };
+		const status = statusMap[categoryId];
+
+		// 保存到数据库
+		try {
+			/**
+			 * 服务端文件：server/src/routes/words.ts
+			 * 接口：PUT /api/v1/words/:id/status
+			 * Body 参数：status: string -- x=已会, y=模糊, z=不会
+			 */
+			await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${wordId}/status`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status }),
+			});
+		} catch (error) {
+			console.error('Failed to save word status:', error);
+		}
+
 		setUsedWords(prev => new Set([...prev, wordId]));
 		setWordCategories(prev => ({ ...prev, [wordId]: categoryId }));
 		setCategories(cats =>
