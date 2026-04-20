@@ -367,12 +367,12 @@ const styles = StyleSheet.create({
 	},
 	statusButton: {
 		backgroundColor: '#F0F0F0',
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 5,
+		borderRadius: 4,
 	},
 	statusButtonText: {
-		fontSize: 12,
+		fontSize: 10,
 		color: '#333333',
 		fontFamily: 'serif',
 	},
