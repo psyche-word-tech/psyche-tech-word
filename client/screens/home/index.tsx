@@ -65,10 +65,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 18,
-    color: '#333333',
-    fontWeight: '400',
-    letterSpacing: 2,
+    fontSize: 16,
+    color: '#444444',
+    fontWeight: '300',
+    letterSpacing: 3,
   },
   mainContent: {
     flex: 1,
@@ -93,10 +93,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666666',
-    fontWeight: '400',
-    letterSpacing: 2,
+    fontWeight: '300',
+    letterSpacing: 3,
     marginBottom: 10,
   },
   dividerLine: {
@@ -125,9 +125,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   nextText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#333333',
-    fontWeight: '400',
-    letterSpacing: 1,
+    fontWeight: '300',
+    letterSpacing: 2,
   },
 });
