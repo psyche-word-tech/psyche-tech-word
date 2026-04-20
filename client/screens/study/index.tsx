@@ -1,169 +1,117 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
-interface Word {
-  id: number;
-  word: string;
-  pronunciation: string;
-  meaning: string;
-  example: string;
+interface Progress {
+  learnedCount: number;
+  reviewCount: number;
+  dailyGoal: number;
+  streak: number;
+  totalWords: number;
 }
-
-const { width } = Dimensions.get('window');
 
 export default function StudyScreen() {
   const router = useSafeRouter();
-  const [words, setWords] = useState<Word[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showMeaning, setShowMeaning] = useState(false);
+  const [progress, setProgress] = useState<Progress>({
+    learnedCount: 0,
+    reviewCount: 0,
+    dailyGoal: 10,
+    streak: 0,
+    totalWords: 20,
+  });
   const [loading, setLoading] = useState(true);
 
-  const fetchWords = useCallback(async () => {
+  const fetchProgress = useCallback(async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words?category=new`);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/progress`);
       const result = await response.json();
       if (result.success) {
-        setWords(result.data);
+        setProgress(result.data);
       }
     } catch (error) {
-      console.error('Failed to fetch words:', error);
+      console.error('Failed to fetch progress:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchWords();
-  }, [fetchWords]);
+    fetchProgress();
+  }, [fetchProgress]);
 
-  const currentWord = words[currentIndex];
-
-  const handleKnown = async () => {
-    if (!currentWord) return;
-    
-    try {
-      await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${currentWord.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'known' }),
-      });
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-
-    setShowMeaning(false);
-    if (currentIndex < words.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      router.back();
-    }
-  };
-
-  const handleUnknown = async () => {
-    if (!currentWord) return;
-    
-    try {
-      await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${currentWord.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'unknown' }),
-      });
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-
-    setShowMeaning(false);
-    if (currentIndex < words.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      router.back();
-    }
-  };
-
-  if (loading) {
-    return (
-      <Screen>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>loading...</Text>
-          </View>
-        </SafeAreaView>
-      </Screen>
-    );
-  }
-
-  if (words.length === 0) {
-    return (
-      <Screen>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backBtn}>← back</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>all done!</Text>
-            <Text style={styles.emptyText}>you&apos;ve mastered all available words</Text>
-          </View>
-        </SafeAreaView>
-      </Screen>
-    );
-  }
+  const todayProgress = Math.min(progress.learnedCount % progress.dailyGoal, progress.dailyGoal);
+  const progressPercent = progress.dailyGoal > 0 ? (todayProgress / progress.dailyGoal) * 100 : 0;
 
   return (
     <Screen>
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backBtn}>← back</Text>
+            <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
-          <Text style={styles.progress}>{currentIndex + 1}/{words.length}</Text>
         </View>
 
-        {/* Word Card */}
-        <View style={styles.cardContainer}>
-          <TouchableOpacity 
-            style={styles.card} 
-            onPress={() => setShowMeaning(!showMeaning)}
-            activeOpacity={0.9}
-          >
-            {!showMeaning ? (
-              <>
-                <Text style={styles.wordText}>{currentWord.word}</Text>
-                <Text style={styles.pronunciationText}>{currentWord.pronunciation}</Text>
-                <Text style={styles.tapHint}>tap to reveal</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.wordTextSmall}>{currentWord.word}</Text>
-                <Text style={styles.meaningText}>{currentWord.meaning}</Text>
-                <View style={styles.divider} />
-                <Text style={styles.exampleText}>{currentWord.example}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+        {/* Logo */}
+        <View style={styles.logoSection}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoText}>W</Text>
+          </View>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{progress.streak}</Text>
+              <Text style={styles.statLabel}>day streak</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{progress.learnedCount}</Text>
+              <Text style={styles.statLabel}>mastered</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{progress.reviewCount}</Text>
+              <Text style={styles.statLabel}>to review</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Progress */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>today&apos;s goal</Text>
+            <Text style={styles.progressCount}>{todayProgress}/{progress.dailyGoal}</Text>
+          </View>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+          </View>
         </View>
 
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity 
-            style={styles.unknownBtn} 
-            onPress={handleUnknown}
+            style={styles.primaryBtn} 
+            onPress={() => router.push('/learn')}
             activeOpacity={0.8}
           >
-            <Text style={styles.unknownBtnText}>still learning</Text>
+            <Text style={styles.primaryBtnText}>start learning</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.knownBtn} 
-            onPress={handleKnown}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.knownBtnText}>got it</Text>
-          </TouchableOpacity>
+          {progress.reviewCount > 0 && (
+            <TouchableOpacity 
+              style={styles.secondaryBtn} 
+              onPress={() => router.push('/notebook')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryBtnText}>review ({progress.reviewCount})</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
     </Screen>
@@ -176,138 +124,119 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 16,
   },
-  backBtn: {
+  backText: {
     fontSize: 14,
     color: '#000000',
     letterSpacing: 1,
   },
-  progress: {
-    fontSize: 14,
-    color: '#666666',
-    letterSpacing: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  logoSection: {
     alignItems: 'center',
+    marginTop: 48,
+    marginBottom: 48,
   },
-  loadingText: {
-    fontSize: 14,
-    color: '#666666',
-    letterSpacing: 2,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  cardContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  card: {
-    width: width - 48,
-    minHeight: 280,
-    borderWidth: 1,
+  logoIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
     borderColor: '#000000',
-    borderRadius: 4,
-    padding: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wordText: {
-    fontSize: 42,
+  logoText: {
+    fontSize: 48,
     fontWeight: '300',
     color: '#000000',
-    textAlign: 'center',
   },
-  pronunciationText: {
-    fontSize: 16,
+  statsContainer: {
+    paddingHorizontal: 32,
+    marginBottom: 32,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statItem: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  statLabel: {
+    fontSize: 11,
     color: '#666666',
-    marginTop: 12,
-  },
-  tapHint: {
-    fontSize: 12,
-    color: '#999999',
-    marginTop: 24,
+    marginTop: 4,
     letterSpacing: 1,
   },
-  wordTextSmall: {
-    fontSize: 24,
-    fontWeight: '400',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  meaningText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#000000',
-    textAlign: 'center',
-  },
-  divider: {
-    width: 40,
-    height: 1,
+  statDivider: {
+    width: 1,
+    height: 32,
     backgroundColor: '#E0E0E0',
-    marginVertical: 20,
   },
-  exampleText: {
-    fontSize: 14,
+  progressSection: {
+    paddingHorizontal: 32,
+    marginBottom: 48,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressTitle: {
+    fontSize: 13,
+    color: '#000000',
+    fontWeight: '500',
+    letterSpacing: 1,
+  },
+  progressCount: {
+    fontSize: 13,
     color: '#666666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 22,
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#000000',
+    borderRadius: 3,
   },
   actions: {
-    flexDirection: 'row',
+    paddingHorizontal: 32,
     gap: 12,
-    paddingHorizontal: 24,
-    paddingBottom: 48,
   },
-  unknownBtn: {
-    flex: 1,
-    paddingVertical: 18,
-    borderRadius: 4,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  unknownBtnText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  knownBtn: {
-    flex: 1,
-    paddingVertical: 18,
-    borderRadius: 4,
-    alignItems: 'center',
+  primaryBtn: {
     backgroundColor: '#000000',
+    paddingVertical: 18,
+    alignItems: 'center',
   },
-  knownBtnText: {
+  primaryBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-    letterSpacing: 1,
+    letterSpacing: 2,
+  },
+  secondaryBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  secondaryBtnText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 2,
   },
 });
