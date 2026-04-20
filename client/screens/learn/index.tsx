@@ -42,9 +42,9 @@ function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 		})
 		.onEnd((event) => {
 			const dropY = event.absoluteY;
-			// 拖拽区域在屏幕下方约200-400像素范围内
+			// 拖拽区域在屏幕下方约150-600像素范围内
 			let targetCategory: number | null = null;
-			if (dropY > 200 && dropY < 500) {
+			if (dropY > 150 && dropY < 700) {
 				const screenWidth = 350;
 				const itemWidth = screenWidth / 3;
 				const relativeX = event.absoluteX;
