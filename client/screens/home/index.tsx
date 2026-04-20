@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
-const { width, height } = Dimensions.get('window');
+const logo = require('@/assets/logo.png');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
@@ -21,16 +21,13 @@ export default function HomeScreen() {
 
         {/* Main Content Area */}
         <View style={styles.mainContent}>
-          {/* Logo - Geometric Butterfly Shape */}
+          {/* Logo Image */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoInner}>
-              {/* Top wings */}
-              <View style={[styles.wing, styles.wingTL]} />
-              <View style={[styles.wing, styles.wingTR]} />
-              {/* Bottom wings */}
-              <View style={[styles.wing, styles.wingBL]} />
-              <View style={[styles.wing, styles.wingBR]} />
-            </View>
+            <Image 
+              source={logo} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Brand Name */}
@@ -84,42 +81,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 50,
   },
-  logoInner: {
+  logoImage: {
     width: 120,
     height: 120,
-    position: 'relative',
-  },
-  wing: {
-    position: 'absolute',
-    backgroundColor: '#000000',
-  },
-  wingTL: {
-    width: 50,
-    height: 50,
-    top: 0,
-    left: 0,
-    borderTopLeftRadius: 50,
-  },
-  wingTR: {
-    width: 50,
-    height: 50,
-    top: 0,
-    right: 0,
-    borderTopRightRadius: 50,
-  },
-  wingBL: {
-    width: 50,
-    height: 50,
-    bottom: 0,
-    left: 0,
-    borderBottomLeftRadius: 50,
-  },
-  wingBR: {
-    width: 50,
-    height: 50,
-    bottom: 0,
-    right: 0,
-    borderBottomRightRadius: 50,
   },
   brandName: {
     fontSize: 22,
