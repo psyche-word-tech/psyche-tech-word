@@ -18,8 +18,8 @@ export default function StudyScreen() {
         <View style={styles.cardsContainer}>
           {/* Card 1 - Top Center */}
           <View style={styles.cardTopCenter}>
-            <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconRock} style={styles.cardIcon} resizeMode="contain" />
+            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8}>
+              <Image source={iconRock} style={styles.cardIconLarge} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelRight}>
               <View style={styles.redLine} />
@@ -93,15 +93,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cardLarge: {
+    width: 160,
+    height: 160,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cardIcon: {
     width: 50,
     height: 50,
+  },
+  cardIconLarge: {
+    width: 140,
+    height: 140,
   },
   cardTopCenter: {
     position: 'absolute',
     top: 40,
     left: '50%',
-    marginLeft: -40,
+    marginLeft: -80,
     alignItems: 'center',
   },
   cardLeftTop: {
