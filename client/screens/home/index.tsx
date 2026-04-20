@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#444444',
     fontFamily: 'serif',
     fontStyle: 'italic',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tagline: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#666666',
     fontFamily: 'serif',
     fontStyle: 'italic',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   nextText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#333333',
     fontFamily: 'serif',
     fontStyle: 'italic',
