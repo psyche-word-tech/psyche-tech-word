@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   cardTopCenter: {
     position: 'absolute',
-    top: 40,
+    top: 10,
     left: '50%',
     marginLeft: -80,
     alignItems: 'center',
