@@ -28,6 +28,14 @@ export default function VocabularyPage() {
     );
   };
 
+  const selectedBook = wordBooks.find(book => book.selected);
+
+  const handleBuy = () => {
+    if (selectedBook) {
+      router.push('/purchase');
+    }
+  };
+
   return (
     <Screen>
       <View style={styles.container}>
@@ -83,6 +91,15 @@ export default function VocabularyPage() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Buy Button */}
+        {selectedBook && (
+          <View style={styles.buyButtonContainer}>
+            <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
+              <Text style={styles.buyButtonText}>购买</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </Screen>
   );
@@ -180,6 +197,20 @@ const styles = StyleSheet.create({
   currencyText: {
     fontSize: 10,
     color: '#666666',
+    fontFamily: 'serif',
+  },
+  buyButtonContainer: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  buyButton: {
+    backgroundColor: '#333333',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontFamily: 'serif',
   },
 });
