@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const ITEM_WIDTH = SCREEN_WIDTH / 3;
 
 interface Word {
 	id: number;
@@ -44,15 +47,13 @@ function DraggableWord({ word, onDrop }: DraggableWordProps) {
 			// 拖拽区域在屏幕下方约150-600像素范围内
 			let targetCategory: number | null = null;
 			if (dropY > 150 && dropY < 700) {
-				const screenWidth = 350;
-				const itemWidth = screenWidth / 3;
 				const relativeX = event.absoluteX;
-				if (relativeX < itemWidth) {
-					targetCategory = 1;
-				} else if (relativeX < itemWidth * 2) {
-					targetCategory = 2;
+				if (relativeX < ITEM_WIDTH) {
+					targetCategory = 1; // 已会
+				} else if (relativeX < ITEM_WIDTH * 2) {
+					targetCategory = 2; // 模糊
 				} else {
-					targetCategory = 3;
+					targetCategory = 3; // 不会
 				}
 			}
 
@@ -277,7 +278,6 @@ const styles = StyleSheet.create({
 	wordRow: {
 		flexDirection: 'row',
 		gap: 15,
-		paddingHorizontal: 20,
 		justifyContent: 'center',
 	},
 	wordItemContainer: {
