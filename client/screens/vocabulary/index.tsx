@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
-    padding: 16,
+    padding: 10,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E5E5',
-    minWidth: 70,
+    minWidth: 55,
   },
   checkbox: {
     width: 24,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   priceText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#333333',
     fontFamily: 'serif',
     fontWeight: '600',
