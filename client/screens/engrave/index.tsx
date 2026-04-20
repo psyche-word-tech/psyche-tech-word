@@ -32,22 +32,6 @@ export default function EngraveScreen() {
             
             <View style={styles.buttonRow}>
               <TouchableOpacity 
-                style={styles.undoBtn}
-                onPress={() => setText('')}
-              >
-                <Text style={styles.undoText}>撤销</Text>
-              </TouchableOpacity>
-              
-              <View style={styles.buttonSpacer} />
-              
-              <TouchableOpacity 
-                style={styles.cancelBtn}
-                onPress={() => router.back()}
-              >
-                <Text style={styles.cancelText}>取消</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
                 style={styles.confirmBtn}
                 onPress={() => {
                   if (text.trim()) {
@@ -58,6 +42,20 @@ export default function EngraveScreen() {
                 }}
               >
                 <Text style={styles.confirmText}>确定</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelBtn}
+                onPress={() => router.back()}
+              >
+                <Text style={styles.cancelText}>取消</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.undoBtn}
+                onPress={() => setText('')}
+              >
+                <Text style={styles.undoText}>撤销</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -107,43 +105,39 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     marginTop: 20,
-    gap: 6,
-  },
-  buttonSpacer: {
-    flex: 1,
-  },
-  undoBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  undoText: {
-    fontSize: 10,
-    color: '#000000',
-    fontFamily: 'serif',
-  },
-  cancelBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  cancelText: {
-    fontSize: 10,
-    color: '#000000',
-    fontFamily: 'serif',
   },
   confirmBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     backgroundColor: '#000000',
   },
   confirmText: {
     fontSize: 12,
     color: '#FFFFFF',
+    fontFamily: 'serif',
+  },
+  cancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  cancelText: {
+    fontSize: 12,
+    color: '#000000',
+    fontFamily: 'serif',
+  },
+  undoBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  undoText: {
+    fontSize: 12,
+    color: '#000000',
     fontFamily: 'serif',
   },
 });
