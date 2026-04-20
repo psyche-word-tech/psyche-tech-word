@@ -23,11 +23,22 @@ export default function WordDetailPage() {
 	// 根据单词生成音标
 	const getPhonetic = (word: string | undefined) => {
 		if (!word) return '/kɪˈɑːs/';
-		// 简单的音标规则（实际应该从API获取）
 		if (word === 'psyche') return '/ˈsaɪki/';
 		if (word === 'tech') return '/tek/';
 		if (word === 'fly') return '/flaɪ/';
 		return '/' + word.charAt(0) + 'ɪˈɑːs/';
+	};
+
+	// 根据单词返回例句
+	const getExampleSentence = (word: string | undefined) => {
+		if (!word) return { sentence: 'The room was in complete chaos.', translation: '房间处于一片混乱之中。' };
+		const examples: Record<string, { sentence: string; translation: string }> = {
+			psyche: { sentence: 'The human psyche is complex.', translation: '人类的心理是复杂的。' },
+			tech: { sentence: 'Tech companies drive innovation.', translation: '科技公司推动创新。' },
+			fly: { sentence: 'Birds fly across the sky.', translation: '鸟儿飞过天空。' },
+			chaos: { sentence: 'The room was in complete chaos.', translation: '房间处于一片混乱之中。' },
+		};
+		return examples[word] || { sentence: 'This word is used in many contexts.', translation: '这个词在多种语境中使用。' };
 	};
 
 	// 在线发音功能 - 使用有道词典 TTS
@@ -136,9 +147,11 @@ export default function WordDetailPage() {
 						<View style={styles.exampleSection}>
 							<Text style={styles.exampleLabel}>例句：</Text>
 							<Text style={styles.exampleText}>
-								The room <Text style={styles.redText}>was</Text> in complete <Text style={styles.redText}>chaos</Text>.
+								{getExampleSentence(params.word).sentence}
 							</Text>
-							<Text style={styles.exampleTranslation}>房间处于一片混乱之中。</Text>
+							<Text style={styles.exampleTranslation}>
+								{getExampleSentence(params.word).translation}
+							</Text>
 						</View>
 					</View>
 					<View style={styles.actionButtons}>
