@@ -7,13 +7,15 @@ interface Word {
   id: number;
   word: string;
   meaning: string | null;
+  phonetic: string | null;
+  example: string | null;
 }
 
 // 获取单词列表
 router.get('/', async (req, res) => {
   try {
     const client = getSupabaseClient();
-    const { data, error } = await client.from('words').select('id, word, meaning').order('id');
+    const { data, error } = await client.from('words').select('id, word, meaning, phonetic, example').order('id');
     
     if (error) {
       res.status(500).json({ error: error.message });
@@ -32,7 +34,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const client = getSupabaseClient();
-    const { data, error } = await client.from('words').select('id, word, meaning').eq('id', parseInt(id)).maybeSingle();
+    const { data, error } = await client.from('words').select('id, word, meaning, phonetic, example').eq('id', parseInt(id)).maybeSingle();
     
     if (error) {
       res.status(500).json({ error: error.message });

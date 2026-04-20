@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import { useFocusEffect } from 'expo-router';
 
 interface Comment {
 	id: number;
@@ -11,38 +12,52 @@ interface Comment {
 	content: string;
 }
 
+interface WordData {
+	phonetic: string;
+	example: string;
+}
+
 export default function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ wordId?: number; word?: string; meaning?: string }>();
 	const [isPlaying, setIsPlaying] = useState(false);
+	const [wordData, setWordData] = useState<WordData | null>(null);
 	const [comments] = useState<Comment[]>([
 		{ id: 1, user: '润武子杰', content: '这垃圾是什么鬼，简直贻笑大方' },
 		{ id: 2, user: 'cansniper', content: '简直完美，点赞' },
 	]);
 
-	// 根据单词生成音标
-	const getPhonetic = (word: string | undefined) => {
-		if (!word) return '/kɪˈɑːs/';
-		if (word === 'psyche') return '/ˈsaɪki/';
-		if (word === 'tech') return '/tek/';
-		if (word === 'fly') return '/flaɪ/';
-		return '/' + word.charAt(0) + 'ɪˈɑːs/';
-	};
+	// 从数据库获取单词完整信息（音标和例句）
+	const fetchWordData = useCallback(async () => {
+		if (!params.wordId) return;
+		try {
+			/**
+			 * 服务端文件：server/src/routes/words.ts
+			 * 接口：GET /api/v1/words
+			 * 返回：words 数组包含 phonetic 和 example 字段
+			 */
+			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
+			const result = await response.json();
+			if (result.data) {
+				const word = result.data.find((w: any) => w.id === params.wordId);
+				if (word) {
+					setWordData({
+						phonetic: word.phonetic || '/暂无音标/',
+						example: word.example || '暂无例句'
+					});
+				}
+			}
+		} catch (error) {
+			console.error('Failed to fetch word data:', error);
+		}
+	}, [params.wordId]);
 
-	// 根据单词返回例句（主谓宾结构）
-	const getExampleSentence = (word: string | undefined) => {
-		if (!word) return { parts: ['I ', 'love ', 'chaos'], translations: ['我', '爱', '混乱'], wordIndex: 2 };
-		const examples: Record<string, { parts: string[]; translations: string[]; wordIndex: number }> = {
-			psyche: { parts: ['Scientists ', 'study ', 'the human ', 'psyche', '.'], translations: ['科学家', '研究', '人类', '心灵', '。'], wordIndex: 3 },
-			tech: { parts: ['We ', 'need ', 'more advanced ', 'tech', '.'], translations: ['我们', '需要', '更先进的', '技术', '。'], wordIndex: 3 },
-			fly: { parts: ['Pilots ', 'fly ', 'airplanes ', 'every day', '.'], translations: ['飞行员', '每天', '驾驶', '飞机', '。'], wordIndex: 1 },
-			chaos: { parts: ['Disorder ', 'creates ', 'chaos', '.'], translations: ['混乱', '创造', '混沌', '。'], wordIndex: 2 },
-		};
-		return examples[word] || { parts: ['People ', 'use ', 'this word', ' often', '.'], translations: ['人们', '经常', '使用', '这个词', '。'], wordIndex: 2 };
-	};
-
-	const currentWord = params.word;
-	const exampleData = getExampleSentence(currentWord);
+	// 页面返回时自动刷新数据
+	useFocusEffect(
+		useCallback(() => {
+			fetchWordData();
+		}, [fetchWordData])
+	);
 
 	// 在线发音功能 - 使用有道词典 TTS
 	const playPronunciation = async () => {
@@ -52,7 +67,6 @@ export default function WordDetailPage() {
 		setIsPlaying(true);
 		
 		try {
-			// 配置音频模式
 			await Audio.setAudioModeAsync({
 				allowsRecordingIOS: false,
 				playsInSilentModeIOS: true,
@@ -60,15 +74,13 @@ export default function WordDetailPage() {
 				playThroughEarpieceAndroid: false,
 			});
 
-			// 使用有道词典 TTS API（国内可访问）
 			const ttsUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(wordToPlay)}&type=1`;
-			
+				
 			const { sound } = await Audio.Sound.createAsync(
 				{ uri: ttsUrl },
 				{ shouldPlay: true }
 			);
 
-			// 播放完成后释放资源
 			sound.setOnPlaybackStatusUpdate((status) => {
 				if (status.isLoaded && status.didJustFinish) {
 					sound.unloadAsync();
@@ -81,6 +93,7 @@ export default function WordDetailPage() {
 		}
 	};
 
+	// 保存单词状态
 	const handleStatusClick = async (status: 'x' | 'y' | 'z') => {
 		const wordId = params.wordId;
 		if (!wordId) {
@@ -129,7 +142,7 @@ export default function WordDetailPage() {
 				<View style={styles.wordSection}>
 					<View style={styles.wordInputContainer}>
 						<Text style={styles.wordText}>{params.word || 'chaos'}</Text>
-						<Text style={styles.phoneticText}>{getPhonetic(params.word)}</Text>
+						<Text style={styles.phoneticText}>{wordData?.phonetic || '加载中...'}</Text>
 					</View>
 					<TouchableOpacity style={styles.speakerButton} onPress={playPronunciation} disabled={isPlaying}>
 						{isPlaying ? (
@@ -150,21 +163,12 @@ export default function WordDetailPage() {
 						<View style={styles.exampleSection}>
 							<Text style={styles.exampleLabel}>例句：</Text>
 							<Text style={styles.exampleText}>
-								{exampleData.parts.map((part, index) => (
-									<Text key={index} style={index === exampleData.wordIndex ? styles.greenText : undefined}>
-										{part}
-									</Text>
-								))}
-							</Text>
-							<Text style={styles.exampleTranslation}>
-								{exampleData.translations.map((trans, index) => (
-									<Text key={index} style={index === exampleData.wordIndex ? styles.greenText : undefined}>
-										{trans}
-									</Text>
-								))}
+								{wordData?.example || '加载中...'}
 							</Text>
 						</View>
 					</View>
+
+					{/* Action Buttons */}
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.iconButton}>
 							<FontAwesome6 name="pen" size={18} color="#666" />
@@ -177,12 +181,7 @@ export default function WordDetailPage() {
 
 				{/* Comments */}
 				<View style={styles.commentsSection}>
-					<View style={styles.commentsHeader}>
-						<Text style={styles.commentsTitle}>评论</Text>
-						<TouchableOpacity>
-							<Text style={styles.dropdownIcon}>▼</Text>
-						</TouchableOpacity>
-					</View>
+					<Text style={styles.commentsTitle}>评论区</Text>
 					{comments.map((comment) => (
 						<View key={comment.id} style={styles.commentItem}>
 							<View style={styles.commentContent}>
@@ -194,8 +193,8 @@ export default function WordDetailPage() {
 					))}
 				</View>
 
-				{/* Bottom Status Buttons */}
-				<View style={styles.bottomSection}>
+				{/* Status Buttons */}
+				<View style={styles.statusSection}>
 					<View style={styles.statusButtons}>
 						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('x')}>
 							<Text style={styles.statusButtonText}>已会（x）</Text>
@@ -207,18 +206,9 @@ export default function WordDetailPage() {
 							<Text style={styles.statusButtonText}>不会（z）</Text>
 						</TouchableOpacity>
 					</View>
-
-					{/* Instructions */}
-					<View style={styles.instructionsSection}>
-						<Text style={styles.instructionTitle}>注：</Text>
+					<View style={styles.instructionContainer}>
 						<Text style={styles.instructionText}>
-							1. 单击三个按钮选择性加入三个数据库
-						</Text>
-						<Text style={styles.instructionText}>
-							2. 评论展示优先级：a. 用户自己的评论 b. 软件后台推荐的知识点 c. 赞数从高到低排列（用户可设置优先级）
-						</Text>
-						<Text style={styles.instructionText}>
-							3. 点击{'"\\"'}可勾选别人的项目加入自己的词汇书，蝴蝶科技将会生成带自己笔记或者其他人优秀笔记甚至吐槽的内容的词汇书并付费打印邮寄给用户
+							3. 点击&ldquo;\&quot;可勾选别人的项目加入自己的词汇书，蝴蝶科技将会生成带自己笔记或者其他人优秀笔记甚至吐槽的内容的词汇书并付费打印邮寄给用户
 						</Text>
 					</View>
 				</View>
@@ -237,7 +227,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		padding: 20,
-		backgroundColor: '#E0E0E0',
+		backgroundColor: '#E5E5E5',
 	},
 	backText: {
 		fontSize: 14,
@@ -255,54 +245,41 @@ const styles = StyleSheet.create({
 	},
 	wordSection: {
 		flexDirection: 'row',
+		justifyContent: 'center',
 		alignItems: 'center',
-		padding: 20,
-		backgroundColor: '#FFFFFF',
+		padding: 30,
+		backgroundColor: '#F5F5F5',
 	},
 	wordInputContainer: {
-		flex: 1,
-		backgroundColor: '#FFFFFF',
-		borderWidth: 1,
-		borderColor: '#E0E0E0',
-		padding: 15,
+		alignItems: 'center',
+		marginRight: 15,
 	},
 	wordText: {
-		fontSize: 24,
+		fontSize: 32,
 		color: '#333333',
 		fontFamily: 'serif',
-		fontWeight: '700',
+		fontStyle: 'italic',
+		fontWeight: '600',
 	},
 	phoneticText: {
 		fontSize: 14,
 		color: '#888888',
 		fontFamily: 'serif',
-		fontStyle: 'italic',
 		marginTop: 5,
 	},
 	speakerButton: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: '#4A4A4A',
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginLeft: 15,
-	},
-	speakerIcon: {
-		fontSize: 20,
+		padding: 10,
 	},
 	meaningSection: {
-		flexDirection: 'row',
 		padding: 20,
-		backgroundColor: '#FFFFFF',
-		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
+		borderBottomWidth: 1,
+		borderBottomColor: '#E8E8E8',
 	},
 	meaningContent: {
-		flex: 1,
+		marginBottom: 15,
 	},
 	meaningLabel: {
-		fontSize: 14,
+		fontSize: 13,
 		color: '#333333',
 		fontFamily: 'serif',
 		fontWeight: '600',
@@ -315,7 +292,7 @@ const styles = StyleSheet.create({
 		lineHeight: 22,
 	},
 	redText: {
-		color: '#D32F2F',
+		color: '#CC0000',
 	},
 	grayText: {
 		color: '#888888',
@@ -352,48 +329,31 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 	},
 	actionButtons: {
-		justifyContent: 'center',
+		flexDirection: 'row',
+		justifyContent: 'flex-end',
 		gap: 10,
 	},
 	iconButton: {
-		width: 36,
-		height: 36,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	iconButtonText: {
-		fontSize: 18,
+		padding: 8,
 	},
 	commentsSection: {
-		margin: 20,
-		borderWidth: 1,
-		borderColor: '#E0E0E0',
-		padding: 15,
-	},
-	commentsHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		marginBottom: 15,
+		padding: 20,
+		borderBottomWidth: 1,
+		borderBottomColor: '#E8E8E8',
 	},
 	commentsTitle: {
 		fontSize: 14,
 		color: '#333333',
 		fontFamily: 'serif',
 		fontWeight: '600',
-	},
-	dropdownIcon: {
-		fontSize: 12,
-		color: '#888888',
+		marginBottom: 15,
 	},
 	commentItem: {
 		flexDirection: 'row',
-		alignItems: 'flex-start',
-		marginBottom: 12,
-	},
-	folderIcon: {
-		fontSize: 14,
-		marginRight: 10,
+		alignItems: 'center',
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+		borderBottomColor: '#F0F0F0',
 	},
 	commentContent: {
 		flex: 1,
@@ -404,24 +364,20 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		color: '#333333',
 		fontFamily: 'serif',
-		fontWeight: '500',
+		fontWeight: '600',
 	},
 	commentText: {
 		fontSize: 13,
 		color: '#666666',
 		fontFamily: 'serif',
 	},
-	checkIcon: {
-		fontSize: 14,
-		color: '#333333',
-		marginLeft: 10,
-	},
-	bottomSection: {
+	statusSection: {
 		padding: 20,
 	},
 	statusButtons: {
 		flexDirection: 'row',
-		justifyContent: 'space-around',
+		justifyContent: 'center',
+		gap: 20,
 		marginBottom: 20,
 	},
 	statusButton: {
@@ -435,22 +391,15 @@ const styles = StyleSheet.create({
 		color: '#333333',
 		fontFamily: 'serif',
 	},
-	instructionsSection: {
-		backgroundColor: '#FAFAFA',
+	instructionContainer: {
 		padding: 15,
-	},
-	instructionTitle: {
-		fontSize: 13,
-		color: '#333333',
-		fontFamily: 'serif',
-		fontWeight: '600',
-		marginBottom: 8,
+		backgroundColor: '#F8F8F8',
+		borderRadius: 8,
 	},
 	instructionText: {
-		fontSize: 12,
-		color: '#666666',
+		fontSize: 11,
+		color: '#999999',
 		fontFamily: 'serif',
 		lineHeight: 18,
-		marginBottom: 6,
 	},
 });
