@@ -67,8 +67,36 @@ export default function WordDetailPage() {
 		}
 	};
 
-	const handleStatusClick = (status: string) => {
-		console.log('Mark as:', status);
+	const handleStatusClick = async (status: 'x' | 'y' | 'z') => {
+		const wordId = params.wordId;
+		if (!wordId) {
+			alert('单词ID不存在');
+			return;
+		}
+
+		try {
+			/**
+			 * 服务端文件：server/src/routes/words.ts
+			 * 接口：PUT /api/v1/words/:id/status
+			 * Body 参数：status: string -- x=已会, y=模糊, z=不会
+			 */
+			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${wordId}/status`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status }),
+			});
+
+			const result = await response.json();
+			if (result.success) {
+				const statusNames = { x: '已会', y: '模糊', z: '不会' };
+				alert(`已移入 ${statusNames[status]} 数据库`);
+			} else {
+				alert('保存失败');
+			}
+		} catch (error) {
+			console.error('Failed to update status:', error);
+			alert('网络错误，请重试');
+		}
 	};
 
 	return (
@@ -139,13 +167,13 @@ export default function WordDetailPage() {
 				{/* Bottom Status Buttons */}
 				<View style={styles.bottomSection}>
 					<View style={styles.statusButtons}>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('known')}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('x')}>
 							<Text style={styles.statusButtonText}>已会（x）</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('vague')}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('y')}>
 							<Text style={styles.statusButtonText}>模糊（y）</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('unknown')}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusClick('z')}>
 							<Text style={styles.statusButtonText}>不会（z）</Text>
 						</TouchableOpacity>
 					</View>

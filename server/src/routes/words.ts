@@ -51,4 +51,82 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// 更新单词状态 (x=已会, y=模糊, z=不会)
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['x', 'y', 'z'].includes(status)) {
+      res.status(400).json({ error: 'Invalid status. Must be x, y, or z.' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+    
+    // 先删除旧状态
+    await client.from('word_status').delete().eq('word_id', parseInt(id));
+    
+    // 插入新状态
+    const { data, error } = await client.from('word_status').insert({
+      word_id: parseInt(id),
+      status: status
+    }).select();
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    
+    res.json({ success: true, data: { wordId: parseInt(id), status } });
+  } catch (err) {
+    console.error('Error updating word status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 获取单词状态
+router.get('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('word_status').select('status').eq('word_id', parseInt(id)).maybeSingle();
+    
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    
+    res.json({ data: data ? { wordId: parseInt(id), status: data.status } : null });
+  } catch (err) {
+    console.error('Error fetching word status:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 获取所有状态分类统计
+router.get('/stats/summary', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client.from('word_status').select('status');
+    
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    
+    const stats = { x: 0, y: 0, z: 0 };
+    data.forEach((item: { status: string }) => {
+      if (stats.hasOwnProperty(item.status)) {
+        stats[item.status as keyof typeof stats]++;
+      }
+    });
+    
+    res.json({ data: stats });
+  } catch (err) {
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
