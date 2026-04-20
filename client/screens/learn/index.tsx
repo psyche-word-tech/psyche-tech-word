@@ -41,17 +41,17 @@ function DraggableWord({ word, onDrop }: DraggableWordProps) {
 		})
 		.onEnd((event) => {
 			const dropY = event.absoluteY;
-			const screenWidth = 350;
-			const itemWidth = screenWidth / 3;
-
+			// 拖拽区域在屏幕下方约200-400像素范围内
 			let targetCategory: number | null = null;
-			if (dropY > 350) {
+			if (dropY > 200 && dropY < 500) {
+				const screenWidth = 350;
+				const itemWidth = screenWidth / 3;
 				const relativeX = event.absoluteX;
-				if (relativeX >= 0 && relativeX < itemWidth) {
+				if (relativeX < itemWidth) {
 					targetCategory = 1;
-				} else if (relativeX >= itemWidth && relativeX < itemWidth * 2) {
+				} else if (relativeX < itemWidth * 2) {
 					targetCategory = 2;
-				} else if (relativeX >= itemWidth * 2) {
+				} else {
 					targetCategory = 3;
 				}
 			}
