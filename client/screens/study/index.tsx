@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardLarge: {
-    width: 200,
-    height: 100,
+    width: '100%',
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
     height: 50,
   },
   cardIconLarge: {
-    width: '80%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
   },
   engravedContainer: {
     position: 'absolute',
@@ -203,8 +203,9 @@ const styles = StyleSheet.create({
   cardLeftTop: {
     position: 'absolute',
     top: 150,
-    left: '30%',
-    alignItems: 'flex-start',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   cardRightMiddle: {
     position: 'absolute',
