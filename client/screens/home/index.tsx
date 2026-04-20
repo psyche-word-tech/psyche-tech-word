@@ -99,9 +99,9 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'serif',
     fontStyle: 'italic',
-    letterSpacing: 3,
+    letterSpacing: 2,
     marginBottom: 10,
-    marginRight: 60,
+    paddingHorizontal: 20,
   },
   dividerLine: {
     width: 60,
