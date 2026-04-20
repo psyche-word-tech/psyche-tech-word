@@ -47,7 +47,6 @@ export default function StudyScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.labelRight}>
-              <View style={styles.redLine} />
               <Text style={styles.cardLabel}>刻字</Text>
             </View>
           </View>
