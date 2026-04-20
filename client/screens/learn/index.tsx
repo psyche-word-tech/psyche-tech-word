@@ -6,340 +6,309 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 
 interface Word {
-  id: number;
-  word: string;
-  meaning: string;
+	id: number;
+	word: string;
+	meaning: string;
 }
 
 interface Category {
-  id: number;
-  name: string;
-  letter: string;
-  count: number;
+	id: number;
+	name: string;
+	letter: string;
+	count: number;
 }
 
 interface DraggableWordProps {
-  word: Word;
-  categories: Category[];
-  onDrop: (categoryId: number) => void;
+	word: Word;
+	onDrop: (categoryId: number) => void;
 }
 
-function DraggableWord({ word, categories, onDrop }: DraggableWordProps) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const zIndex = useSharedValue(1);
-  const [droppedCategory, setDroppedCategory] = useState<number | null>(null);
+function DraggableWord({ word, onDrop }: DraggableWordProps) {
+	const translateX = useSharedValue(0);
+	const translateY = useSharedValue(0);
+	const scale = useSharedValue(1);
+	const zIndex = useSharedValue(1);
+	const [droppedCategory, setDroppedCategory] = useState<number | null>(null);
 
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
-      scale.value = withSpring(1.1);
-      zIndex.value = 100;
-    })
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-      translateY.value = event.translationY;
-    })
-    .onEnd((event) => {
-      // Check if dropped on a category
-      const dropY = event.absoluteY;
-      // Approximate positions for 3 categories
-      const screenWidth = 350; // approximate
-      const itemWidth = screenWidth / 3;
-      const startX = (screenWidth - itemWidth * 3) / 2;
-      
-      let targetCategory: number | null = null;
-      if (dropY > 400) { // Below the word cards
-        const relativeX = event.absoluteX - startX;
-        if (relativeX >= 0 && relativeX < itemWidth) {
-          targetCategory = categories[0].id;
-        } else if (relativeX >= itemWidth && relativeX < itemWidth * 2) {
-          targetCategory = categories[1].id;
-        } else if (relativeX >= itemWidth * 2) {
-          targetCategory = categories[2].id;
-        }
-      }
+	const panGesture = Gesture.Pan()
+		.onStart(() => {
+			scale.value = withSpring(1.1);
+			zIndex.value = 100;
+		})
+		.onUpdate((event) => {
+			translateX.value = event.translationX;
+			translateY.value = event.translationY;
+		})
+		.onEnd((event) => {
+			const dropY = event.absoluteY;
+			const screenWidth = 350;
+			const itemWidth = screenWidth / 3;
 
-      if (targetCategory !== null) {
-        runOnJS(setDroppedCategory)(targetCategory);
-        runOnJS(onDrop)(targetCategory);
-      }
+			let targetCategory: number | null = null;
+			if (dropY > 350) {
+				const relativeX = event.absoluteX;
+				if (relativeX >= 0 && relativeX < itemWidth) {
+					targetCategory = 1;
+				} else if (relativeX >= itemWidth && relativeX < itemWidth * 2) {
+					targetCategory = 2;
+				} else if (relativeX >= itemWidth * 2) {
+					targetCategory = 3;
+				}
+			}
 
-      // Reset position
-      translateX.value = withSpring(0);
-      translateY.value = withSpring(0);
-      scale.value = withSpring(1);
-      zIndex.value = 1;
-    });
+			if (targetCategory !== null) {
+				runOnJS(setDroppedCategory)(targetCategory);
+				runOnJS(onDrop)(targetCategory);
+			}
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-    zIndex: zIndex.value,
-  }));
+			translateX.value = withSpring(0);
+			translateY.value = withSpring(0);
+			scale.value = withSpring(1);
+			zIndex.value = 1;
+		});
 
-  return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-        <View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
-          <Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
-            {word.word}
-          </Text>
-        </View>
-        {/* Guide Line */}
-        <View style={styles.guideLine} />
-        {/* Category Button */}
-        <View style={styles.categoryCard}>
-          <Text style={styles.categoryCardText}>-</Text>
-        </View>
-      </Animated.View>
-    </GestureDetector>
-  );
+	const animatedStyle = useAnimatedStyle(() => ({
+		transform: [
+			{ translateX: translateX.value },
+			{ translateY: translateY.value },
+			{ scale: scale.value },
+		],
+		zIndex: zIndex.value,
+	}));
+
+	return (
+		<GestureDetector gesture={panGesture}>
+			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
+				<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
+					<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
+						{word.word}
+					</Text>
+				</View>
+			</Animated.View>
+		</GestureDetector>
+	);
 }
 
 export default function LearnPage() {
-  const router = useSafeRouter();
-  const [words, setWords] = useState<Word[]>([]);
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: '已会', letter: 'x', count: 0 },
-    { id: 2, name: '模糊', letter: 'y', count: 0 },
-    { id: 3, name: '不会', letter: 'z', count: 0 },
-  ]);
-  const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
+	const router = useSafeRouter();
+	const [words, setWords] = useState<Word[]>([]);
+	const [categories, setCategories] = useState<Category[]>([
+		{ id: 1, name: '已会', letter: 'x', count: 0 },
+		{ id: 2, name: '模糊', letter: 'y', count: 0 },
+		{ id: 3, name: '不会', letter: 'z', count: 0 },
+	]);
+	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    fetchWords();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+	useEffect(() => {
+		fetchWords();
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
-  const fetchWords = async () => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
-      const result = await response.json();
-      if (result.data) {
-        setWords(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch words:', error);
-    }
-  };
+	const fetchWords = async () => {
+		try {
+			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
+			const result = await response.json();
+			if (result.data) {
+				setWords(result.data);
+			}
+		} catch (error) {
+			console.error('Failed to fetch words:', error);
+		}
+	};
 
-  const handleDrop = (wordId: number, categoryId: number) => {
-    setUsedWords(prev => new Set([...prev, wordId]));
-    setCategories(cats =>
-      cats.map(cat =>
-        cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
-      )
-    );
-  };
+	const handleDrop = (wordId: number, categoryId: number) => {
+		setUsedWords(prev => new Set([...prev, wordId]));
+		setCategories(cats =>
+			cats.map(cat =>
+				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
+			)
+		);
+	};
 
-  const availableWords = words.filter(w => !usedWords.has(w.id));
+	const availableWords = words.filter(w => !usedWords.has(w.id));
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Screen>
-        <ScrollView style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backText}>← back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>词汇预览</Text>
-            <View style={styles.placeholder} />
-          </View>
+	return (
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<Screen>
+				<ScrollView style={styles.container}>
+					{/* Header */}
+					<View style={styles.header}>
+						<TouchableOpacity onPress={() => router.back()}>
+							<Text style={styles.backText}>← back</Text>
+						</TouchableOpacity>
+						<Text style={styles.title}>词汇预览</Text>
+						<View style={styles.placeholder} />
+					</View>
 
-          {/* Word Cards - Horizontal with Drag */}
-          <View style={styles.wordCardsContainer}>
-            {availableWords.length > 0 ? (
-              <View style={styles.wordRow}>
-                {availableWords.map((word) => (
-                  <DraggableWord
-                    key={word.id}
-                    word={word}
-                    categories={categories}
-                    onDrop={(categoryId) => handleDrop(word.id, categoryId)}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>暂无单词</Text>
-              </View>
-            )}
-          </View>
+					{/* Word Cards - Horizontal with Drag */}
+					<View style={styles.wordCardsContainer}>
+						{availableWords.length > 0 ? (
+							<View style={styles.wordRow}>
+								{availableWords.map((word) => (
+									<DraggableWord
+										key={word.id}
+										word={word}
+										onDrop={(categoryId) => handleDrop(word.id, categoryId)}
+									/>
+								))}
+							</View>
+						) : (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.emptyText}>暂无单词</Text>
+							</View>
+						)}
+					</View>
 
-          {/* Category Drop Zones */}
-          <View style={styles.categoryContainer}>
-            <View style={styles.categoryRow}>
-              {categories.map((cat) => (
-                <View key={cat.id} style={styles.categoryItem}>
-                  <View style={styles.categoryCardLarge}>
-                    <Text style={styles.categoryNameText}>{cat.name}</Text>
-                    <Text style={styles.categoryLetterText}>({cat.letter})</Text>
-                  </View>
-                  <View style={styles.categoryCountBadge}>
-                    <Text style={styles.categoryCountText}>{cat.count}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
+					{/* Category Drop Zones */}
+					<View style={styles.categoryContainer}>
+						<View style={styles.categoryRow}>
+							{categories.map((cat) => (
+								<View key={cat.id} style={styles.categoryItem}>
+									<View style={styles.categoryCardLarge}>
+										<Text style={styles.categoryNameText}>{cat.name}</Text>
+										<Text style={styles.categoryLetterText}>({cat.letter})</Text>
+									</View>
+									<View style={styles.categoryCountBadge}>
+										<Text style={styles.categoryCountText}>{cat.count}</Text>
+									</View>
+								</View>
+							))}
+						</View>
+					</View>
 
-          {/* Instruction */}
-          <View style={styles.instructionContainer}>
-            <Text style={styles.instructionText}>拖拽单词到下方分类</Text>
-          </View>
-        </ScrollView>
-      </Screen>
-    </GestureHandlerRootView>
-  );
+					{/* Instruction */}
+					<View style={styles.instructionContainer}>
+						<Text style={styles.instructionText}>拖拽单词到下方分类</Text>
+					</View>
+				</ScrollView>
+			</Screen>
+		</GestureHandlerRootView>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#E5E5E5',
-  },
-  backText: {
-    fontSize: 14,
-    color: '#000000',
-    fontFamily: 'serif',
-  },
-  title: {
-    fontSize: 16,
-    color: '#333333',
-    fontFamily: 'serif',
-    fontWeight: '600',
-  },
-  placeholder: {
-    width: 50,
-  },
-  wordCardsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 60,
-  },
-  wordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  wordItemContainer: {
-    alignItems: 'center',
-  },
-  wordCard: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  wordCardUsed: {
-    backgroundColor: '#CCCCCC',
-    borderColor: '#AAAAAA',
-  },
-  wordCardText: {
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: 'serif',
-  },
-  wordCardTextUsed: {
-    color: '#888888',
-  },
-  guideLine: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#4A90D9',
-    marginVertical: 10,
-  },
-  categoryCard: {
-    backgroundColor: '#4A4A4A',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 6,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  categoryCardText: {
-    fontSize: 13,
-    color: '#FFFFFF',
-    fontFamily: 'serif',
-  },
-  categoryContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  categoryItem: {
-    alignItems: 'center',
-  },
-  categoryCardLarge: {
-    backgroundColor: '#4A4A4A',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  categoryNameText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: 'serif',
-    fontWeight: '600',
-  },
-  categoryLetterText: {
-    fontSize: 12,
-    color: '#CCCCCC',
-    fontFamily: 'serif',
-    marginTop: 4,
-  },
-  categoryCountBadge: {
-    backgroundColor: '#4A90D9',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  categoryCountText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontFamily: 'serif',
-    fontWeight: '600',
-  },
-  instructionContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  instructionText: {
-    fontSize: 12,
-    color: '#999999',
-    fontFamily: 'serif',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#999999',
-    fontFamily: 'serif',
-  },
+	container: {
+		flex: 1,
+		backgroundColor: '#FFFFFF',
+	},
+	header: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		padding: 20,
+		backgroundColor: '#E5E5E5',
+	},
+	backText: {
+		fontSize: 14,
+		color: '#000000',
+		fontFamily: 'serif',
+	},
+	title: {
+		fontSize: 16,
+		color: '#333333',
+		fontFamily: 'serif',
+		fontWeight: '600',
+	},
+	placeholder: {
+		width: 50,
+	},
+	wordCardsContainer: {
+		paddingHorizontal: 20,
+		paddingVertical: 60,
+	},
+	wordRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+	},
+	wordItemContainer: {
+		alignItems: 'center',
+	},
+	wordCard: {
+		backgroundColor: '#F0F0F0',
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		borderRadius: 6,
+		borderWidth: 1,
+		borderColor: '#E0E0E0',
+		minWidth: 60,
+		alignItems: 'center',
+	},
+	wordCardUsed: {
+		backgroundColor: '#CCCCCC',
+		borderColor: '#AAAAAA',
+	},
+	wordCardText: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
+	},
+	wordCardTextUsed: {
+		color: '#888888',
+	},
+	categoryContainer: {
+		paddingHorizontal: 20,
+		paddingVertical: 40,
+	},
+	categoryRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+	},
+	categoryItem: {
+		alignItems: 'center',
+	},
+	categoryCardLarge: {
+		backgroundColor: '#4A4A4A',
+		paddingHorizontal: 16,
+		paddingVertical: 20,
+		borderRadius: 8,
+		minWidth: 80,
+		alignItems: 'center',
+	},
+	categoryNameText: {
+		fontSize: 14,
+		color: '#FFFFFF',
+		fontFamily: 'serif',
+		fontWeight: '600',
+	},
+	categoryLetterText: {
+		fontSize: 12,
+		color: '#CCCCCC',
+		fontFamily: 'serif',
+		marginTop: 4,
+	},
+	categoryCountBadge: {
+		backgroundColor: '#4A90D9',
+		borderRadius: 12,
+		width: 24,
+		height: 24,
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginTop: 8,
+	},
+	categoryCountText: {
+		fontSize: 12,
+		color: '#FFFFFF',
+		fontFamily: 'serif',
+		fontWeight: '600',
+	},
+	instructionContainer: {
+		padding: 20,
+		alignItems: 'center',
+	},
+	instructionText: {
+		fontSize: 12,
+		color: '#999999',
+		fontFamily: 'serif',
+	},
+	emptyContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		paddingVertical: 40,
+	},
+	emptyText: {
+		fontSize: 14,
+		color: '#999999',
+		fontFamily: 'serif',
+	},
 });
