@@ -53,7 +53,10 @@ export default function EngraveScreen() {
               
               <TouchableOpacity 
                 style={styles.undoBtn}
-                onPress={() => setText('')}
+                onPress={() => {
+                  setText('');
+                  router.replace('/study', { engravedText: '' });
+                }}
               >
                 <Text style={styles.undoText}>撤销</Text>
               </TouchableOpacity>
