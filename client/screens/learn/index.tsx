@@ -71,13 +71,6 @@ export default function LearnPage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Instructions */}
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsText}>
-            依次展示按照一定的顺序安排的单词，下面三个或者同时展示或者单独一个展示（只展示在中间一个），长按拖曳将单词拖入下面的三本单词书（里面的&quot;x&quot;、&quot;y&quot;、&quot;z&quot;显示加入后的词汇库数量）
-          </Text>
-        </View>
-
         {/* Word Cards - Horizontal */}
         <View style={styles.wordCardsContainer}>
           {words.length > 0 ? (
