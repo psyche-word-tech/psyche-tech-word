@@ -41,9 +41,9 @@ function DraggableWord({ word, onDrop }: DraggableWordProps) {
 		})
 		.onEnd((event) => {
 			const dropY = event.absoluteY;
-			// 拖拽区域在屏幕下方约150-600像素范围内
+			// 拖拽区域以分类按钮的黑色卡片范围为准（约400-500像素）
 			let targetCategory: number | null = null;
-			if (dropY > 150 && dropY < 700) {
+			if (dropY > 400 && dropY < 520) {
 				const screenWidth = 350;
 				const itemWidth = screenWidth / 3;
 				const relativeX = event.absoluteX;
