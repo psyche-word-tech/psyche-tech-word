@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'serif',
     fontStyle: 'italic',
-    letterSpacing: 2,
+    letterSpacing: 1,
     marginBottom: 10,
     paddingHorizontal: 20,
   },
