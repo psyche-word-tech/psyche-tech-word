@@ -29,6 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="engrave" options={{ title: "" }} />
         <Stack.Screen name="vocabulary" options={{ title: "" }} />
         <Stack.Screen name="purchase" options={{ title: "" }} />
+        <Stack.Screen name="my-vocabulary" options={{ title: "" }} />
       </Stack>
       <Toast />
     </Provider>
