@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardLarge: {
-    width: 160,
-    height: 160,
+    width: '100%',
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -104,14 +104,14 @@ const styles = StyleSheet.create({
     height: 50,
   },
   cardIconLarge: {
-    width: 140,
-    height: 140,
+    width: '100%',
+    height: '100%',
   },
   cardTopCenter: {
     position: 'absolute',
     top: 0,
-    left: '50%',
-    marginLeft: -80,
+    left: 0,
+    right: 0,
     alignItems: 'center',
   },
   cardLeftTop: {
