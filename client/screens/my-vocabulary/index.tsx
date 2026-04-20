@@ -82,7 +82,6 @@ export default function MyVocabularyPage() {
               
               {/* Guide Line */}
               <View style={[styles.guideLine, index === 0 && styles.guideLineWithDot]} />
-              {index === 0 && <View style={styles.dot} />}
             </View>
           ))}
         </View>
