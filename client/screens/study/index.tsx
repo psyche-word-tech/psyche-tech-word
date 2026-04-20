@@ -31,28 +31,10 @@ export default function StudyScreen() {
                 {engravedText.length > 0 && (
                   <View style={styles.engravedContainer}>
                     <LinearGradient
-                      colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.4)']}
+                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
                       style={styles.engravedGradient}
                     />
-                    {/* 外发光层 - 金色暖光 */}
-                    <Text style={[styles.engravedText, {
-                      textShadowColor: '#D4A574',
-                      textShadowOffset: { width: 0, height: 0 },
-                      textShadowRadius: 15,
-                    }]}>{engravedText}</Text>
-                    {/* 中层发光 */}
-                    <Text style={[styles.engravedText, {
-                      position: 'absolute',
-                      textShadowColor: '#8B7355',
-                      textShadowOffset: { width: 0, height: 0 },
-                      textShadowRadius: 8,
-                    }]}>{engravedText}</Text>
-                    {/* 内层文字 - 雕刻感 */}
-                    <Text style={[styles.engravedTextInner, {
-                      textShadowColor: 'rgba(0,0,0,0.8)',
-                      textShadowOffset: { width: 2, height: 2 },
-                      textShadowRadius: 3,
-                    }]}>{engravedText}</Text>
+                    <Text style={styles.engravedText}>{engravedText}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -174,23 +156,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   engravedText: {
-    fontSize: 32,
+    fontSize: 28,
     color: '#F5E6D3',
     fontFamily: 'serif',
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 4,
+    textShadowColor: '#C9A96E',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
-  // 内层文字（主要显示）
-  engravedTextInner: {
-    fontSize: 32,
-    color: '#F5E6D3',
-    fontFamily: 'serif',
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 4,
-  },
-  // 渐变遮罩
   engravedGradient: {
     position: 'absolute',
     top: 0,
