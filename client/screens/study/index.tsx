@@ -167,6 +167,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#C9A96E',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
+    lineHeight: 30,
   },
   engravedTextContainer: {
     flexDirection: 'column',
