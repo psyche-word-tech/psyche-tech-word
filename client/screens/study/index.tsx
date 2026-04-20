@@ -36,7 +36,9 @@ export default function StudyScreen() {
                     />
                     <View style={styles.engravedTextContainer}>
                       {engravedText.split('').map((char, index) => (
-                        <Text key={index} style={styles.engravedText}>{char}</Text>
+                        <View key={index} style={styles.engravedCharWrapper}>
+                          <Text style={styles.engravedText}>{char}</Text>
+                        </View>
                       ))}
                     </View>
                   </View>
@@ -167,7 +169,10 @@ const styles = StyleSheet.create({
     textShadowColor: '#C9A96E',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
-    lineHeight: 30,
+    marginBottom: -4,
+  },
+  engravedCharWrapper: {
+    marginRight: 12,
   },
   engravedTextContainer: {
     flexDirection: 'column',
