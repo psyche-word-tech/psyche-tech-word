@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ITEM_WIDTH = SCREEN_WIDTH / 3;
@@ -115,10 +117,13 @@ export default function LearnPage() {
 	]);
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
-	useEffect(() => {
-		fetchData();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	// 页面返回时自动刷新数据
+	useFocusEffect(
+		useCallback(() => {
+			fetchData();
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		}, [])
+	);
 
 	const fetchData = async () => {
 		try {
