@@ -83,8 +83,8 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
   logoImage: {
-    width: 120,
-    height: 120,
+    width: 180,
+    height: 180,
   },
   brandName: {
     fontSize: 22,
