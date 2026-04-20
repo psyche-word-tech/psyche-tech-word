@@ -78,35 +78,37 @@ export default function LearnPage() {
           </Text>
         </View>
 
-        {/* Word Cards */}
+        {/* Word Cards - Horizontal */}
         <View style={styles.wordCardsContainer}>
           {words.length > 0 ? (
-            words.map((word) => (
-              <View key={word.id} style={styles.wordItemContainer}>
-                <TouchableOpacity 
-                  style={[styles.wordCard, selectedWord?.id === word.id && styles.wordCardSelected]}
-                  onPress={() => handleWordClick(word)}
-                  onLongPress={() => handleWordClick(word)}
-                >
-                  <Text style={styles.wordCardText}>{word.word}</Text>
-                </TouchableOpacity>
-                {/* Guide Line */}
-                <View style={styles.guideLine} />
-                {/* Category Button */}
-                <TouchableOpacity 
-                  style={[styles.categoryCard, selectedWord?.id === word.id && styles.categoryCardActive]}
-                  onPress={() => {
-                    if (selectedWord?.id === word.id) {
-                      handleCategoryClick(categories[words.indexOf(word) % 3]);
-                    }
-                  }}
-                >
-                  <Text style={styles.categoryCardText}>
-                    {categories[words.indexOf(word) % 3].name} ({categories[words.indexOf(word) % 3].letter})
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))
+            <View style={styles.wordRow}>
+              {words.map((word) => (
+                <View key={word.id} style={styles.wordItemContainer}>
+                  <TouchableOpacity 
+                    style={[styles.wordCard, selectedWord?.id === word.id && styles.wordCardSelected]}
+                    onPress={() => handleWordClick(word)}
+                    onLongPress={() => handleWordClick(word)}
+                  >
+                    <Text style={styles.wordCardText}>{word.word}</Text>
+                  </TouchableOpacity>
+                  {/* Guide Line */}
+                  <View style={styles.guideLine} />
+                  {/* Category Button */}
+                  <TouchableOpacity 
+                    style={[styles.categoryCard, selectedWord?.id === word.id && styles.categoryCardActive]}
+                    onPress={() => {
+                      if (selectedWord?.id === word.id) {
+                        handleCategoryClick(categories[words.indexOf(word) % 3]);
+                      }
+                    }}
+                  >
+                    <Text style={styles.categoryCardText}>
+                      {categories[words.indexOf(word) % 3].name} ({categories[words.indexOf(word) % 3].letter})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>暂无单词</Text>
@@ -168,10 +170,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   wordCardsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     paddingHorizontal: 20,
     paddingVertical: 30,
+  },
+  wordRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   wordItemContainer: {
     alignItems: 'center',
