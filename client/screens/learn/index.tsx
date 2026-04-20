@@ -102,7 +102,6 @@ export default function LearnPage() {
 	]);
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 	const [wordCategories, setWordCategories] = useState<Record<number, number>>({});
-	const [showKnownList, setShowKnownList] = useState(false);
 
 	useEffect(() => {
 		fetchWords();
@@ -140,11 +139,10 @@ export default function LearnPage() {
 	};
 
 	const availableWords = words.filter(w => !usedWords.has(w.id));
-	const knownWords = words.filter(w => wordCategories[w.id] === 1);
 
 	const handleCategoryPress = (categoryId: number) => {
 		if (categoryId === 1) {
-			setShowKnownList(!showKnownList);
+			router.push('/known-words');
 		}
 	};
 
@@ -196,17 +194,6 @@ export default function LearnPage() {
 								</TouchableOpacity>
 							))}
 						</View>
-
-						{/* 已会单词列表 */}
-						{showKnownList && knownWords.length > 0 && (
-							<View style={styles.knownListContainer}>
-								{knownWords.map((word) => (
-									<View key={word.id} style={styles.knownWordItem}>
-										<Text style={styles.knownWordText}>{word.word}</Text>
-									</View>
-								))}
-							</View>
-						)}
 					</View>
 
 					{/* Instruction */}
@@ -323,24 +310,6 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 		fontWeight: '600',
-	},
-	knownListContainer: {
-		marginTop: 20,
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		justifyContent: 'center',
-		gap: 10,
-	},
-	knownWordItem: {
-		backgroundColor: '#F5F5F5',
-		paddingHorizontal: 15,
-		paddingVertical: 8,
-		borderRadius: 6,
-	},
-	knownWordText: {
-		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'serif',
 	},
 	instructionContainer: {
 		padding: 20,
