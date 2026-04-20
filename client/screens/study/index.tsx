@@ -34,7 +34,11 @@ export default function StudyScreen() {
                       colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
                       style={styles.engravedGradient}
                     />
-                    <Text style={styles.engravedText}>{engravedText}</Text>
+                    <View style={styles.engravedTextContainer}>
+                      {engravedText.split('').map((char, index) => (
+                        <Text key={index} style={styles.engravedText}>{char}</Text>
+                      ))}
+                    </View>
                   </View>
                 )}
               </TouchableOpacity>
@@ -160,10 +164,16 @@ const styles = StyleSheet.create({
     color: '#F5E6D3',
     fontFamily: 'serif',
     fontWeight: '600',
-    textAlign: 'center',
     textShadowColor: '#C9A96E',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
+  },
+  engravedTextContainer: {
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxHeight: 180,
   },
   engravedGradient: {
     position: 'absolute',
