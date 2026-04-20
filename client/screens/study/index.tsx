@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   card: {
-    width: 80,
-    height: 80,
+    width: 160,
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardIcon: {
-    width: 50,
-    height: 50,
+    width: 100,
+    height: 100,
   },
   cardIconLarge: {
     width: '100%',
@@ -202,20 +202,20 @@ const styles = StyleSheet.create({
   },
   cardLeftTop: {
     position: 'absolute',
-    top: 150,
+    top: 100,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
   cardRightMiddle: {
     position: 'absolute',
-    top: 320,
+    top: 280,
     right: 30,
     alignItems: 'center',
   },
   cardLeftBottom: {
     position: 'absolute',
-    top: 450,
+    top: 420,
     left: 30,
     alignItems: 'flex-start',
   },
