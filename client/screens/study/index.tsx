@@ -62,7 +62,7 @@ export default function StudyScreen() {
 
           {/* Card 3 - Right Middle */}
           <View style={styles.cardRightMiddle}>
-            <TouchableOpacity style={styles.cardMedium} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
+            <TouchableOpacity style={styles.cardMediumWide} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
               <Image source={iconMyVocab} style={styles.cardIconMedium} resizeMode="cover" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>我的词汇书</Text>
@@ -142,6 +142,18 @@ const styles = StyleSheet.create({
   },
   cardMedium: {
     width: '50%',
+    height: 75,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#8B7355',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cardMediumWide: {
+    width: '80%',
     height: 75,
     borderRadius: 4,
     overflow: 'hidden',
