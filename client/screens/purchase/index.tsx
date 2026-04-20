@@ -17,9 +17,32 @@ export default function PurchasePage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.titleText}>购买页面</Text>
+        {/* Dialog */}
+        <View style={styles.dialogContainer}>
+          <View style={styles.dialog}>
+            {/* Empty space */}
+            <View style={styles.emptySpace} />
+            
+            {/* Main content */}
+            <View style={styles.content}>
+              <Text style={styles.mainText}>您是否确认购买蝴蝶单词四级版</Text>
+              
+              {/* Buttons */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>确认</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>取消</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            {/* Notice */}
+            <View style={styles.noticeBar}>
+              <Text style={styles.noticeText}>注意：确认后显示是否支付成功</Text>
+            </View>
+          </View>
         </View>
       </View>
     </Screen>
@@ -51,14 +74,59 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 50,
   },
-  content: {
+  dialogContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
   },
-  titleText: {
-    fontSize: 16,
+  dialog: {
+    width: '100%',
+    borderWidth: 2,
+    borderColor: '#4A90D9',
+    borderStyle: 'dashed',
+    backgroundColor: '#FFFFFF',
+  },
+  emptySpace: {
+    height: 80,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  mainText: {
+    fontSize: 14,
     color: '#333333',
     fontFamily: 'serif',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 30,
+  },
+  button: {
+    backgroundColor: '#7CB342',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'serif',
+    fontWeight: '600',
+  },
+  noticeBar: {
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 12,
+  },
+  noticeText: {
+    fontSize: 12,
+    color: '#888888',
+    fontFamily: 'serif',
+    textAlign: 'center',
   },
 });
