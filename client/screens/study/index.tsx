@@ -98,6 +98,7 @@ const styles = StyleSheet.create({
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 0,
   },
   cardIcon: {
     width: 50,
