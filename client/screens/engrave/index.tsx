@@ -9,10 +9,6 @@ export default function EngraveScreen() {
   const router = useSafeRouter();
   const [text, setText] = useState('');
 
-  const handleConfirm = () => {
-    router.back();
-  };
-
   return (
     <Screen>
       <SafeAreaView style={styles.container}>
@@ -35,6 +31,15 @@ export default function EngraveScreen() {
             />
             
             <View style={styles.buttonRow}>
+              <TouchableOpacity 
+                style={styles.undoBtn}
+                onPress={() => setText('')}
+              >
+                <Text style={styles.undoText}>撤销</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.buttonSpacer} />
+              
               <TouchableOpacity 
                 style={styles.cancelBtn}
                 onPress={() => router.back()}
@@ -104,7 +109,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 20,
-    gap: 16,
+    gap: 8,
+  },
+  buttonSpacer: {
+    flex: 1,
+  },
+  undoBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  undoText: {
+    fontSize: 12,
+    color: '#000000',
+    fontFamily: 'serif',
   },
   cancelBtn: {
     paddingHorizontal: 20,
