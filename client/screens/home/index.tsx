@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666666',
     fontFamily: 'serif',
     fontStyle: 'italic',
