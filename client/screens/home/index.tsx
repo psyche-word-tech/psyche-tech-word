@@ -32,7 +32,7 @@ export default function HomeScreen() {
 
           {/* Brand Name */}
           {/* Tagline */}
-          <Text style={styles.tagline}>phantasia connects us</Text>
+          <Text style={styles.tagline} numberOfLines={1}>phantasia connects us</Text>
 
           {/* Divider Line */}
           <View style={styles.dividerLine} />
