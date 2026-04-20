@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardLarge: {
-    width: 300,
-    height: 150,
+    width: 200,
+    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
