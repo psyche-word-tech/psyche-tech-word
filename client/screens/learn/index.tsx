@@ -155,7 +155,7 @@ export default function LearnPage() {
 					<View style={styles.wordCardsContainer}>
 						{availableWords.length > 0 ? (
 							<View style={styles.wordRow}>
-								{availableWords.slice(0, 9).map((word) => (
+								{availableWords.slice(0, 6).map((word) => (
 									<DraggableWord
 										key={word.id}
 										word={word}
