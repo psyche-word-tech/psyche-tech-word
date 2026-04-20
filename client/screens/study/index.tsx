@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'r
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
-const iconLandscape = require('@/assets/logo.png');
+const iconMountain = require('@/assets/icon.png');
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -31,7 +31,7 @@ export default function StudyScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/learn')}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelWrapper}>
               <View style={styles.redLine} />
@@ -46,7 +46,7 @@ export default function StudyScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/notebook')}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBottom}>我的词汇书</Text>
           </View>
@@ -57,7 +57,7 @@ export default function StudyScreen() {
               style={styles.card} 
               activeOpacity={0.8}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelWrapper}>
               <View style={styles.redLine} />
@@ -71,7 +71,7 @@ export default function StudyScreen() {
               style={styles.card} 
               activeOpacity={0.8}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelWrapper}>
               <View style={styles.redLine} />
@@ -85,7 +85,7 @@ export default function StudyScreen() {
               style={styles.card} 
               activeOpacity={0.8}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
           </View>
 
@@ -95,7 +95,7 @@ export default function StudyScreen() {
               style={styles.card} 
               activeOpacity={0.8}
             >
-              <Image source={iconLandscape} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <View style={[styles.labelWrapper, styles.bottomLabel]}>
               <View style={[styles.redLine, styles.bottomRedLine]} />
