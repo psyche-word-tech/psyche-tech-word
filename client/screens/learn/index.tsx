@@ -100,19 +100,40 @@ export default function LearnPage() {
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
 	useEffect(() => {
-		fetchWords();
+		fetchData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	const fetchWords = async () => {
+	const fetchData = async () => {
 		try {
+			// 获取单词列表
 			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
 			const result = await response.json();
 			if (result.data) {
 				setWords(result.data);
+
+				// 从数据库获取每个单词的状态
+				const usedSet = new Set<number>();
+				const catCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+				const statusMap: Record<string, number> = { x: 1, y: 2, z: 3 };
+
+				for (const word of result.data) {
+					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
+					const statusData = await statusRes.json();
+					if (statusData.data?.status) {
+						const catId = statusMap[statusData.data.status];
+						if (catId) {
+							usedSet.add(word.id);
+							catCounts[catId as keyof typeof catCounts]++;
+						}
+					}
+				}
+
+				setUsedWords(usedSet);
+				setCategories(cats => cats.map(cat => ({ ...cat, count: catCounts[cat.id] || 0 })));
 			}
 		} catch (error) {
-			console.error('Failed to fetch words:', error);
+			console.error('Failed to fetch data:', error);
 		}
 	};
 
@@ -148,8 +169,7 @@ export default function LearnPage() {
 		const newUsedWords = new Set([...usedWords, wordId]);
 		const remainingWords = words.filter(w => !newUsedWords.has(w.id));
 		if (remainingWords.length === 0 && words.length > 0) {
-			await fetchWords();
-			setUsedWords(new Set());
+			await fetchData();
 		}
 	};
 
