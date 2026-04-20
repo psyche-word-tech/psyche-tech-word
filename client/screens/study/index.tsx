@@ -86,7 +86,6 @@ export default function StudyScreen() {
           {/* Card 6 - Bottom Center */}
           <View style={styles.cardBottomCenter}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
             <View style={styles.redLineVertical} />
           </View>
