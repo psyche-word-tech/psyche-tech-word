@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.png');
-const iconDang = require('@/assets/dang.png');
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -55,7 +54,7 @@ export default function StudyScreen() {
           {/* Card 2 - Left Top */}
           <View style={styles.cardLeftTop}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
-              <Image source={iconDang} style={styles.cardIcon} resizeMode="cover" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>购买词汇书</Text>
           </View>
