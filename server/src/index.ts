@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import wordsRouter from "./routes/words";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -13,6 +14,9 @@ app.get('/api/v1/health', (req, res) => {
   console.log('Health check success');
   res.status(200).json({ status: 'ok' });
 });
+
+// Routes
+app.use('/api/v1/words', wordsRouter);
 
 
 app.listen(port, () => {
