@@ -1,11 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useFonts } from 'expo-font';
 
 const logo = require('@/assets/logo.png');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
+  const [fontsLoaded] = useFonts({
+    'TimesNewRoman': require('@/assets/fonts/TimesNewRoman.ttf'),
+  });
 
   const handleNext = () => {
     router.replace('/study');
@@ -69,6 +73,7 @@ const styles = StyleSheet.create({
     color: '#444444',
     fontWeight: '300',
     letterSpacing: 3,
+    fontFamily: 'TimesNewRoman',
   },
   mainContent: {
     flex: 1,
@@ -98,6 +103,7 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     letterSpacing: 3,
     marginBottom: 10,
+    fontFamily: 'TimesNewRoman',
   },
   dividerLine: {
     width: 60,
@@ -129,5 +135,6 @@ const styles = StyleSheet.create({
     color: '#333333',
     fontWeight: '300',
     letterSpacing: 2,
+    fontFamily: 'TimesNewRoman',
   },
 });
