@@ -64,7 +64,7 @@ export default function StudyScreen() {
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
               <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
-            <Text style={styles.cardLabelBelow}>书店</Text>
+            <Text style={styles.cardLabelBelow}>我的词汇书</Text>
           </View>
 
           {/* Card 4 - Left Bottom */}
