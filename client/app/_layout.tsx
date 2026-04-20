@@ -26,6 +26,7 @@ export default function RootLayout() {
         <Stack.Screen name="study" options={{ title: "" }} />
         <Stack.Screen name="learn" options={{ title: "" }} />
         <Stack.Screen name="notebook" options={{ title: "" }} />
+        <Stack.Screen name="engrave" options={{ title: "" }} />
       </Stack>
       <Toast />
     </Provider>
