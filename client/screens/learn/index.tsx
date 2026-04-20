@@ -175,12 +175,12 @@ const styles = StyleSheet.create({
   },
   wordCard: {
     backgroundColor: '#F0F0F0',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    minWidth: 80,
+    minWidth: 60,
     alignItems: 'center',
   },
   wordCardSelected: {
@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     backgroundColor: '#4A4A4A',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 80,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 60,
     alignItems: 'center',
   },
   categoryCardActive: {
