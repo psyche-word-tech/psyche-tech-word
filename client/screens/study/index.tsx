@@ -90,9 +90,6 @@ const styles = StyleSheet.create({
   card: {
     width: 80,
     height: 80,
-    borderWidth: 2,
-    borderColor: '#000000',
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
