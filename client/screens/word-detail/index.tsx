@@ -133,6 +133,13 @@ export default function WordDetailPage() {
 						<Text style={styles.meaningText}>
 							<Text style={styles.redText}>{params.meaning || '暂无释义'}</Text>
 						</Text>
+						<View style={styles.exampleSection}>
+							<Text style={styles.exampleLabel}>例句：</Text>
+							<Text style={styles.exampleText}>
+								The room <Text style={styles.redText}>was</Text> in complete <Text style={styles.redText}>chaos</Text>.
+							</Text>
+							<Text style={styles.exampleTranslation}>房间处于一片混乱之中。</Text>
+						</View>
 					</View>
 					<View style={styles.actionButtons}>
 						<TouchableOpacity style={styles.iconButton}>
@@ -291,6 +298,31 @@ const styles = StyleSheet.create({
 	},
 	collocationText: {
 		marginTop: 10,
+	},
+	exampleSection: {
+		marginTop: 16,
+		paddingTop: 12,
+		borderTopWidth: 1,
+		borderTopColor: '#E8E8E8',
+	},
+	exampleLabel: {
+		fontSize: 13,
+		color: '#333333',
+		fontFamily: 'serif',
+		fontWeight: '600',
+		marginBottom: 6,
+	},
+	exampleText: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
+		lineHeight: 22,
+	},
+	exampleTranslation: {
+		fontSize: 12,
+		color: '#888888',
+		fontFamily: 'serif',
+		marginTop: 4,
 	},
 	actionButtons: {
 		justifyContent: 'center',
