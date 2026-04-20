@@ -25,14 +25,20 @@ interface DraggableWordProps {
 	word: Word;
 	onDrop: (categoryId: number) => void;
 	onPress: () => void;
+	isUsed: boolean;
 }
 
-function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
+function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 	const translateX = useSharedValue(0);
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
 	const zIndex = useSharedValue(1);
-	const [droppedCategory, setDroppedCategory] = useState<number | null>(null);
+
+	const handlePress = () => {
+		if (!isUsed) {
+			onPress();
+		}
+	};
 
 	const panGesture = Gesture.Pan()
 		.onStart(() => {
@@ -59,7 +65,6 @@ function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 			}
 
 			if (targetCategory !== null) {
-				runOnJS(setDroppedCategory)(targetCategory);
 				runOnJS(onDrop)(targetCategory);
 			}
 
@@ -81,9 +86,9 @@ function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 	return (
 		<GestureDetector gesture={panGesture}>
 			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-				<TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-					<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
-						<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
+				<TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+					<View style={[styles.wordCard, isUsed && styles.wordCardUsed]}>
+						<Text style={[styles.wordCardText, isUsed && styles.wordCardTextUsed]}>
 							{word.word}
 						</Text>
 					</View>
@@ -225,6 +230,7 @@ export default function LearnPage() {
 										word={word}
 										onDrop={(categoryId) => handleDrop(word.id, categoryId)}
 										onPress={() => handleWordPress(word)}
+										isUsed={usedWords.has(word.id)}
 									/>
 								))}
 							</View>
