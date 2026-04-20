@@ -1,11 +1,17 @@
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useState } from 'react';
 
 const iconRock = require('@/assets/rock.png');
 
 export default function EngraveScreen() {
   const router = useSafeRouter();
+  const [text, setText] = useState('');
+
+  const handleConfirm = () => {
+    router.back();
+  };
 
   return (
     <Screen>
@@ -23,6 +29,8 @@ export default function EngraveScreen() {
               style={styles.input}
               placeholder=""
               placeholderTextColor="#999999"
+              value={text}
+              onChangeText={setText}
               multiline
             />
             
@@ -36,7 +44,13 @@ export default function EngraveScreen() {
               
               <TouchableOpacity 
                 style={styles.confirmBtn}
-                onPress={() => router.back()}
+                onPress={() => {
+                  if (text.trim()) {
+                    router.replace('/study', { engravedText: text.trim() });
+                  } else {
+                    router.back();
+                  }
+                }}
               >
                 <Text style={styles.confirmText}>确定</Text>
               </TouchableOpacity>

@@ -1,12 +1,14 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.png');
 
 export default function StudyScreen() {
   const router = useSafeRouter();
+  const params = useSafeSearchParams<{ engravedText?: string }>();
+  const engravedText = params.engravedText || '';
 
   return (
     <Screen>
@@ -18,9 +20,16 @@ export default function StudyScreen() {
         <View style={styles.cardsContainer}>
           {/* Card 1 - Top Center */}
           <View style={styles.cardTopCenter}>
-            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/engrave')}>
-              <Image source={iconRock} style={styles.cardIconLarge} resizeMode="contain" />
+            <TouchableOpacity 
+              style={styles.cardLargeWrapper} 
+              activeOpacity={0.8} 
+              onPress={() => router.push('/engrave')}
+            >
+              <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
             </TouchableOpacity>
+            {engravedText.length > 0 && (
+              <Text style={styles.engravedText}>{engravedText}</Text>
+            )}
             <View style={styles.labelRight}>
               <View style={styles.redLine} />
               <Text style={styles.cardLabel}>刻字</Text>
@@ -93,12 +102,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cardLargeWrapper: {
+    width: '100%',
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   cardLarge: {
     width: '100%',
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
+  },
+  imageContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardIcon: {
     width: 50,
@@ -108,11 +129,29 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  engravedText: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
   cardTopCenter: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    alignItems: 'center',
+  },
+  imageWrapper: {
+    width: '100%',
     alignItems: 'center',
   },
   cardLeftTop: {
