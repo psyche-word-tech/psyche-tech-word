@@ -101,7 +101,8 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 30,
     marginTop: 20,
   },
   confirmBtn: {
