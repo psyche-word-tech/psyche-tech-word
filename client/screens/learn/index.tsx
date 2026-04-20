@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -27,11 +27,10 @@ export default function LearnPage() {
     }
   };
 
-  const handleStartLearn = () => {
-    setCurrentIndex(0);
-    setShowMeaning(false);
+  useEffect(() => {
     fetchWords();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const currentWord = words[currentIndex];
 
@@ -61,50 +60,76 @@ export default function LearnPage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Content */}
-        {words.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <TouchableOpacity style={styles.startButton} onPress={handleStartLearn}>
-              <Text style={styles.startButtonText}>开始学习</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.learnContainer}>
-            {/* Word Card */}
-            <TouchableOpacity 
-              style={styles.wordCard}
-              onPress={() => setShowMeaning(!showMeaning)}
-            >
-              <Text style={styles.wordText}>{currentWord?.word}</Text>
-              {showMeaning && (
-                <Text style={styles.meaningText}>{currentWord?.meaning}</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Progress */}
-            <Text style={styles.progressText}>
-              {currentIndex + 1} / {words.length}
-            </Text>
-
-            {/* Navigation */}
-            <View style={styles.navContainer}>
+        {/* Word Cards Grid */}
+        <View style={styles.gridContainer}>
+          {words.map((word, index) => (
+            <View key={word.id} style={styles.wordItem}>
+              {/* Word Tag */}
               <TouchableOpacity 
-                style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]} 
-                onPress={handlePrev}
-                disabled={currentIndex === 0}
+                style={[styles.wordCard, index === currentIndex && styles.wordCardActive]}
+                onPress={() => {
+                  setCurrentIndex(index);
+                  setShowMeaning(false);
+                }}
               >
-                <Text style={styles.navButtonText}>←</Text>
+                <View style={styles.wordTextContainer}>
+                  {word.word.split('').map((char, i) => (
+                    <Text key={i} style={styles.wordText}>{char}</Text>
+                  ))}
+                </View>
               </TouchableOpacity>
+              
+              {/* Start Learn Button */}
+              <TouchableOpacity style={styles.learnButton}>
+                <View style={styles.learnTextContainer}>
+                  <Text style={styles.learnText}>学</Text>
+                  <Text style={styles.learnText}>习</Text>
+                </View>
+              </TouchableOpacity>
+              
+              {/* Guide Line */}
+              <View style={[styles.guideLine, index === currentIndex && styles.guideLineActive]} />
+            </View>
+          ))}
+        </View>
+
+        {/* Word Detail Card */}
+        {currentWord && (
+          <View style={styles.detailContainer}>
+            <View style={styles.detailCard}>
               <TouchableOpacity 
-                style={[styles.navButton, currentIndex === words.length - 1 && styles.navButtonDisabled]} 
-                onPress={handleNext}
-                disabled={currentIndex === words.length - 1}
+                style={styles.detailWordCard}
+                onPress={() => setShowMeaning(!showMeaning)}
               >
-                <Text style={styles.navButtonText}>→</Text>
+                <Text style={styles.detailWord}>{currentWord.word}</Text>
+                {showMeaning && (
+                  <Text style={styles.detailMeaning}>{currentWord.meaning}</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         )}
+
+        {/* Navigation */}
+        <View style={styles.navContainer}>
+          <TouchableOpacity 
+            style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]} 
+            onPress={handlePrev}
+            disabled={currentIndex === 0}
+          >
+            <Text style={styles.navButtonText}>←</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.navButton, currentIndex === words.length - 1 && styles.navButtonDisabled]} 
+            onPress={handleNext}
+            disabled={currentIndex === words.length - 1}
+          >
+            <Text style={styles.navButtonText}>→</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Right Guide Line */}
+        <View style={styles.rightLine} />
       </View>
     </Screen>
   );
@@ -120,71 +145,110 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: '#D8D8D8',
   },
   backText: {
     fontSize: 14,
-    color: '#000000',
+    color: '#666666',
     fontFamily: 'serif',
   },
   title: {
-    fontSize: 14,
-    color: '#333333',
+    fontSize: 16,
+    color: '#666666',
     fontFamily: 'serif',
+    fontWeight: '600',
   },
   placeholder: {
     width: 50,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  gridContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    paddingTop: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  wordItem: {
     alignItems: 'center',
-  },
-  startButton: {
-    backgroundColor: '#333333',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-  },
-  startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'serif',
-  },
-  learnContainer: {
-    flex: 1,
-    padding: 20,
+    position: 'relative',
   },
   wordCard: {
+    backgroundColor: '#EBEBEB',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    minWidth: 50,
+  },
+  wordCardActive: {
+    backgroundColor: '#333333',
+  },
+  wordTextContainer: {
+    alignItems: 'center',
+  },
+  wordText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'serif',
+  },
+  learnButton: {
+    backgroundColor: '#EBEBEB',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 45,
+  },
+  learnTextContainer: {
+    alignItems: 'center',
+  },
+  learnText: {
+    fontSize: 11,
+    color: '#666666',
+    fontFamily: 'serif',
+  },
+  guideLine: {
+    width: 1,
+    height: 80,
+    backgroundColor: '#B8D4E8',
+    marginTop: 15,
+  },
+  guideLineActive: {
+    backgroundColor: '#2C5F8A',
+  },
+  detailContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  detailCard: {
+    flex: 1,
+  },
+  detailWordCard: {
     flex: 1,
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
-    marginBottom: 20,
   },
-  wordText: {
-    fontSize: 32,
+  detailWord: {
+    fontSize: 36,
     fontWeight: '600',
     color: '#333333',
     fontFamily: 'serif',
   },
-  meaningText: {
+  detailMeaning: {
     fontSize: 16,
     color: '#666666',
     fontFamily: 'serif',
     marginTop: 20,
-  },
-  progressText: {
     textAlign: 'center',
-    fontSize: 14,
-    color: '#999999',
-    fontFamily: 'serif',
-    marginBottom: 20,
   },
   navContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 40,
+    paddingBottom: 30,
   },
   navButton: {
     backgroundColor: '#333333',
@@ -199,5 +263,13 @@ const styles = StyleSheet.create({
   navButtonText: {
     color: '#FFFFFF',
     fontSize: 20,
+  },
+  rightLine: {
+    position: 'absolute',
+    right: 15,
+    top: 80,
+    bottom: 80,
+    width: 1,
+    backgroundColor: '#B8D4E8',
   },
 });
