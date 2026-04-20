@@ -230,13 +230,12 @@ const styles = StyleSheet.create({
 	},
 	wordRow: {
 		flexDirection: 'row',
-		flexWrap: 'wrap',
 		gap: 12,
 		paddingHorizontal: 20,
+		justifyContent: 'center',
 	},
 	wordItemContainer: {
-		flex: 1,
-		minWidth: 90,
+		minWidth: 80,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
