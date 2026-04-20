@@ -103,8 +103,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    paddingHorizontal: 10,
   },
   confirmBtn: {
+    position: 'absolute',
+    left: '25%',
     paddingHorizontal: 12,
     paddingVertical: 4,
     backgroundColor: '#000000',
@@ -126,6 +129,8 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
   },
   undoBtn: {
+    position: 'absolute',
+    left: '75%',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 1,
