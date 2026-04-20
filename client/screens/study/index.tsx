@@ -18,7 +18,7 @@ export default function StudyScreen() {
         <View style={styles.cardsContainer}>
           {/* Card 1 - Top Center */}
           <View style={styles.cardTopCenter}>
-            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/learn')}>
               <Image source={iconRock} style={styles.cardIconLarge} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelRight}>
