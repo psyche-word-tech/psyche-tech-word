@@ -25,7 +25,7 @@ export default function PurchasePage() {
             
             {/* Main content */}
             <View style={styles.content}>
-              <Text style={styles.mainText}>您是否确认购买蝴蝶单词四级版</Text>
+              <Text style={styles.mainText}>您是否确认购买蝴蝶单词高中版</Text>
               
               {/* Buttons */}
               <View style={styles.buttonRow}>
