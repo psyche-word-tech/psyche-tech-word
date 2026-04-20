@@ -51,16 +51,16 @@ export default function StudyScreen() {
             </View>
           </View>
 
-          {/* Card 2 - Right Middle */}
-          <View style={styles.cardRightMiddle}>
+          {/* Card 2 - Left Top */}
+          <View style={styles.cardLeftTop}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
               <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>我的词汇书</Text>
           </View>
 
-          {/* Card 3 - Left Top */}
-          <View style={styles.cardLeftTop}>
+          {/* Card 3 - Right Middle */}
+          <View style={styles.cardRightMiddle}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
               <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
