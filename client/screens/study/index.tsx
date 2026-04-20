@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   cardRightEnd: {
     position: 'absolute',
     top: 320,
-    right: 20,
+    right: 10,
     alignItems: 'flex-end',
   },
   cardLeftBottom: {
