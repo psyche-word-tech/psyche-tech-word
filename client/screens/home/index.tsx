@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+
+const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
@@ -12,46 +14,61 @@ export default function HomeScreen() {
   return (
     <Screen>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>welcome to</Text>
+        {/* Top Header Bar */}
+        <View style={styles.headerBar}>
+          <Text style={styles.headerText}>welcome to</Text>
         </View>
 
-        {/* Logo Icon - Geometric butterfly shape */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
+        {/* Main Content Area */}
+        <View style={styles.mainContent}>
+          {/* Logo - Geometric Butterfly Shape */}
+          <View style={styles.logoContainer}>
             <View style={styles.logoTop}>
-              <View style={[styles.wing, styles.wingLeft]} />
-              <View style={[styles.wing, styles.wingRight]} />
+              <View style={styles.topLeftWing}>
+                <View style={styles.wingShape1} />
+                <View style={styles.wingShape2} />
+              </View>
+              <View style={styles.topRightWing}>
+                <View style={styles.wingShape1} />
+                <View style={styles.wingShape2} />
+              </View>
             </View>
             <View style={styles.logoBottom}>
-              <View style={[styles.wing, styles.wingLeftDown]} />
-              <View style={[styles.wing, styles.wingRightDown]} />
+              <View style={styles.bottomLeftWing}>
+                <View style={styles.wingShape3} />
+                <View style={styles.wingShape4} />
+              </View>
+              <View style={styles.bottomRightWing}>
+                <View style={styles.wingShape3} />
+                <View style={styles.wingShape4} />
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Brand Name */}
-        <View style={styles.brandSection}>
-          <View style={styles.divider} />
+          {/* Brand Name */}
           <Text style={styles.brandName}>word mastery</Text>
-          <View style={styles.divider} />
-          <Text style={styles.brandTagline}>phantasia connects us</Text>
+
+          {/* Tagline */}
+          <Text style={styles.tagline}>phantasia connects us</Text>
+
+          {/* Divider Line */}
+          <View style={styles.dividerLine} />
         </View>
 
-        {/* Next Button with Arrow */}
-        <View style={styles.actionContainer}>
-          <View style={styles.arrowContainer}>
+        {/* Bottom Action Area */}
+        <View style={styles.bottomAction}>
+          {/* Red Arrow - centered below divider */}
+          <View style={styles.arrowArea}>
             <Text style={styles.arrow}>↓</Text>
           </View>
+          
+          {/* Next Button - bottom right */}
           <TouchableOpacity 
-            style={styles.nextBtn} 
+            style={styles.nextButton} 
             onPress={handleNext}
             activeOpacity={0.7}
           >
-            <Text style={styles.nextBtnText}>next</Text>
+            <Text style={styles.nextText}>next</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -64,120 +81,148 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
+  headerBar: {
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 20,
     alignItems: 'center',
-    marginTop: 80,
   },
-  greeting: {
+  headerText: {
     fontSize: 18,
-    color: '#000000',
-    fontWeight: '300',
-    letterSpacing: 3,
+    color: '#333333',
+    fontWeight: '400',
+    letterSpacing: 2,
+  },
+  mainContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
   logoContainer: {
+    width: 140,
+    height: 140,
     alignItems: 'center',
-    marginTop: 60,
-  },
-  logoIcon: {
-    width: 160,
-    height: 160,
     justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 40,
   },
   logoTop: {
     flexDirection: 'row',
-    marginBottom: -8,
+    marginBottom: -10,
   },
   logoBottom: {
     flexDirection: 'row',
-    marginTop: -8,
+    marginTop: -10,
   },
-  wing: {
+  topLeftWing: {
+    alignItems: 'flex-end',
+    marginRight: 4,
+  },
+  topRightWing: {
+    alignItems: 'flex-start',
+    marginLeft: 4,
+  },
+  bottomLeftWing: {
+    alignItems: 'flex-end',
+    marginRight: 4,
+  },
+  bottomRightWing: {
+    alignItems: 'flex-start',
+    marginLeft: 4,
+  },
+  wingShape1: {
     width: 0,
     height: 0,
-    backgroundColor: 'transparent',
-  },
-  wingLeft: {
-    borderRightWidth: 45,
-    borderTopWidth: 45,
+    borderStyle: 'solid',
+    borderRightWidth: 35,
+    borderTopWidth: 35,
     borderRightColor: 'transparent',
     borderTopColor: '#000000',
-    marginRight: 4,
-    transform: [{ rotate: '-15deg' }],
   },
-  wingRight: {
-    borderLeftWidth: 45,
-    borderTopWidth: 45,
-    borderLeftColor: 'transparent',
-    borderTopColor: '#000000',
-    marginLeft: 4,
-    transform: [{ rotate: '15deg' }],
-  },
-  wingLeftDown: {
-    borderRightWidth: 45,
-    borderBottomWidth: 45,
+  wingShape2: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderRightWidth: 25,
+    borderBottomWidth: 25,
     borderRightColor: 'transparent',
     borderBottomColor: '#000000',
-    marginRight: 4,
-    transform: [{ rotate: '15deg' }],
+    marginRight: -10,
+    marginTop: -15,
   },
-  wingRightDown: {
-    borderLeftWidth: 45,
-    borderBottomWidth: 45,
-    borderLeftColor: 'transparent',
+  wingShape3: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderRightWidth: 25,
+    borderBottomWidth: 25,
+    borderRightColor: 'transparent',
     borderBottomColor: '#000000',
-    marginLeft: 4,
-    transform: [{ rotate: '-15deg' }],
+    marginRight: -10,
   },
-  brandSection: {
-    alignItems: 'center',
-    marginTop: 60,
-    paddingHorizontal: 40,
-  },
-  divider: {
-    width: 80,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 16,
+  wingShape4: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderRightWidth: 35,
+    borderTopWidth: 35,
+    borderRightColor: 'transparent',
+    borderTopColor: '#000000',
+    marginTop: -15,
   },
   brandName: {
-    fontSize: 24,
-    color: '#000000',
+    fontSize: 22,
+    color: '#333333',
     fontWeight: '400',
-    letterSpacing: 4,
-    textAlign: 'center',
+    letterSpacing: 3,
+    marginBottom: 12,
   },
-  brandTagline: {
+  tagline: {
     fontSize: 12,
     color: '#666666',
-    fontWeight: '300',
-    letterSpacing: 2,
-    marginTop: 16,
-  },
-  actionContainer: {
-    position: 'absolute',
-    bottom: 60,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  arrowContainer: {
-    marginBottom: 16,
-  },
-  arrow: {
-    fontSize: 24,
-    color: '#CC0000',
-  },
-  nextBtn: {
-    paddingHorizontal: 40,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  nextBtnText: {
-    fontSize: 14,
-    color: '#000000',
     fontWeight: '400',
     letterSpacing: 2,
+    marginBottom: 30,
+  },
+  dividerLine: {
+    width: 60,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginTop: 20,
+  },
+  bottomAction: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    paddingRight: 24,
+    paddingBottom: 24,
+  },
+  arrowArea: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 30,
+    alignItems: 'center',
+  },
+  arrow: {
+    fontSize: 20,
+    color: '#CC0000',
+  },
+  nextButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
+  },
+  nextText: {
+    fontSize: 12,
+    color: '#333333',
+    fontWeight: '400',
+    letterSpacing: 1,
   },
 });
