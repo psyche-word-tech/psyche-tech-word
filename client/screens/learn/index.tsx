@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 
 interface Word {
   id: number;
@@ -16,6 +18,88 @@ interface Category {
   count: number;
 }
 
+interface DraggableWordProps {
+  word: Word;
+  categories: Category[];
+  onDrop: (categoryId: number) => void;
+}
+
+function DraggableWord({ word, categories, onDrop }: DraggableWordProps) {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const zIndex = useSharedValue(1);
+  const [droppedCategory, setDroppedCategory] = useState<number | null>(null);
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      scale.value = withSpring(1.1);
+      zIndex.value = 100;
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd((event) => {
+      // Check if dropped on a category
+      const dropY = event.absoluteY;
+      // Approximate positions for 3 categories
+      const screenWidth = 350; // approximate
+      const itemWidth = screenWidth / 3;
+      const startX = (screenWidth - itemWidth * 3) / 2;
+      
+      let targetCategory: number | null = null;
+      if (dropY > 400) { // Below the word cards
+        const relativeX = event.absoluteX - startX;
+        if (relativeX >= 0 && relativeX < itemWidth) {
+          targetCategory = categories[0].id;
+        } else if (relativeX >= itemWidth && relativeX < itemWidth * 2) {
+          targetCategory = categories[1].id;
+        } else if (relativeX >= itemWidth * 2) {
+          targetCategory = categories[2].id;
+        }
+      }
+
+      if (targetCategory !== null) {
+        runOnJS(setDroppedCategory)(targetCategory);
+        runOnJS(onDrop)(targetCategory);
+      }
+
+      // Reset position
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+      scale.value = withSpring(1);
+      zIndex.value = 1;
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    zIndex: zIndex.value,
+  }));
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View style={[styles.wordItemContainer, animatedStyle]}>
+        <View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
+          <Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
+            {word.word}
+          </Text>
+        </View>
+        {/* Guide Line */}
+        <View style={styles.guideLine} />
+        {/* Category Button */}
+        <View style={styles.categoryCard}>
+          <Text style={styles.categoryCardText}>-</Text>
+        </View>
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
 export default function LearnPage() {
   const router = useSafeRouter();
   const [words, setWords] = useState<Word[]>([]);
@@ -24,7 +108,7 @@ export default function LearnPage() {
     { id: 2, name: '模糊', letter: 'y', count: 0 },
     { id: 3, name: '不会', letter: 'z', count: 0 },
   ]);
-  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+  const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchWords();
@@ -43,86 +127,74 @@ export default function LearnPage() {
     }
   };
 
-  const handleWordClick = (word: Word) => {
-    setSelectedWord(word);
+  const handleDrop = (wordId: number, categoryId: number) => {
+    setUsedWords(prev => new Set([...prev, wordId]));
+    setCategories(cats =>
+      cats.map(cat =>
+        cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
+      )
+    );
   };
 
-  const handleCategoryClick = (category: Category) => {
-    if (selectedWord) {
-      setCategories(cats =>
-        cats.map(cat =>
-          cat.id === category.id ? { ...cat, count: cat.count + 1 } : cat
-        )
-      );
-      setWords(words.filter(w => w.id !== selectedWord.id));
-      setSelectedWord(null);
-    }
-  };
+  const availableWords = words.filter(w => !usedWords.has(w.id));
 
   return (
-    <Screen>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>← back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>词汇预览</Text>
-          <View style={styles.placeholder} />
-        </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Screen>
+        <ScrollView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backText}>← back</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>词汇预览</Text>
+            <View style={styles.placeholder} />
+          </View>
 
-        {/* Word Cards - Horizontal */}
-        <View style={styles.wordCardsContainer}>
-          {words.length > 0 ? (
-            <View style={styles.wordRow}>
-              {words.map((word) => (
-                <View key={word.id} style={styles.wordItemContainer}>
-                  <TouchableOpacity 
-                    style={[styles.wordCard, selectedWord?.id === word.id && styles.wordCardSelected]}
-                    onPress={() => handleWordClick(word)}
-                    onLongPress={() => handleWordClick(word)}
-                  >
-                    <Text style={styles.wordCardText}>{word.word}</Text>
-                  </TouchableOpacity>
-                  {/* Guide Line */}
-                  <View style={styles.guideLine} />
-                  {/* Category Button */}
-                  <TouchableOpacity 
-                    style={[styles.categoryCard, selectedWord?.id === word.id && styles.categoryCardActive]}
-                    onPress={() => {
-                      if (selectedWord?.id === word.id) {
-                        handleCategoryClick(categories[words.indexOf(word) % 3]);
-                      }
-                    }}
-                  >
-                    <Text style={styles.categoryCardText}>
-                      {categories[words.indexOf(word) % 3].name} ({categories[words.indexOf(word) % 3].letter})
-                    </Text>
-                  </TouchableOpacity>
+          {/* Word Cards - Horizontal with Drag */}
+          <View style={styles.wordCardsContainer}>
+            {availableWords.length > 0 ? (
+              <View style={styles.wordRow}>
+                {availableWords.map((word) => (
+                  <DraggableWord
+                    key={word.id}
+                    word={word}
+                    categories={categories}
+                    onDrop={(categoryId) => handleDrop(word.id, categoryId)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>暂无单词</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Category Drop Zones */}
+          <View style={styles.categoryContainer}>
+            <View style={styles.categoryRow}>
+              {categories.map((cat) => (
+                <View key={cat.id} style={styles.categoryItem}>
+                  <View style={styles.categoryCardLarge}>
+                    <Text style={styles.categoryNameText}>{cat.name}</Text>
+                    <Text style={styles.categoryLetterText}>({cat.letter})</Text>
+                  </View>
+                  <View style={styles.categoryCountBadge}>
+                    <Text style={styles.categoryCountText}>{cat.count}</Text>
+                  </View>
                 </View>
               ))}
             </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无单词</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Category Summary */}
-        <View style={styles.categorySummaryContainer}>
-          <Text style={styles.summaryTitle}>词汇库统计</Text>
-          <View style={styles.summaryRow}>
-            {categories.map((cat) => (
-              <View key={cat.id} style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>{cat.name}</Text>
-                <Text style={styles.summaryCount}>{cat.letter}: {cat.count}</Text>
-              </View>
-            ))}
           </View>
-        </View>
-      </ScrollView>
-    </Screen>
+
+          {/* Instruction */}
+          <View style={styles.instructionContainer}>
+            <Text style={styles.instructionText}>拖拽单词到下方分类</Text>
+          </View>
+        </ScrollView>
+      </Screen>
+    </GestureHandlerRootView>
   );
 }
 
@@ -152,19 +224,9 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 50,
   },
-  instructionsContainer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-  },
-  instructionsText: {
-    fontSize: 13,
-    color: '#666666',
-    fontFamily: 'serif',
-    lineHeight: 20,
-  },
   wordCardsContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingVertical: 60,
   },
   wordRow: {
     flexDirection: 'row',
@@ -183,18 +245,21 @@ const styles = StyleSheet.create({
     minWidth: 60,
     alignItems: 'center',
   },
-  wordCardSelected: {
-    backgroundColor: '#333333',
-    borderColor: '#333333',
+  wordCardUsed: {
+    backgroundColor: '#CCCCCC',
+    borderColor: '#AAAAAA',
   },
   wordCardText: {
     fontSize: 14,
     color: '#333333',
     fontFamily: 'serif',
   },
+  wordCardTextUsed: {
+    color: '#888888',
+  },
   guideLine: {
     width: 1,
-    height: 40,
+    height: 30,
     backgroundColor: '#4A90D9',
     marginVertical: 10,
   },
@@ -206,12 +271,64 @@ const styles = StyleSheet.create({
     minWidth: 60,
     alignItems: 'center',
   },
-  categoryCardActive: {
-    backgroundColor: '#2C5F8A',
-  },
   categoryCardText: {
     fontSize: 13,
     color: '#FFFFFF',
+    fontFamily: 'serif',
+  },
+  categoryContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  categoryItem: {
+    alignItems: 'center',
+  },
+  categoryCardLarge: {
+    backgroundColor: '#4A4A4A',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  categoryNameText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontWeight: '600',
+  },
+  categoryLetterText: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    fontFamily: 'serif',
+    marginTop: 4,
+  },
+  categoryCountBadge: {
+    backgroundColor: '#4A90D9',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  categoryCountText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontWeight: '600',
+  },
+  instructionContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  instructionText: {
+    fontSize: 12,
+    color: '#999999',
     fontFamily: 'serif',
   },
   emptyContainer: {
@@ -224,38 +341,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999999',
     fontFamily: 'serif',
-  },
-  categorySummaryContainer: {
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 30,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-  },
-  summaryTitle: {
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: 'serif',
-    fontWeight: '600',
-    marginBottom: 15,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: '#666666',
-    fontFamily: 'serif',
-    marginBottom: 5,
-  },
-  summaryCount: {
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: 'serif',
-    fontWeight: '600',
   },
 });
