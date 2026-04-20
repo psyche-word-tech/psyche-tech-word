@@ -21,7 +21,7 @@ export default function WordDetailPage() {
 		{ id: 2, user: 'cansniper', content: '简直完美，点赞' },
 	]);
 
-	// 在线发音功能 - 使用 Google Translate TTS
+	// 在线发音功能 - 使用有道词典 TTS
 	const playPronunciation = async () => {
 		if (isPlaying) return;
 		
@@ -37,8 +37,8 @@ export default function WordDetailPage() {
 				playThroughEarpieceAndroid: false,
 			});
 
-			// 使用 Google Translate TTS API
-			const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(wordToPlay)}&tl=en&client=tw-ob`;
+			// 使用有道词典 TTS API（国内可访问）
+			const ttsUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(wordToPlay)}&type=1`;
 			
 			const { sound } = await Audio.Sound.createAsync(
 				{ uri: ttsUrl },
