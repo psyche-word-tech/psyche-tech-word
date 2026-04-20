@@ -73,7 +73,6 @@ export default function StudyScreen() {
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
             </TouchableOpacity>
             <View style={styles.labelRight}>
-              <View style={styles.redLine} />
               <Text style={styles.cardLabel}>磨刀石</Text>
             </View>
           </View>
@@ -88,7 +87,6 @@ export default function StudyScreen() {
           <View style={styles.cardBottomCenter}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
             </TouchableOpacity>
-            <View style={styles.redLineVertical} />
           </View>
         </View>
       </SafeAreaView>
