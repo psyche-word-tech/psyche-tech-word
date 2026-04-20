@@ -29,16 +29,16 @@ export default function WordDetailPage() {
 		return '/' + word.charAt(0) + 'ɪˈɑːs/';
 	};
 
-	// 根据单词返回例句
+	// 根据单词返回例句（主谓宾结构）
 	const getExampleSentence = (word: string | undefined) => {
-		if (!word) return { sentence: 'The room was in complete chaos.', translation: '房间处于一片混乱之中。' };
+		if (!word) return { sentence: 'I love chaos.', translation: '我爱混乱。' };
 		const examples: Record<string, { sentence: string; translation: string }> = {
-			psyche: { sentence: 'The human psyche is complex.', translation: '人类的心理是复杂的。' },
-			tech: { sentence: 'Tech companies drive innovation.', translation: '科技公司推动创新。' },
-			fly: { sentence: 'Birds fly across the sky.', translation: '鸟儿飞过天空。' },
-			chaos: { sentence: 'The room was in complete chaos.', translation: '房间处于一片混乱之中。' },
+			psyche: { sentence: 'Scientists study the human psyche.', translation: '科学家研究人类心灵。' },
+			tech: { sentence: 'We need more advanced tech.', translation: '我们需要更先进的技术。' },
+			fly: { sentence: 'Pilots fly airplanes every day.', translation: '飞行员每天驾驶飞机。' },
+			chaos: { sentence: 'Disorder creates chaos.', translation: '混乱创造混沌。' },
 		};
-		return examples[word] || { sentence: 'This word is used in many contexts.', translation: '这个词在多种语境中使用。' };
+		return examples[word] || { sentence: 'People use this word often.', translation: '人们经常使用这个词。' };
 	};
 
 	// 在线发音功能 - 使用有道词典 TTS
