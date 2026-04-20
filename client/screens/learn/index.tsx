@@ -227,13 +227,14 @@ const styles = StyleSheet.create({
 	wordCardsContainer: {
 		paddingHorizontal: 20,
 		paddingVertical: 60,
-		height: 180,
 	},
 	wordRow: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
-		justifyContent: 'center',
+		justifyContent: 'flex-start',
 		gap: 20,
+		maxHeight: 110,
+		overflow: 'hidden',
 	},
 	wordItemContainer: {
 		alignItems: 'center',
