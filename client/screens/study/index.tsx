@@ -31,10 +31,28 @@ export default function StudyScreen() {
                 {engravedText.length > 0 && (
                   <View style={styles.engravedContainer}>
                     <LinearGradient
-                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
+                      colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.4)']}
                       style={styles.engravedGradient}
                     />
-                    <Text style={styles.engravedText}>{engravedText}</Text>
+                    {/* 外发光层 - 金色暖光 */}
+                    <Text style={[styles.engravedText, {
+                      textShadowColor: '#D4A574',
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 15,
+                    }]}>{engravedText}</Text>
+                    {/* 中层发光 */}
+                    <Text style={[styles.engravedText, {
+                      position: 'absolute',
+                      textShadowColor: '#8B7355',
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 8,
+                    }]}>{engravedText}</Text>
+                    {/* 内层文字 - 雕刻感 */}
+                    <Text style={[styles.engravedTextInner, {
+                      textShadowColor: 'rgba(0,0,0,0.8)',
+                      textShadowOffset: { width: 2, height: 2 },
+                      textShadowRadius: 3,
+                    }]}>{engravedText}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -145,25 +163,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // 发光外层（外发光）
+  engravedGlow: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  engravedText: {
+    fontSize: 32,
+    color: '#F5E6D3',
+    fontFamily: 'serif',
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 4,
+  },
+  // 内层文字（主要显示）
+  engravedTextInner: {
+    fontSize: 32,
+    color: '#F5E6D3',
+    fontFamily: 'serif',
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 4,
+  },
+  // 渐变遮罩
   engravedGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  engravedText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontFamily: 'serif',
-    fontStyle: 'italic',
-    fontWeight: '600',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   cardTopCenter: {
     position: 'absolute',
