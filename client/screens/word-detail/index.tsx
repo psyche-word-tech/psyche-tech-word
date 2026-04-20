@@ -31,15 +31,18 @@ export default function WordDetailPage() {
 
 	// 根据单词返回例句（主谓宾结构）
 	const getExampleSentence = (word: string | undefined) => {
-		if (!word) return { sentence: 'I love chaos.', translation: '我爱混乱。' };
-		const examples: Record<string, { sentence: string; translation: string }> = {
-			psyche: { sentence: 'Scientists study the human psyche.', translation: '科学家研究人类心灵。' },
-			tech: { sentence: 'We need more advanced tech.', translation: '我们需要更先进的技术。' },
-			fly: { sentence: 'Pilots fly airplanes every day.', translation: '飞行员每天驾驶飞机。' },
-			chaos: { sentence: 'Disorder creates chaos.', translation: '混乱创造混沌。' },
+		if (!word) return { parts: ['I', 'love', 'chaos'], translations: ['我', '爱', '混乱'], wordIndex: 2 };
+		const examples: Record<string, { parts: string[]; translations: string[]; wordIndex: number }> = {
+			psyche: { parts: ['Scientists', 'study', 'the human', 'psyche', '.'], translations: ['科学家', '研究', '人类', '心灵', '。'], wordIndex: 3 },
+			tech: { parts: ['We', 'need', 'more advanced', 'tech', '.'], translations: ['我们', '需要', '更先进的', '技术', '。'], wordIndex: 3 },
+			fly: { parts: ['Pilots', 'fly', 'airplanes', 'every day', '.'], translations: ['飞行员', '每天', '驾驶', '飞机', '。'], wordIndex: 1 },
+			chaos: { parts: ['Disorder', 'creates', 'chaos', '.'], translations: ['混乱', '创造', '混沌', '。'], wordIndex: 2 },
 		};
-		return examples[word] || { sentence: 'People use this word often.', translation: '人们经常使用这个词。' };
+		return examples[word] || { parts: ['People', 'use', 'this word', 'often', '.'], translations: ['人们', '经常', '使用', '这个词', '。'], wordIndex: 2 };
 	};
+
+	const currentWord = params.word;
+	const exampleData = getExampleSentence(currentWord);
 
 	// 在线发音功能 - 使用有道词典 TTS
 	const playPronunciation = async () => {
@@ -147,10 +150,18 @@ export default function WordDetailPage() {
 						<View style={styles.exampleSection}>
 							<Text style={styles.exampleLabel}>例句：</Text>
 							<Text style={styles.exampleText}>
-								{getExampleSentence(params.word).sentence}
+								{exampleData.parts.map((part, index) => (
+									<Text key={index} style={index === exampleData.wordIndex ? styles.greenText : undefined}>
+										{part}
+									</Text>
+								))}
 							</Text>
 							<Text style={styles.exampleTranslation}>
-								{getExampleSentence(params.word).translation}
+								{exampleData.translations.map((trans, index) => (
+									<Text key={index} style={index === exampleData.wordIndex ? styles.greenText : undefined}>
+										{trans}
+									</Text>
+								))}
 							</Text>
 						</View>
 					</View>
@@ -327,13 +338,16 @@ const styles = StyleSheet.create({
 	},
 	exampleText: {
 		fontSize: 14,
-		color: '#228B22',
+		color: '#333333',
 		fontFamily: 'serif',
 		lineHeight: 22,
 	},
+	greenText: {
+		color: '#228B22',
+	},
 	exampleTranslation: {
 		fontSize: 12,
-		color: '#228B22',
+		color: '#888888',
 		fontFamily: 'serif',
 		marginTop: 4,
 	},
