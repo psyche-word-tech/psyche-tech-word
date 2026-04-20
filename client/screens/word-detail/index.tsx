@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
@@ -14,10 +15,48 @@ export default function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ wordId?: number; word?: string; meaning?: string }>();
 	const [phonetic] = useState('/ˈkeɪɒs/');
+	const [isPlaying, setIsPlaying] = useState(false);
 	const [comments] = useState<Comment[]>([
 		{ id: 1, user: '润武子杰', content: '这垃圾是什么鬼，简直贻笑大方' },
 		{ id: 2, user: 'cansniper', content: '简直完美，点赞' },
 	]);
+
+	// 在线发音功能 - 使用 Google Translate TTS
+	const playPronunciation = async () => {
+		if (isPlaying) return;
+		
+		const wordToPlay = params.word || 'chaos';
+		setIsPlaying(true);
+		
+		try {
+			// 配置音频模式
+			await Audio.setAudioModeAsync({
+				allowsRecordingIOS: false,
+				playsInSilentModeIOS: true,
+				shouldDuckAndroid: true,
+				playThroughEarpieceAndroid: false,
+			});
+
+			// 使用 Google Translate TTS API
+			const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(wordToPlay)}&tl=en&client=tw-ob`;
+			
+			const { sound } = await Audio.Sound.createAsync(
+				{ uri: ttsUrl },
+				{ shouldPlay: true }
+			);
+
+			// 播放完成后释放资源
+			sound.setOnPlaybackStatusUpdate((status) => {
+				if (status.isLoaded && status.didJustFinish) {
+					sound.unloadAsync();
+					setIsPlaying(false);
+				}
+			});
+		} catch (error) {
+			console.error('Failed to play pronunciation:', error);
+			setIsPlaying(false);
+		}
+	};
 
 	const handleStatusClick = (status: string) => {
 		console.log('Mark as:', status);
@@ -41,8 +80,12 @@ export default function WordDetailPage() {
 						<Text style={styles.wordText}>{params.word || 'chaos'}</Text>
 						<Text style={styles.phoneticText}>{phonetic}</Text>
 					</View>
-					<TouchableOpacity style={styles.speakerButton}>
-						<FontAwesome6 name="volume-off" size={24} color="#666" />
+					<TouchableOpacity style={styles.speakerButton} onPress={playPronunciation} disabled={isPlaying}>
+						{isPlaying ? (
+							<ActivityIndicator size="small" color="#666" />
+						) : (
+							<FontAwesome6 name="volume-off" size={24} color="#666" />
+						)}
 					</TouchableOpacity>
 				</View>
 
