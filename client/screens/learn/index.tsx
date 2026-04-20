@@ -119,13 +119,21 @@ export default function LearnPage() {
 		}
 	};
 
-	const handleDrop = (wordId: number, categoryId: number) => {
+	const handleDrop = async (wordId: number, categoryId: number) => {
 		setUsedWords(prev => new Set([...prev, wordId]));
 		setCategories(cats =>
 			cats.map(cat =>
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
 			)
 		);
+
+		// 检查是否所有单词都用完了，如果是则重新获取新单词
+		const newUsedWords = new Set([...usedWords, wordId]);
+		const remainingWords = words.filter(w => !newUsedWords.has(w.id));
+		if (remainingWords.length === 0 && words.length > 0) {
+			await fetchWords();
+			setUsedWords(new Set());
+		}
 	};
 
 	const availableWords = words.filter(w => !usedWords.has(w.id));
