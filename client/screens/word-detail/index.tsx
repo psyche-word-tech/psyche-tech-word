@@ -154,7 +154,6 @@ export default function WordDetailPage() {
 					</View>
 					{comments.map((comment) => (
 						<View key={comment.id} style={styles.commentItem}>
-							<FontAwesome6 name="folder" size={16} color="#666" />
 							<View style={styles.commentContent}>
 								<Text style={styles.commentUser}>{comment.user}：</Text>
 								<Text style={styles.commentText}>{comment.content}</Text>
