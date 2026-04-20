@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, PanResponder, Modal, TextInput, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, TextInput, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,75 +17,25 @@ export default function StudyScreen() {
 
   // 购买词汇书卡片位置和大小
   const [dangPosition, setDangPosition] = useState({ x: 30, y: 150 });
-  const [dangSize, setDangSize] = useState({ width: 300, height: 150 });
-
-  // 编辑对话框状态
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [tempX, setTempX] = useState('30');
-  const [tempY, setTempY] = useState('150');
-  const [tempWidth, setTempWidth] = useState('300');
-  const [tempHeight, setTempHeight] = useState('150');
-
-  // 打开编辑对话框
-  const openEditModal = () => {
-    setTempX(String(dangPosition.x));
-    setTempY(String(dangPosition.y));
-    setTempWidth(String(dangSize.width));
-    setTempHeight(String(dangSize.height));
-    setEditModalVisible(true);
-  };
-
-  // 保存设置
-  const saveSettings = () => {
-    setDangPosition({
-      x: parseInt(tempX) || 30,
-      y: parseInt(tempY) || 150,
-    });
-    setDangSize({
-      width: parseInt(tempWidth) || 300,
-      height: parseInt(tempHeight) || 150,
-    });
-    setEditModalVisible(false);
-  };
+  const [dangSize, setDangSize] = useState({ width: 200, height: 100 });
 
   return (
     <Screen>
-      <SafeAreaView style={styles.container}>
-        {/* Top Status Bar */}
-        <View style={styles.statusBar} />
+      <View style={styles.mainContainer}>
+        {/* 左侧预览区域 */}
+        <View style={styles.previewContainer}>
+          {/* 背景 */}
+          <View style={styles.backgroundContainer}>
+            <Image source={iconRock} style={styles.backgroundImage} resizeMode="cover" />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0)']}
+              style={styles.gradient}
+            />
+          </View>
 
-        {/* Cards Container */}
-        <View style={styles.cardsContainer}>
-          {/* Card 1 - Top Center */}
-          <View style={styles.cardTopCenter}>
-            <View style={styles.cardLargeWrapper}>
-              <TouchableOpacity 
-                style={styles.cardLarge} 
-                activeOpacity={0.8} 
-                onPress={() => router.push('/engrave')}
-              >
-                <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
-                {engravedText.length > 0 && (
-                  <View style={styles.engravedContainer}>
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
-                      style={styles.engravedGradient}
-                    />
-                    <View style={styles.engravedTextContainer}>
-                      {engravedText.split('').map((char, index) => (
-                        <View key={index} style={styles.engravedCharWrapper}>
-                          <Text style={styles.engravedText}>{char}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-            <View style={styles.labelRight}>
-              <View style={styles.redLine} />
-              <Text style={styles.cardLabel}>刻字</Text>
-            </View>
+          {/* 刻字 */}
+          <View style={styles.engraveContainer}>
+            <Text style={styles.engraveText} numberOfLines={3}>{engravedText}</Text>
           </View>
 
           {/* Card 2 - Left Top */}
@@ -133,329 +83,292 @@ export default function StudyScreen() {
           </View>
         </View>
 
-        {/* 编辑按钮 */}
-        <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
-          <Text style={styles.editButtonText}>编辑</Text>
-        </TouchableOpacity>
+        {/* 右侧编辑面板 */}
+        <View style={styles.editorContainer}>
+          <Text style={styles.editorTitle}>编辑面板</Text>
+          <Text style={styles.editorSubtitle}>购买词汇书</Text>
 
-        {/* 编辑对话框 */}
-        <Modal
-          visible={editModalVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setEditModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>调整卡片位置和大小</Text>
-
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>X 位置:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={tempX}
-                  onChangeText={setTempX}
-                  keyboardType="numeric"
-                  placeholder="0-375"
-                />
-              </View>
-
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>Y 位置:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={tempY}
-                  onChangeText={setTempY}
-                  keyboardType="numeric"
-                  placeholder="100-600"
-                />
-              </View>
-
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>宽度:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={tempWidth}
-                  onChangeText={setTempWidth}
-                  keyboardType="numeric"
-                  placeholder="100-300"
-                />
-              </View>
-
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>高度:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={tempHeight}
-                  onChangeText={setTempHeight}
-                  keyboardType="numeric"
-                  placeholder="50-200"
-                />
-              </View>
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setEditModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>取消</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton]}
-                  onPress={saveSettings}
-                >
-                  <Text style={styles.saveButtonText}>保存</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.sliderSection}>
+            <Text style={styles.sliderLabel}>X 位置</Text>
+            <View style={styles.sliderRow}>
+              <Text style={styles.sliderMin}>0</Text>
+              <TextInput
+                style={styles.sliderInput}
+                value={String(dangPosition.x)}
+                onChangeText={(text) => {
+                  const val = parseInt(text) || 0;
+                  setDangPosition(prev => ({ ...prev, x: val }));
+                }}
+                keyboardType="numeric"
+              />
+              <Text style={styles.sliderMax}>{Math.round(screenWidth * 0.6 - dangSize.width)}</Text>
             </View>
           </View>
-        </Modal>
-      </SafeAreaView>
+
+          <View style={styles.sliderSection}>
+            <Text style={styles.sliderLabel}>Y 位置</Text>
+            <View style={styles.sliderRow}>
+              <Text style={styles.sliderMin}>0</Text>
+              <TextInput
+                style={styles.sliderInput}
+                value={String(dangPosition.y)}
+                onChangeText={(text) => {
+                  const val = parseInt(text) || 0;
+                  setDangPosition(prev => ({ ...prev, y: val }));
+                }}
+                keyboardType="numeric"
+              />
+              <Text style={styles.sliderMax}>600</Text>
+            </View>
+          </View>
+
+          <View style={styles.sliderSection}>
+            <Text style={styles.sliderLabel}>宽度</Text>
+            <View style={styles.sliderRow}>
+              <Text style={styles.sliderMin}>50</Text>
+              <TextInput
+                style={styles.sliderInput}
+                value={String(dangSize.width)}
+                onChangeText={(text) => {
+                  const val = parseInt(text) || 100;
+                  setDangSize(prev => ({ ...prev, width: val }));
+                }}
+                keyboardType="numeric"
+              />
+              <Text style={styles.sliderMax}>400</Text>
+            </View>
+          </View>
+
+          <View style={styles.sliderSection}>
+            <Text style={styles.sliderLabel}>高度</Text>
+            <View style={styles.sliderRow}>
+              <Text style={styles.sliderMin}>30</Text>
+              <TextInput
+                style={styles.sliderInput}
+                value={String(dangSize.height)}
+                onChangeText={(text) => {
+                  const val = parseInt(text) || 50;
+                  setDangSize(prev => ({ ...prev, height: val }));
+                }}
+                keyboardType="numeric"
+              />
+              <Text style={styles.sliderMax}>300</Text>
+            </View>
+          </View>
+
+          <View style={styles.valueDisplay}>
+            <Text style={styles.valueText}>当前值: X={dangPosition.x}, Y={dangPosition.y}</Text>
+            <Text style={styles.valueText}>尺寸: {dangSize.width} x {dangSize.height}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.doneButtonText}>完成</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    flexDirection: 'row',
   },
-  statusBar: {
-    height: 40,
-    backgroundColor: '#FFFFFF',
-  },
-  cardsContainer: {
-    flex: 1,
+  previewContainer: {
+    flex: 1.2,
     position: 'relative',
   },
-  card: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
+  editorContainer: {
+    flex: 0.8,
+    backgroundColor: '#F5F5F5',
+    padding: 20,
+    paddingTop: 60,
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
+  gradient: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  engraveContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 30,
+  },
+  engraveText: {
+    fontSize: 20,
+    fontFamily: 'serif',
+    writingDirection: 'ltr',
+    color: '#000000',
+    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  cardLeftTop: {
+    position: 'absolute',
     alignItems: 'center',
   },
   cardLargeWrapper: {
-    width: '100%',
-    alignItems: 'center',
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   cardLarge: {
-    width: 200,
-    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 0,
   },
-  imageContainer: {
+  cardIconLarge: {
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardIcon: {
-    width: 50,
-    height: 50,
-  },
-  cardIconLarge: {
-    width: '80%',
-    height: '80%',
-  },
-  engravedContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // 发光外层（外发光）
-  engravedGlow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  engravedText: {
-    fontSize: 28,
-    color: '#D4B896',
-    fontFamily: 'serif',
-    fontWeight: '600',
-    textShadowColor: '#8B6914',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-    marginBottom: -8,
-  },
-  engravedCharWrapper: {
-    marginRight: 12,
-  },
-  engravedTextContainer: {
-    flexDirection: 'column',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxHeight: 180,
-  },
-  engravedGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  cardTopCenter: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  imageWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  cardLeftTop: {
-    position: 'absolute',
-    alignItems: 'flex-start',
-  },
-  cardRightMiddle: {
-    position: 'absolute',
-    top: 320,
-    right: 30,
-    alignItems: 'center',
-  },
-  cardLeftBottom: {
-    position: 'absolute',
-    top: 450,
-    left: 30,
-    alignItems: 'flex-start',
-  },
-  cardCenter: {
-    position: 'absolute',
-    top: 300,
-    right: 80,
-    alignItems: 'center',
-  },
-  cardBottomCenter: {
-    position: 'absolute',
-    bottom: 40,
-    left: '50%',
-    marginLeft: -40,
-    alignItems: 'center',
-  },
-  labelRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  redLine: {
-    width: 25,
-    height: 2,
-    backgroundColor: '#CC0000',
-    marginRight: 4,
-  },
-  redLineVertical: {
-    width: 2,
-    height: 30,
-    backgroundColor: '#CC0000',
-    marginTop: 8,
-  },
-  cardLabel: {
-    fontSize: 12,
-    color: '#000000',
-    fontFamily: 'serif',
   },
   cardLabelBelow: {
     fontSize: 12,
     color: '#000000',
     fontFamily: 'serif',
     marginTop: 8,
-  },
-  // 编辑按钮
-  editButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#333',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    zIndex: 100,
-  },
-  editButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // 对话框
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 24,
-    width: '85%',
-    maxWidth: 320,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 20,
     textAlign: 'center',
   },
-  inputRow: {
-    flexDirection: 'row',
+  cardRightMiddle: {
+    position: 'absolute',
+    top: 160,
+    right: 30,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  inputLabel: {
+  card: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+  },
+  cardIcon: {
+    width: '100%',
+    height: '100%',
+  },
+  cardLeftBottom: {
+    position: 'absolute',
+    top: 300,
+    left: 30,
+    alignItems: 'flex-start',
+  },
+  labelRight: {
+    alignItems: 'flex-start',
+    marginTop: 8,
+  },
+  redLine: {
+    width: 60,
+    height: 2,
+    backgroundColor: '#CC0000',
+    marginBottom: 4,
+  },
+  cardLabel: {
+    fontSize: 12,
+    color: '#000000',
+    fontFamily: 'serif',
+  },
+  cardCenter: {
+    position: 'absolute',
+    top: 300,
+    right: 30,
+    alignItems: 'center',
+  },
+  cardBottomCenter: {
+    position: 'absolute',
+    bottom: 50,
+    left: '50%',
+    marginLeft: -40,
+    alignItems: 'center',
+  },
+  redLineVertical: {
+    width: 2,
+    height: 40,
+    backgroundColor: '#CC0000',
+    marginTop: 4,
+  },
+  // 编辑面板样式
+  editorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  editorSubtitle: {
     fontSize: 14,
     color: '#666',
-    width: 70,
+    marginBottom: 24,
   },
-  input: {
+  sliderSection: {
+    marginBottom: 20,
+  },
+  sliderLabel: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  sliderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sliderMin: {
+    fontSize: 12,
+    color: '#999',
+    width: 30,
+  },
+  sliderMax: {
+    fontSize: 12,
+    color: '#999',
+    width: 40,
+    textAlign: 'right',
+  },
+  sliderInput: {
     flex: 1,
+    height: 44,
+    backgroundColor: '#FFF',
     borderWidth: 1,
     borderColor: '#DDD',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
+    marginHorizontal: 10,
+    fontSize: 16,
+    textAlign: 'center',
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  valueDisplay: {
+    backgroundColor: '#FFF',
+    padding: 12,
+    borderRadius: 8,
     marginTop: 20,
+    marginBottom: 20,
   },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
+  valueText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  doneButton: {
+    backgroundColor: '#333',
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 'auto',
   },
-  cancelButton: {
-    backgroundColor: '#F0F0F0',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  saveButton: {
-    backgroundColor: '#333',
-    marginLeft: 10,
-  },
-  saveButtonText: {
+  doneButtonText: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
