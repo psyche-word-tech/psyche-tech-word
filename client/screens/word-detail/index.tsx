@@ -93,7 +93,7 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 保存单词状态
+	// 保存单词状态并跳转到同类下一个单词
 	const handleStatusClick = async (status: 'x' | 'y' | 'z') => {
 		const wordId = params.wordId;
 		if (!wordId) {
@@ -107,18 +107,55 @@ export default function WordDetailPage() {
 			 * 接口：PUT /api/v1/words/:id/status
 			 * Body 参数：status: string -- x=已会, y=模糊, z=不会
 			 */
-			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${wordId}/status`, {
+			await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${wordId}/status`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ status }),
 			});
 
-			const result = await response.json();
-			if (result.success) {
-				const statusNames = { x: '已会', y: '模糊', z: '不会' };
-				alert(`已移入 ${statusNames[status]} 数据库`);
-			} else {
-				alert('保存失败');
+			/**
+			 * 服务端文件：server/src/routes/words.ts
+			 * 接口：GET /api/v1/words
+			 * 接口：GET /api/v1/words/statuses/all
+			 */
+			const [wordsRes, statusesRes] = await Promise.all([
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
+			]);
+
+			const wordsResult = await wordsRes.json();
+			const statusesResult = await statusesRes.json();
+
+			if (wordsResult.data) {
+				const statusMap = statusesResult.data || {};
+
+				// 找出同分类的所有单词
+				const sameStatusWordIds = Object.entries(statusMap)
+					.filter(([_, s]) => s === status)
+					.map(([id]) => parseInt(id))
+					.sort((a, b) => a - b);
+
+				if (sameStatusWordIds.length > 0) {
+					// 找到当前单词在列表中的位置
+					const currentIndex = sameStatusWordIds.indexOf(wordId);
+					// 获取下一个单词（循环）
+					const nextIndex = (currentIndex + 1) % sameStatusWordIds.length;
+					const nextWordId = sameStatusWordIds[nextIndex];
+
+					// 找到下一个单词的完整信息
+					const nextWord = wordsResult.data.find((w: any) => w.id === nextWordId);
+					if (nextWord) {
+						router.replace('/word-detail', {
+							wordId: nextWord.id,
+							word: nextWord.word,
+							meaning: nextWord.meaning
+						});
+						return;
+					}
+				}
+
+				// 如果没有更多同类单词，返回上一页
+				router.back();
 			}
 		} catch (error) {
 			console.error('Failed to update status:', error);
