@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#444444',
     fontFamily: 'serif',
+    fontStyle: 'italic',
     letterSpacing: 3,
   },
   mainContent: {
@@ -96,6 +97,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666666',
     fontFamily: 'serif',
+    fontStyle: 'italic',
     letterSpacing: 3,
     marginBottom: 10,
   },
@@ -128,6 +130,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#333333',
     fontFamily: 'serif',
+    fontStyle: 'italic',
     letterSpacing: 2,
   },
 });
