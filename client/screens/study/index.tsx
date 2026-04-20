@@ -20,16 +20,18 @@ export default function StudyScreen() {
         <View style={styles.cardsContainer}>
           {/* Card 1 - Top Center */}
           <View style={styles.cardTopCenter}>
-            <TouchableOpacity 
-              style={styles.cardLargeWrapper} 
-              activeOpacity={0.8} 
-              onPress={() => router.push('/engrave')}
-            >
-              <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
-            </TouchableOpacity>
-            {engravedText.length > 0 && (
-              <Text style={styles.engravedText}>{engravedText}</Text>
-            )}
+            <View style={styles.cardLargeWrapper}>
+              <TouchableOpacity 
+                style={styles.cardLarge} 
+                activeOpacity={0.8} 
+                onPress={() => router.push('/engrave')}
+              >
+                <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
+                {engravedText.length > 0 && (
+                  <Text style={styles.engravedText}>{engravedText}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
             <View style={styles.labelRight}>
               <View style={styles.redLine} />
               <Text style={styles.cardLabel}>刻字</Text>
@@ -104,8 +106,6 @@ const styles = StyleSheet.create({
   },
   cardLargeWrapper: {
     width: '100%',
-    height: 150,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   cardLarge: {
@@ -130,11 +130,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   engravedText: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
     fontSize: 20,
     color: '#FFFFFF',
     fontFamily: 'serif',
@@ -142,6 +137,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#000000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+    textAlign: 'center',
   },
   cardTopCenter: {
     position: 'absolute',
