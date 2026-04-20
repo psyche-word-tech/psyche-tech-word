@@ -23,25 +23,13 @@ export default function HomeScreen() {
         <View style={styles.mainContent}>
           {/* Logo - Geometric Butterfly Shape */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoTop}>
-              <View style={styles.topLeftWing}>
-                <View style={styles.wingShape1} />
-                <View style={styles.wingShape2} />
-              </View>
-              <View style={styles.topRightWing}>
-                <View style={styles.wingShape1} />
-                <View style={styles.wingShape2} />
-              </View>
-            </View>
-            <View style={styles.logoBottom}>
-              <View style={styles.bottomLeftWing}>
-                <View style={styles.wingShape3} />
-                <View style={styles.wingShape4} />
-              </View>
-              <View style={styles.bottomRightWing}>
-                <View style={styles.wingShape3} />
-                <View style={styles.wingShape4} />
-              </View>
+            <View style={styles.logoInner}>
+              {/* Top wings */}
+              <View style={[styles.wing, styles.wingTL]} />
+              <View style={[styles.wing, styles.wingTR]} />
+              {/* Bottom wings */}
+              <View style={[styles.wing, styles.wingBL]} />
+              <View style={[styles.wing, styles.wingBR]} />
             </View>
           </View>
 
@@ -92,75 +80,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logoContainer: {
-    width: 140,
-    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 50,
   },
-  logoTop: {
-    flexDirection: 'row',
-    marginBottom: -10,
+  logoInner: {
+    width: 120,
+    height: 120,
+    position: 'relative',
   },
-  logoBottom: {
-    flexDirection: 'row',
-    marginTop: -10,
+  wing: {
+    position: 'absolute',
+    backgroundColor: '#000000',
   },
-  topLeftWing: {
-    alignItems: 'flex-end',
-    marginRight: 4,
+  wingTL: {
+    width: 50,
+    height: 50,
+    top: 0,
+    left: 0,
+    borderTopLeftRadius: 50,
   },
-  topRightWing: {
-    alignItems: 'flex-start',
-    marginLeft: 4,
+  wingTR: {
+    width: 50,
+    height: 50,
+    top: 0,
+    right: 0,
+    borderTopRightRadius: 50,
   },
-  bottomLeftWing: {
-    alignItems: 'flex-end',
-    marginRight: 4,
+  wingBL: {
+    width: 50,
+    height: 50,
+    bottom: 0,
+    left: 0,
+    borderBottomLeftRadius: 50,
   },
-  bottomRightWing: {
-    alignItems: 'flex-start',
-    marginLeft: 4,
-  },
-  wingShape1: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderRightWidth: 35,
-    borderTopWidth: 35,
-    borderRightColor: 'transparent',
-    borderTopColor: '#000000',
-  },
-  wingShape2: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderRightWidth: 25,
-    borderBottomWidth: 25,
-    borderRightColor: 'transparent',
-    borderBottomColor: '#000000',
-    marginRight: -10,
-    marginTop: -15,
-  },
-  wingShape3: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderRightWidth: 25,
-    borderBottomWidth: 25,
-    borderRightColor: 'transparent',
-    borderBottomColor: '#000000',
-    marginRight: -10,
-  },
-  wingShape4: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderRightWidth: 35,
-    borderTopWidth: 35,
-    borderRightColor: 'transparent',
-    borderTopColor: '#000000',
-    marginTop: -15,
+  wingBR: {
+    width: 50,
+    height: 50,
+    bottom: 0,
+    right: 0,
+    borderBottomRightRadius: 50,
   },
   brandName: {
     fontSize: 22,
