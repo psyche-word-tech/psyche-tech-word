@@ -12,10 +12,6 @@ export default function StudyScreen() {
       <SafeAreaView style={styles.container}>
         {/* Top Status Bar */}
         <View style={styles.statusBar}>
-          <View style={styles.statusLeft}>
-            <Text style={styles.statusText}>在线帮助</Text>
-            <Text style={styles.statusText}>反馈问题</Text>
-          </View>
           <View style={styles.statusRight}>
             <Text style={styles.statusIcon}>[ ]</Text>
             <Text style={styles.statusIcon}>=</Text>
@@ -89,14 +85,11 @@ const styles = StyleSheet.create({
   },
   statusBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-  },
-  statusLeft: {
-    alignItems: 'flex-start',
   },
   statusRight: {
     flexDirection: 'row',
