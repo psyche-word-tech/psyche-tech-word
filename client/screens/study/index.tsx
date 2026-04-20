@@ -63,7 +63,6 @@ export default function StudyScreen() {
           {/* Card 3 - Right Middle */}
           <View style={styles.cardRightMiddle}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>我的词汇书</Text>
           </View>
