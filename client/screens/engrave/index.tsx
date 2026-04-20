@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   undoBtn: {
     position: 'absolute',
     left: '75%',
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingVertical: 4,
     backgroundColor: '#000000',
   },
