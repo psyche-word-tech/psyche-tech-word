@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Book {
   id: number;
@@ -8,11 +9,26 @@ interface Book {
   price: number;
 }
 
+const STORAGE_KEY = 'bought_wordbooks';
+
 export default function PurchasePage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
   const books: Book[] = params.books ? JSON.parse(params.books) : [];
   const bookName = books.map(b => b.name).join('、');
+
+  const handleConfirm = async () => {
+    const existing = await AsyncStorage.getItem(STORAGE_KEY);
+    const existingBooks: Book[] = existing ? JSON.parse(existing) : [];
+    const merged = [...existingBooks];
+    books.forEach(newBook => {
+      if (!merged.find(b => b.id === newBook.id)) {
+        merged.push(newBook);
+      }
+    });
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    router.replace('/my-vocabulary');
+  };
 
   return (
     <Screen>
@@ -38,9 +54,7 @@ export default function PurchasePage() {
               
               {/* Buttons */}
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.button} onPress={() => {
-                  router.replace('/my-vocabulary', { books: params.books || '[]' });
-                }}>
+                <TouchableOpacity style={styles.button} onPress={handleConfirm}>
                   <Text style={styles.buttonText}>确认</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button} onPress={() => router.back()}>

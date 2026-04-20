@@ -1,24 +1,51 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface WordBook {
   id: number;
   name: string;
 }
 
+const STORAGE_KEY = 'bought_wordbooks';
+
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
 
-  useFocusEffect(() => {
-    if (params.books) {
-      setBoughtBooks(JSON.parse(params.books));
-    }
-  });
+  useFocusEffect(
+    useCallback(() => {
+      const loadBooks = async () => {
+        // 如果有传入的books参数，先合并保存
+        if (params.books) {
+          const newBooks: WordBook[] = JSON.parse(params.books);
+          // 获取已有的
+          const existing = await AsyncStorage.getItem(STORAGE_KEY);
+          const existingBooks: WordBook[] = existing ? JSON.parse(existing) : [];
+          // 合并去重
+          const merged = [...existingBooks];
+          newBooks.forEach(newBook => {
+            if (!merged.find(b => b.id === newBook.id)) {
+              merged.push(newBook);
+            }
+          });
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          setBoughtBooks(merged);
+        } else {
+          // 从存储读取
+          const stored = await AsyncStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            setBoughtBooks(JSON.parse(stored));
+          }
+        }
+      };
+      loadBooks();
+    }, [params.books])
+  );
 
   return (
     <Screen>
