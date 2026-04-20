@@ -21,10 +21,9 @@ interface Category {
 interface DraggableWordProps {
 	word: Word;
 	onDrop: (categoryId: number) => void;
-	onPress: () => void;
 }
 
-function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
+function DraggableWord({ word, onDrop }: DraggableWordProps) {
 	const translateX = useSharedValue(0);
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
@@ -80,13 +79,11 @@ function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 	return (
 		<GestureDetector gesture={panGesture}>
 			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-				<TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-					<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
-						<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
-							{word.word}
-						</Text>
-					</View>
-				</TouchableOpacity>
+				<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
+					<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
+						{word.word}
+					</Text>
+				</View>
 			</Animated.View>
 		</GestureDetector>
 	);
@@ -101,7 +98,6 @@ export default function LearnPage() {
 		{ id: 3, name: '不会', letter: 'z', count: 0 },
 	]);
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
-	const [wordCategories, setWordCategories] = useState<Record<number, number>>({});
 
 	useEffect(() => {
 		fetchWords();
@@ -142,7 +138,6 @@ export default function LearnPage() {
 		}
 
 		setUsedWords(prev => new Set([...prev, wordId]));
-		setWordCategories(prev => ({ ...prev, [wordId]: categoryId }));
 		setCategories(cats =>
 			cats.map(cat =>
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
@@ -192,7 +187,6 @@ export default function LearnPage() {
 										key={word.id}
 										word={word}
 										onDrop={(categoryId) => handleDrop(word.id, categoryId)}
-										onPress={() => router.push('/word-detail', { wordId: word.id, word: word.word, meaning: word.meaning })}
 									/>
 								))}
 							</View>
