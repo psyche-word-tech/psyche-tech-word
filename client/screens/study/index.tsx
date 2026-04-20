@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, TextInput, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
 
 const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.png');
@@ -13,38 +12,51 @@ export default function StudyScreen() {
   const params = useSafeSearchParams<{ engravedText?: string }>();
   const engravedText = params.engravedText || '';
 
-  const screenWidth = Dimensions.get('window').width;
-
-  // 购买词汇书卡片位置和大小
-  const [dangPosition, setDangPosition] = useState({ x: 30, y: 150 });
-  const [dangSize, setDangSize] = useState({ width: 200, height: 100 });
-
   return (
     <Screen>
-      <View style={styles.mainContainer}>
-        {/* 左侧预览区域 */}
-        <View style={styles.previewContainer}>
-          {/* 背景 */}
-          <View style={styles.backgroundContainer}>
-            <Image source={iconRock} style={styles.backgroundImage} resizeMode="cover" />
-            <LinearGradient
-              colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0)']}
-              style={styles.gradient}
-            />
-          </View>
+      <SafeAreaView style={styles.container}>
+        {/* Top Status Bar */}
+        <View style={styles.statusBar} />
 
-          {/* 刻字 */}
-          <View style={styles.engraveContainer}>
-            <Text style={styles.engraveText} numberOfLines={3}>{engravedText}</Text>
+        {/* Cards Container */}
+        <View style={styles.cardsContainer}>
+          {/* Card 1 - Top Center */}
+          <View style={styles.cardTopCenter}>
+            <View style={styles.cardLargeWrapper}>
+              <TouchableOpacity 
+                style={styles.cardLarge} 
+                activeOpacity={0.8} 
+                onPress={() => router.push('/engrave')}
+              >
+                <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
+                {engravedText.length > 0 && (
+                  <View style={styles.engravedContainer}>
+                    <LinearGradient
+                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
+                      style={styles.engravedGradient}
+                    />
+                    <View style={styles.engravedTextContainer}>
+                      {engravedText.split('').map((char, index) => (
+                        <View key={index} style={styles.engravedCharWrapper}>
+                          <Text style={styles.engravedText}>{char}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+            <View style={styles.labelRight}>
+              <View style={styles.redLine} />
+              <Text style={styles.cardLabel}>刻字</Text>
+            </View>
           </View>
 
           {/* Card 2 - Left Top */}
-          <View style={[styles.cardLeftTop, { left: dangPosition.x, top: dangPosition.y, width: dangSize.width, height: dangSize.height }]}>
-            <View style={styles.cardLargeWrapper}>
-              <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
-                <Image source={iconDang} style={styles.cardIconLarge} resizeMode="cover" />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.cardLeftTop}>
+            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
+              <Image source={iconDang} style={styles.cardIconLarge} resizeMode="cover" />
+            </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>购买词汇书</Text>
           </View>
 
@@ -82,293 +94,169 @@ export default function StudyScreen() {
             <View style={styles.redLineVertical} />
           </View>
         </View>
-
-        {/* 右侧编辑面板 */}
-        <View style={styles.editorContainer}>
-          <Text style={styles.editorTitle}>编辑面板</Text>
-          <Text style={styles.editorSubtitle}>购买词汇书</Text>
-
-          <View style={styles.sliderSection}>
-            <Text style={styles.sliderLabel}>X 位置</Text>
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderMin}>0</Text>
-              <TextInput
-                style={styles.sliderInput}
-                value={String(dangPosition.x)}
-                onChangeText={(text) => {
-                  const val = parseInt(text) || 0;
-                  setDangPosition(prev => ({ ...prev, x: val }));
-                }}
-                keyboardType="numeric"
-              />
-              <Text style={styles.sliderMax}>{Math.round(screenWidth * 0.6 - dangSize.width)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.sliderSection}>
-            <Text style={styles.sliderLabel}>Y 位置</Text>
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderMin}>0</Text>
-              <TextInput
-                style={styles.sliderInput}
-                value={String(dangPosition.y)}
-                onChangeText={(text) => {
-                  const val = parseInt(text) || 0;
-                  setDangPosition(prev => ({ ...prev, y: val }));
-                }}
-                keyboardType="numeric"
-              />
-              <Text style={styles.sliderMax}>600</Text>
-            </View>
-          </View>
-
-          <View style={styles.sliderSection}>
-            <Text style={styles.sliderLabel}>宽度</Text>
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderMin}>50</Text>
-              <TextInput
-                style={styles.sliderInput}
-                value={String(dangSize.width)}
-                onChangeText={(text) => {
-                  const val = parseInt(text) || 100;
-                  setDangSize(prev => ({ ...prev, width: val }));
-                }}
-                keyboardType="numeric"
-              />
-              <Text style={styles.sliderMax}>400</Text>
-            </View>
-          </View>
-
-          <View style={styles.sliderSection}>
-            <Text style={styles.sliderLabel}>高度</Text>
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderMin}>30</Text>
-              <TextInput
-                style={styles.sliderInput}
-                value={String(dangSize.height)}
-                onChangeText={(text) => {
-                  const val = parseInt(text) || 50;
-                  setDangSize(prev => ({ ...prev, height: val }));
-                }}
-                keyboardType="numeric"
-              />
-              <Text style={styles.sliderMax}>300</Text>
-            </View>
-          </View>
-
-          <View style={styles.valueDisplay}>
-            <Text style={styles.valueText}>当前值: X={dangPosition.x}, Y={dangPosition.y}</Text>
-            <Text style={styles.valueText}>尺寸: {dangSize.width} x {dangSize.height}</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.doneButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.doneButtonText}>完成</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </SafeAreaView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
+  container: {
     flex: 1,
-    flexDirection: 'row',
-  },
-  previewContainer: {
-    flex: 1.2,
-    position: 'relative',
-  },
-  editorContainer: {
-    flex: 0.8,
     backgroundColor: '#F5F5F5',
-    padding: 20,
-    paddingTop: 60,
   },
-  backgroundContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
+  statusBar: {
+    height: 40,
+    backgroundColor: '#FFFFFF',
   },
-  backgroundImage: {
-    width: '100%',
-    height: '100%',
-  },
-  gradient: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  engraveContainer: {
-    position: 'absolute',
-    top: 40,
-    left: 30,
-  },
-  engraveText: {
-    fontSize: 20,
-    fontFamily: 'serif',
-    writingDirection: 'ltr',
-    color: '#000000',
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-  cardLeftTop: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  cardLargeWrapper: {
-    overflow: 'hidden',
-    borderRadius: 12,
-  },
-  cardLarge: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 0,
-  },
-  cardIconLarge: {
-    width: '100%',
-    height: '100%',
-  },
-  cardLabelBelow: {
-    fontSize: 12,
-    color: '#000000',
-    fontFamily: 'serif',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  cardRightMiddle: {
-    position: 'absolute',
-    top: 160,
-    right: 30,
-    alignItems: 'center',
+  cardsContainer: {
+    flex: 1,
+    position: 'relative',
   },
   card: {
     width: 80,
     height: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
   },
-  cardIcon: {
+  cardLargeWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  cardLarge: {
+    width: 200,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+  },
+  imageContainer: {
     width: '100%',
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardIcon: {
+    width: 50,
+    height: 50,
+  },
+  cardIconLarge: {
+    width: '80%',
+    height: '80%',
+  },
+  engravedContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // 发光外层（外发光）
+  engravedGlow: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  engravedText: {
+    fontSize: 28,
+    color: '#D4B896',
+    fontFamily: 'serif',
+    fontWeight: '600',
+    textShadowColor: '#8B6914',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+    marginBottom: -8,
+  },
+  engravedCharWrapper: {
+    marginRight: 12,
+  },
+  engravedTextContainer: {
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxHeight: 180,
+  },
+  engravedGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cardTopCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  imageWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  cardLeftTop: {
+    position: 'absolute',
+    top: 150,
+    left: '30%',
+    alignItems: 'flex-start',
+  },
+  cardRightMiddle: {
+    position: 'absolute',
+    top: 320,
+    right: 30,
+    alignItems: 'center',
   },
   cardLeftBottom: {
     position: 'absolute',
-    top: 300,
+    top: 450,
     left: 30,
     alignItems: 'flex-start',
   },
+  cardCenter: {
+    position: 'absolute',
+    top: 300,
+    right: 80,
+    alignItems: 'center',
+  },
+  cardBottomCenter: {
+    position: 'absolute',
+    bottom: 40,
+    left: '50%',
+    marginLeft: -40,
+    alignItems: 'center',
+  },
   labelRight: {
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
   },
   redLine: {
-    width: 60,
+    width: 25,
     height: 2,
     backgroundColor: '#CC0000',
-    marginBottom: 4,
+    marginRight: 4,
+  },
+  redLineVertical: {
+    width: 2,
+    height: 30,
+    backgroundColor: '#CC0000',
+    marginTop: 8,
   },
   cardLabel: {
     fontSize: 12,
     color: '#000000',
     fontFamily: 'serif',
   },
-  cardCenter: {
-    position: 'absolute',
-    top: 300,
-    right: 30,
-    alignItems: 'center',
-  },
-  cardBottomCenter: {
-    position: 'absolute',
-    bottom: 50,
-    left: '50%',
-    marginLeft: -40,
-    alignItems: 'center',
-  },
-  redLineVertical: {
-    width: 2,
-    height: 40,
-    backgroundColor: '#CC0000',
-    marginTop: 4,
-  },
-  // 编辑面板样式
-  editorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  editorSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
-  },
-  sliderSection: {
-    marginBottom: 20,
-  },
-  sliderLabel: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  sliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sliderMin: {
+  cardLabelBelow: {
     fontSize: 12,
-    color: '#999',
-    width: 30,
-  },
-  sliderMax: {
-    fontSize: 12,
-    color: '#999',
-    width: 40,
-    textAlign: 'right',
-  },
-  sliderInput: {
-    flex: 1,
-    height: 44,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginHorizontal: 10,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  valueDisplay: {
-    backgroundColor: '#FFF',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  valueText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  doneButton: {
-    backgroundColor: '#333',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 'auto',
-  },
-  doneButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'serif',
+    marginTop: 8,
   },
 });
