@@ -230,7 +230,8 @@ const styles = StyleSheet.create({
 	},
 	wordRow: {
 		flexDirection: 'column',
-		gap: 10,
+		gap: 12,
+		paddingHorizontal: 20,
 	},
 	wordItemContainer: {
 		alignItems: 'stretch',
@@ -238,10 +239,8 @@ const styles = StyleSheet.create({
 	wordCard: {
 		backgroundColor: '#F0F0F0',
 		paddingHorizontal: 15,
-		paddingVertical: 12,
-		borderRadius: 6,
-		borderWidth: 1,
-		borderColor: '#E0E0E0',
+		paddingVertical: 15,
+		borderRadius: 8,
 		alignItems: 'center',
 	},
 	wordCardUsed: {
