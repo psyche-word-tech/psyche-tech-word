@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   card: {
-    width: 160,
-    height: 160,
+    width: 80,
+    height: 80,
     borderWidth: 2,
     borderColor: '#000000',
     backgroundColor: '#FFFFFF',
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   },
   cardTopCenter: {
     position: 'absolute',
-    top: 20,
+    top: 40,
     left: '50%',
-    marginLeft: -80,
+    marginLeft: -40,
     alignItems: 'center',
   },
   cardLeftTop: {
