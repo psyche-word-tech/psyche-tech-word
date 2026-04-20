@@ -31,14 +31,14 @@ export default function WordDetailPage() {
 
 	// 根据单词返回例句（主谓宾结构）
 	const getExampleSentence = (word: string | undefined) => {
-		if (!word) return { parts: ['I', 'love', 'chaos'], translations: ['我', '爱', '混乱'], wordIndex: 2 };
+		if (!word) return { parts: ['I ', 'love ', 'chaos'], translations: ['我', '爱', '混乱'], wordIndex: 2 };
 		const examples: Record<string, { parts: string[]; translations: string[]; wordIndex: number }> = {
-			psyche: { parts: ['Scientists', 'study', 'the human', 'psyche', '.'], translations: ['科学家', '研究', '人类', '心灵', '。'], wordIndex: 3 },
-			tech: { parts: ['We', 'need', 'more advanced', 'tech', '.'], translations: ['我们', '需要', '更先进的', '技术', '。'], wordIndex: 3 },
-			fly: { parts: ['Pilots', 'fly', 'airplanes', 'every day', '.'], translations: ['飞行员', '每天', '驾驶', '飞机', '。'], wordIndex: 1 },
-			chaos: { parts: ['Disorder', 'creates', 'chaos', '.'], translations: ['混乱', '创造', '混沌', '。'], wordIndex: 2 },
+			psyche: { parts: ['Scientists ', 'study ', 'the human ', 'psyche', '.'], translations: ['科学家', '研究', '人类', '心灵', '。'], wordIndex: 3 },
+			tech: { parts: ['We ', 'need ', 'more advanced ', 'tech', '.'], translations: ['我们', '需要', '更先进的', '技术', '。'], wordIndex: 3 },
+			fly: { parts: ['Pilots ', 'fly ', 'airplanes ', 'every day', '.'], translations: ['飞行员', '每天', '驾驶', '飞机', '。'], wordIndex: 1 },
+			chaos: { parts: ['Disorder ', 'creates ', 'chaos', '.'], translations: ['混乱', '创造', '混沌', '。'], wordIndex: 2 },
 		};
-		return examples[word] || { parts: ['People', 'use', 'this word', 'often', '.'], translations: ['人们', '经常', '使用', '这个词', '。'], wordIndex: 2 };
+		return examples[word] || { parts: ['People ', 'use ', 'this word', ' often', '.'], translations: ['人们', '经常', '使用', '这个词', '。'], wordIndex: 2 };
 	};
 
 	const currentWord = params.word;
