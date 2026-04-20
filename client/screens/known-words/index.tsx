@@ -21,22 +21,21 @@ export default function KnownWordsPage() {
 	const fetchKnownWords = async () => {
 		try {
 			setLoading(true);
-			// 获取所有单词
 			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
 			const result = await response.json();
 			
 			if (result.data) {
-				// 获取所有状态为x（已会）的单词
 				const allWords = result.data as Word[];
-				const knownIds = allWords
-					.filter(async (_, index) => {
-						const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${index + 1}/status`);
-						const statusData = await statusRes.json();
-						return statusData.data?.status === 'x';
-					});
-				
-				// 简单处理：直接使用前3个单词作为已会示例
-				setKnownWords(allWords.slice(0, 3));
+				// 从后端获取已会状态的单词ID
+				const knownWordIds: number[] = [];
+				for (const word of allWords) {
+					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
+					const statusData = await statusRes.json();
+					if (statusData.data?.status === 'x') {
+						knownWordIds.push(word.id);
+					}
+				}
+				setKnownWords(allWords.filter(w => knownWordIds.includes(w.id)));
 			}
 		} catch (error) {
 			console.error('Failed to fetch known words:', error);

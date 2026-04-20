@@ -26,8 +26,16 @@ export default function VagueWordsPage() {
 			
 			if (result.data) {
 				const allWords = result.data as Word[];
-				// 使用前几个单词作为模糊示例
-				setVagueWords(allWords.slice(0, 2));
+				// 从后端获取模糊状态的单词ID
+				const vagueWordIds: number[] = [];
+				for (const word of allWords) {
+					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
+					const statusData = await statusRes.json();
+					if (statusData.data?.status === 'y') {
+						vagueWordIds.push(word.id);
+					}
+				}
+				setVagueWords(allWords.filter(w => vagueWordIds.includes(w.id)));
 			}
 		} catch (error) {
 			console.error('Failed to fetch vague words:', error);

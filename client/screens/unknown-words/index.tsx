@@ -26,8 +26,16 @@ export default function UnknownWordsPage() {
 			
 			if (result.data) {
 				const allWords = result.data as Word[];
-				// 使用前几个单词作为不会示例
-				setUnknownWords(allWords.slice(0, 1));
+				// 从后端获取不会状态的单词ID
+				const unknownWordIds: number[] = [];
+				for (const word of allWords) {
+					const statusRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${word.id}/status`);
+					const statusData = await statusRes.json();
+					if (statusData.data?.status === 'z') {
+						unknownWordIds.push(word.id);
+					}
+				}
+				setUnknownWords(allWords.filter(w => unknownWordIds.includes(w.id)));
 			}
 		} catch (error) {
 			console.error('Failed to fetch unknown words:', error);
