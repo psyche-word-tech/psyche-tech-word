@@ -29,10 +29,10 @@ export default function PurchasePage() {
               
               {/* Buttons */}
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={() => router.back()}>
                   <Text style={styles.buttonText}>确认</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity style={styles.button} onPress={() => router.back()}>
                   <Text style={styles.buttonText}>取消</Text>
                 </TouchableOpacity>
               </View>
