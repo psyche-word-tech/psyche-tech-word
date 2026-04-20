@@ -38,7 +38,9 @@ export default function PurchasePage() {
               
               {/* Buttons */}
               <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.button} onPress={() => {
+                  router.replace('/my-vocabulary', { books: params.books || '[]' });
+                }}>
                   <Text style={styles.buttonText}>确认</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.button} onPress={() => router.back()}>

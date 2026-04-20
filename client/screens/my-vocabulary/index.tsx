@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
 interface WordBook {
@@ -10,12 +9,8 @@ interface WordBook {
 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
-  const wordBooks: WordBook[] = [
-    { id: 1, name: '高中' },
-    { id: 2, name: '四级' },
-    { id: 3, name: '六级' },
-    { id: 4, name: '考研' },
-  ];
+  const params = useSafeSearchParams<{ books?: string }>();
+  const boughtBooks: WordBook[] = params.books ? JSON.parse(params.books) : [];
 
   return (
     <Screen>
@@ -31,7 +26,7 @@ export default function MyVocabularyPage() {
 
         {/* Word Books Grid */}
         <View style={styles.gridContainer}>
-          {wordBooks.map((book: WordBook, index: number) => (
+          {boughtBooks.map((book: WordBook, index: number) => (
             <View key={book.id} style={styles.bookItem}>
               {/* Book Tag */}
               <View style={styles.tagContainer}>
