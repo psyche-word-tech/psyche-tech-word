@@ -237,16 +237,16 @@ const styles = StyleSheet.create({
 	wordItemContainer: {
 		width: '30%',
 		alignItems: 'center',
-		marginBottom: 10,
+		marginBottom: 8,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 6,
+		borderRadius: 4,
 		borderWidth: 1,
 		borderColor: '#E0E0E0',
-		minWidth: 60,
+		minWidth: 80,
 		alignItems: 'center',
 	},
 	wordCardUsed: {
