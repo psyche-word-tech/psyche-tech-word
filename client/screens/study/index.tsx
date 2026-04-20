@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   cardLarge: {
     width: '100%',
-    height: 180,
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
   },
