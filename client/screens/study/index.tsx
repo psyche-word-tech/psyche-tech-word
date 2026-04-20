@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   cardLeftTop: {
     position: 'absolute',
-    top: 150,
+    top: 220,
     left: 0,
     right: 0,
     alignItems: 'center',
