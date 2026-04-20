@@ -285,6 +285,6 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     marginTop: 8,
     alignSelf: 'flex-start',
-    marginLeft: 10,
+    marginLeft: 20,
   },
 });
