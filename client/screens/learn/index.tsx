@@ -155,7 +155,7 @@ export default function LearnPage() {
 					<View style={styles.wordCardsContainer}>
 						{availableWords.length > 0 ? (
 							<View style={styles.wordRow}>
-								{availableWords.map((word) => (
+								{availableWords.slice(0, 9).map((word) => (
 									<DraggableWord
 										key={word.id}
 										word={word}
@@ -232,13 +232,12 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		justifyContent: 'flex-start',
-		gap: 20,
-		maxHeight: 110,
-		overflow: 'hidden',
+		gap: 15,
 	},
 	wordItemContainer: {
+		width: '30%',
 		alignItems: 'center',
-		marginHorizontal: 5,
+		marginBottom: 10,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
