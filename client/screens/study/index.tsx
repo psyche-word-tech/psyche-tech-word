@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.png');
@@ -28,7 +29,13 @@ export default function StudyScreen() {
               >
                 <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
                 {engravedText.length > 0 && (
-                  <Text style={styles.engravedText}>{engravedText}</Text>
+                  <View style={styles.engravedContainer}>
+                    <LinearGradient
+                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
+                      style={styles.engravedGradient}
+                    />
+                    <Text style={styles.engravedText}>{engravedText}</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -129,15 +136,34 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  engravedContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  engravedGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   engravedText: {
-    fontSize: 20,
+    fontSize: 24,
     color: '#FFFFFF',
     fontFamily: 'serif',
     fontStyle: 'italic',
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontWeight: '600',
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   cardTopCenter: {
     position: 'absolute',
