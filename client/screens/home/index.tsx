@@ -46,8 +46,6 @@ export default function HomeScreen() {
           </View>
 
           {/* Brand Name */}
-          <Text style={styles.brandName}>word mastery</Text>
-
           {/* Tagline */}
           <Text style={styles.tagline}>phantasia connects us</Text>
 
@@ -57,11 +55,6 @@ export default function HomeScreen() {
 
         {/* Bottom Action Area */}
         <View style={styles.bottomAction}>
-          {/* Red Arrow - centered below divider */}
-          <View style={styles.arrowArea}>
-            <Text style={styles.arrow}>↓</Text>
-          </View>
-          
           {/* Next Button - bottom right */}
           <TouchableOpacity 
             style={styles.nextButton} 
@@ -181,7 +174,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontWeight: '400',
     letterSpacing: 2,
-    marginBottom: 30,
+    marginBottom: 10,
   },
   dividerLine: {
     width: 60,
@@ -200,17 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingRight: 24,
     paddingBottom: 24,
-  },
-  arrowArea: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 30,
-    alignItems: 'center',
-  },
-  arrow: {
-    fontSize: 20,
-    color: '#CC0000',
   },
   nextButton: {
     paddingHorizontal: 24,
