@@ -45,13 +45,6 @@ export default function EngraveScreen() {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.cancelBtn}
-                onPress={() => router.back()}
-              >
-                <Text style={styles.cancelText}>取消</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
                 style={styles.undoBtn}
                 onPress={() => {
                   setText('');
