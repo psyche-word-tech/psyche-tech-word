@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   cardLeftTop: {
     position: 'absolute',
     top: 150,
-    left: '50%',
+    left: '30%',
     alignItems: 'flex-start',
   },
   cardRightMiddle: {
