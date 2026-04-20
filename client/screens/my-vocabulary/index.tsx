@@ -35,12 +35,19 @@ export default function MyVocabularyPage() {
             <View key={book.id} style={styles.bookItem}>
               {/* Book Tag */}
               <View style={styles.tagContainer}>
-                <Text style={styles.tagText}>{book.name}</Text>
+                {book.name.split('').map((char, i) => (
+                  <Text key={i} style={styles.tagText}>{char}</Text>
+                ))}
               </View>
               
               {/* Learn Button */}
               <TouchableOpacity style={styles.learnButton}>
-                <Text style={styles.learnText}>开始学习</Text>
+                <View style={styles.learnTextContainer}>
+                  <Text style={styles.learnText}>开</Text>
+                  <Text style={styles.learnText}>始</Text>
+                  <Text style={styles.learnText}>学</Text>
+                  <Text style={styles.learnText}>习</Text>
+                </View>
               </TouchableOpacity>
               
               {/* Guide Line */}
@@ -94,24 +101,30 @@ const styles = StyleSheet.create({
   },
   tagContainer: {
     backgroundColor: '#EBEBEB',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
     marginBottom: 12,
+    alignItems: 'center',
+    minWidth: 40,
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666666',
     fontFamily: 'serif',
   },
   learnButton: {
     backgroundColor: '#EBEBEB',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 40,
+  },
+  learnTextContainer: {
+    alignItems: 'center',
   },
   learnText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666666',
     fontFamily: 'serif',
   },
