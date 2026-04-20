@@ -133,12 +133,11 @@ const styles = StyleSheet.create({
     left: '75%',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#000000',
+    backgroundColor: '#000000',
   },
   undoText: {
     fontSize: 10,
-    color: '#000000',
+    color: '#FFFFFF',
     fontFamily: 'serif',
   },
 });
