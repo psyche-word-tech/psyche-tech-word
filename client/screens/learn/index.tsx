@@ -227,6 +227,7 @@ const styles = StyleSheet.create({
 	wordCardsContainer: {
 		paddingHorizontal: 20,
 		paddingVertical: 60,
+		height: 180,
 	},
 	wordRow: {
 		flexDirection: 'row',
