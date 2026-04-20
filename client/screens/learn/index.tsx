@@ -33,34 +33,31 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
 	const zIndex = useSharedValue(1);
+	const hasDragged = useSharedValue(false);
 
-	const handlePress = () => {
-		if (!isUsed) {
-			onPress();
-		}
-	};
-
+	// 拖动手势
 	const panGesture = Gesture.Pan()
 		.onStart(() => {
+			hasDragged.value = false;
 			scale.value = withSpring(1.1);
 			zIndex.value = 100;
 		})
 		.onUpdate((event) => {
+			hasDragged.value = true;
 			translateX.value = event.translationX;
 			translateY.value = event.translationY;
 		})
 		.onEnd((event) => {
 			const dropY = event.absoluteY;
-			// 拖拽区域在屏幕下方约150-600像素范围内
 			let targetCategory: number | null = null;
 			if (dropY > 150 && dropY < 700) {
 				const relativeX = event.absoluteX;
 				if (relativeX < ITEM_WIDTH) {
-					targetCategory = 1; // 已会
+					targetCategory = 1;
 				} else if (relativeX < ITEM_WIDTH * 2) {
-					targetCategory = 2; // 模糊
+					targetCategory = 2;
 				} else {
-					targetCategory = 3; // 不会
+					targetCategory = 3;
 				}
 			}
 
@@ -72,7 +69,19 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			translateY.value = withSpring(0);
 			scale.value = withSpring(1);
 			zIndex.value = 1;
+			hasDragged.value = false;
 		});
+
+	// 点击手势
+	const tapGesture = Gesture.Tap()
+		.onEnd(() => {
+			if (!hasDragged.value) {
+				runOnJS(onPress)();
+			}
+		});
+
+	// 同时支持拖动和点击
+	const composedGesture = Gesture.Race(panGesture, tapGesture);
 
 	const animatedStyle = useAnimatedStyle(() => ({
 		transform: [
@@ -84,15 +93,13 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 	}));
 
 	return (
-		<GestureDetector gesture={panGesture}>
+		<GestureDetector gesture={composedGesture}>
 			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-				<TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
-					<View style={[styles.wordCard, isUsed && styles.wordCardUsed]}>
-						<Text style={[styles.wordCardText, isUsed && styles.wordCardTextUsed]}>
-							{word.word}
-						</Text>
-					</View>
-				</TouchableOpacity>
+				<View style={[styles.wordCard, isUsed && styles.wordCardUsed]}>
+					<Text style={[styles.wordCardText, isUsed && styles.wordCardTextUsed]}>
+						{word.word}
+					</Text>
+				</View>
 			</Animated.View>
 		</GestureDetector>
 	);
