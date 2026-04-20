@@ -1,32 +1,32 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
-interface Word {
+interface WordBook {
   id: number;
-  word: string;
-  meaning: string;
+  name: string;
+  price: number;
+  selected: boolean;
 }
 
 export default function VocabularyPage() {
   const router = useSafeRouter();
-  const [words] = useState<Word[]>([
-    { id: 1, word: 'apple', meaning: '苹果' },
-    { id: 2, word: 'book', meaning: '书' },
-    { id: 3, word: 'cat', meaning: '猫' },
+  const [activeTab, setActiveTab] = useState<'exchange' | 'buy'>('exchange');
+  const [wordBooks, setWordBooks] = useState<WordBook[]>([
+    { id: 1, name: '高中词汇', price: 10, selected: false },
+    { id: 2, name: '四级词汇', price: 12, selected: false },
+    { id: 3, name: '六级词汇', price: 15, selected: false },
+    { id: 4, name: '考研词汇', price: 20, selected: false },
   ]);
-  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
-  const renderItem = ({ item }: { item: Word }) => (
-    <TouchableOpacity 
-      style={styles.wordItem}
-      onPress={() => setSelectedWord(item)}
-    >
-      <Text style={styles.wordText}>{item.word}</Text>
-      <Text style={styles.meaningText}>{item.meaning}</Text>
-    </TouchableOpacity>
-  );
+  const toggleSelect = (id: number) => {
+    setWordBooks(books =>
+      books.map(book =>
+        book.id === id ? { ...book, selected: !book.selected } : book
+      )
+    );
+  };
 
   return (
     <Screen>
@@ -36,18 +36,53 @@ export default function VocabularyPage() {
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>我的词汇书</Text>
+          
+          <View style={styles.tabs}>
+            <TouchableOpacity onPress={() => setActiveTab('exchange')}>
+              <Text style={[styles.tabText, activeTab === 'exchange' && styles.tabActive]}>
+                兑换
+              </Text>
+              {activeTab === 'exchange' && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setActiveTab('buy')}>
+              <Text style={[styles.tabText, activeTab === 'buy' && styles.tabActive]}>
+                购买
+              </Text>
+              {activeTab === 'buy' && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+          </View>
+          
           <View style={styles.placeholder} />
         </View>
 
-        {/* Word List */}
-        <FlatList
-          data={words}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-        />
+        {/* Word Books Grid */}
+        <View style={styles.gridContainer}>
+          {wordBooks.map(book => (
+            <TouchableOpacity
+              key={book.id}
+              style={styles.card}
+              onPress={() => toggleSelect(book.id)}
+            >
+              {/* Checkbox */}
+              <View style={[styles.checkbox, book.selected && styles.checkboxSelected]}>
+                {book.selected && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              
+              {/* Book Name - Vertical */}
+              <View style={styles.nameContainer}>
+                {book.name.split('').map((char, i) => (
+                  <Text key={i} style={styles.nameText}>{char}</Text>
+                ))}
+              </View>
+              
+              {/* Price - Vertical */}
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceText}>{book.price}</Text>
+                <Text style={styles.currencyText}>蝴蝶币</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </Screen>
   );
@@ -56,53 +91,95 @@ export default function VocabularyPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    backgroundColor: '#E5E5E5',
   },
   backText: {
     fontSize: 14,
-    color: '#D4B896',
+    color: '#000000',
     fontFamily: 'serif',
   },
-  title: {
-    fontSize: 18,
-    color: '#FFFFFF',
+  tabs: {
+    flexDirection: 'row',
+    gap: 30,
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#999999',
     fontFamily: 'serif',
-    fontWeight: '600',
+  },
+  tabActive: {
+    color: '#333333',
+  },
+  tabUnderline: {
+    height: 2,
+    backgroundColor: '#333333',
+    marginTop: 4,
   },
   placeholder: {
     width: 50,
   },
-  list: {
+  gridContainer: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
-  listContent: {
-    padding: 20,
-  },
-  wordItem: {
-    padding: 20,
-    marginBottom: 10,
-    backgroundColor: '#2a2a2a',
+  card: {
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#E5E5E5',
+    minWidth: 70,
   },
-  wordText: {
-    fontSize: 20,
-    color: '#D4B896',
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#333333',
+    borderColor: '#333333',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  nameContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  nameText: {
+    fontSize: 14,
+    color: '#333333',
+    fontFamily: 'serif',
+  },
+  priceContainer: {
+    alignItems: 'center',
+  },
+  priceText: {
+    fontSize: 18,
+    color: '#333333',
     fontFamily: 'serif',
     fontWeight: '600',
-    marginBottom: 4,
   },
-  meaningText: {
-    fontSize: 14,
-    color: '#888888',
+  currencyText: {
+    fontSize: 10,
+    color: '#666666',
     fontFamily: 'serif',
   },
 });
