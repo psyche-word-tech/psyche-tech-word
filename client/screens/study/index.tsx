@@ -61,7 +61,7 @@ export default function StudyScreen() {
           </View>
 
           {/* Card 3 - Right Middle */}
-          <View style={styles.cardRightMiddle}>
+          <View style={styles.cardRightEnd}>
             <TouchableOpacity style={styles.cardLargeWide} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
               <Image source={iconMyVocab} style={styles.cardIconLarge} resizeMode="cover" />
             </TouchableOpacity>
@@ -262,6 +262,12 @@ const styles = StyleSheet.create({
     top: 320,
     right: 30,
     alignItems: 'center',
+  },
+  cardRightEnd: {
+    position: 'absolute',
+    top: 320,
+    right: 30,
+    alignItems: 'flex-end',
   },
   cardLeftBottom: {
     position: 'absolute',
