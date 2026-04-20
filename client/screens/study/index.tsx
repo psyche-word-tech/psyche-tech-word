@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, PanResponder } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 
 const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.png');
@@ -11,6 +12,24 @@ export default function StudyScreen() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ engravedText?: string }>();
   const engravedText = params.engravedText || '';
+
+  // 购买词汇书卡片可拖动位置
+  const [dangPosition, setDangPosition] = useState({ x: 30, y: 150 });
+
+  // 购买词汇书卡片的拖动手势
+  const dangPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      setDangPosition({
+        x: Math.max(0, Math.min(100, 30 + gestureState.dx / 3)),
+        y: Math.max(100, Math.min(500, 150 + gestureState.dy))
+      });
+    },
+    onPanResponderRelease: () => {
+      // 拖动结束，保持当前位置
+    },
+  });
 
   return (
     <Screen>
@@ -52,11 +71,13 @@ export default function StudyScreen() {
             </View>
           </View>
 
-          {/* Card 2 - Left Top */}
-          <View style={styles.cardLeftTop}>
-            <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
-              <Image source={iconDang} style={styles.cardIconLarge} resizeMode="cover" />
-            </TouchableOpacity>
+          {/* Card 2 - Left Top - 可拖动 */}
+          <View style={[styles.cardLeftTop, { left: dangPosition.x, top: dangPosition.y }]}>
+            <View {...dangPanResponder.panHandlers} style={styles.cardLargeWrapper}>
+              <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
+                <Image source={iconDang} style={styles.cardIconLarge} resizeMode="cover" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.cardLabelBelow}>购买词汇书</Text>
           </View>
 
@@ -202,8 +223,6 @@ const styles = StyleSheet.create({
   },
   cardLeftTop: {
     position: 'absolute',
-    top: 150,
-    left: '30%',
     alignItems: 'flex-start',
   },
   cardRightMiddle: {
