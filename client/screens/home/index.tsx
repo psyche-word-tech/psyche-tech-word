@@ -67,9 +67,8 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 16,
     color: '#444444',
-    fontWeight: '300',
+    fontFamily: 'serif',
     letterSpacing: 3,
-    fontFamily: 'TimesNewRoman',
   },
   mainContent: {
     flex: 1,
@@ -96,10 +95,9 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 11,
     color: '#666666',
-    fontWeight: '300',
+    fontFamily: 'serif',
     letterSpacing: 3,
     marginBottom: 10,
-    fontFamily: 'TimesNewRoman',
   },
   dividerLine: {
     width: 60,
@@ -129,8 +127,7 @@ const styles = StyleSheet.create({
   nextText: {
     fontSize: 11,
     color: '#333333',
-    fontWeight: '300',
+    fontFamily: 'serif',
     letterSpacing: 2,
-    fontFamily: 'TimesNewRoman',
   },
 });
