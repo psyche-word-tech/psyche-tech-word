@@ -1,15 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
-import { useFonts } from 'expo-font';
 
 const logo = require('@/assets/logo.png');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
-  const [fontsLoaded] = useFonts({
-    'TimesNewRoman': require('@/assets/fonts/TimesNewRoman.ttf'),
-  });
 
   const handleNext = () => {
     router.replace('/study');
