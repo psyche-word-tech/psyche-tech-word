@@ -54,7 +54,7 @@ export default function StudyScreen() {
           {/* Card 2 - Left Top */}
           <View style={styles.cardLeftTop}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>购买词汇书</Text>
           </View>
@@ -62,7 +62,7 @@ export default function StudyScreen() {
           {/* Card 3 - Right Middle */}
           <View style={styles.cardRightMiddle}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
             <Text style={styles.cardLabelBelow}>我的词汇书</Text>
           </View>
@@ -70,7 +70,7 @@ export default function StudyScreen() {
           {/* Card 4 - Left Bottom */}
           <View style={styles.cardLeftBottom}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
             <View style={styles.labelRight}>
               <View style={styles.redLine} />
@@ -81,14 +81,14 @@ export default function StudyScreen() {
           {/* Card 5 - Center */}
           <View style={styles.cardCenter}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
           </View>
 
           {/* Card 6 - Bottom Center */}
           <View style={styles.cardBottomCenter}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconMountain} style={styles.cardIcon} resizeMode="cover" />
             </TouchableOpacity>
             <View style={styles.redLineVertical} />
           </View>
