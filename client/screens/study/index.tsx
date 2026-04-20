@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 160,
     left: 30,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   cardRightMiddle: {
     position: 'absolute',
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 300,
     left: 30,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   cardCenter: {
     position: 'absolute',
