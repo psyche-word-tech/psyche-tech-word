@@ -1,5 +1,5 @@
 {
-  "$schema": "https://www.schemastore.org/tsconfig",
+  "$schema": "https://schemastore.org/tsconfig",
   "compilerOptions": {
     "lib": [
       "es2024",
@@ -18,7 +18,11 @@
 
     "rewriteRelativeImportExtensions": true,
     "erasableSyntaxOnly": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }

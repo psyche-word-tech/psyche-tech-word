@@ -1,171 +1,111 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
-import { Screen } from '@/components/Screen';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { Screen } from '@/components/Screen';
 
 interface Word {
   id: number;
   word: string;
-  pronunciation: string;
   meaning: string;
-  example: string;
 }
 
-const { width } = Dimensions.get('window');
-
-export default function LearnScreen() {
+export default function LearnPage() {
   const router = useSafeRouter();
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMeaning, setShowMeaning] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  const fetchWords = useCallback(async () => {
+  const fetchWords = async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words?category=new`);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
       const result = await response.json();
-      if (result.success) {
+      if (result.data) {
         setWords(result.data);
       }
     } catch (error) {
       console.error('Failed to fetch words:', error);
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
+  const handleStartLearn = () => {
+    setCurrentIndex(0);
+    setShowMeaning(false);
     fetchWords();
-  }, [fetchWords]);
+  };
 
   const currentWord = words[currentIndex];
 
-  const handleKnown = async () => {
-    if (!currentWord) return;
-    
-    try {
-      await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${currentWord.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'known' }),
-      });
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-
-    setShowMeaning(false);
+  const handleNext = () => {
     if (currentIndex < words.length - 1) {
       setCurrentIndex(prev => prev + 1);
-    } else {
-      router.back();
+      setShowMeaning(false);
     }
   };
 
-  const handleUnknown = async () => {
-    if (!currentWord) return;
-    
-    try {
-      await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${currentWord.id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'unknown' }),
-      });
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
-
-    setShowMeaning(false);
-    if (currentIndex < words.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      router.back();
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      setShowMeaning(false);
     }
   };
-
-  if (loading) {
-    return (
-      <Screen>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>loading...</Text>
-          </View>
-        </SafeAreaView>
-      </Screen>
-    );
-  }
-
-  if (words.length === 0) {
-    return (
-      <Screen>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backBtn}>← back</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>all done!</Text>
-            <Text style={styles.emptyText}>you&apos;ve mastered all available words</Text>
-          </View>
-        </SafeAreaView>
-      </Screen>
-    );
-  }
 
   return (
     <Screen>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backBtn}>← back</Text>
+            <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
-          <Text style={styles.progress}>{currentIndex + 1}/{words.length}</Text>
+          <Text style={styles.title}>学习</Text>
+          <View style={styles.placeholder} />
         </View>
 
-        {/* Word Card */}
-        <View style={styles.cardContainer}>
-          <TouchableOpacity 
-            style={styles.card} 
-            onPress={() => setShowMeaning(!showMeaning)}
-            activeOpacity={0.9}
-          >
-            {!showMeaning ? (
-              <>
-                <Text style={styles.wordText}>{currentWord.word}</Text>
-                <Text style={styles.pronunciationText}>{currentWord.pronunciation}</Text>
-                <Text style={styles.tapHint}>tap to reveal</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.wordTextSmall}>{currentWord.word}</Text>
-                <Text style={styles.meaningText}>{currentWord.meaning}</Text>
-                <View style={styles.divider} />
-                <Text style={styles.exampleText}>{currentWord.example}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+        {/* Content */}
+        {words.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <TouchableOpacity style={styles.startButton} onPress={handleStartLearn}>
+              <Text style={styles.startButtonText}>开始学习</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.learnContainer}>
+            {/* Word Card */}
+            <TouchableOpacity 
+              style={styles.wordCard}
+              onPress={() => setShowMeaning(!showMeaning)}
+            >
+              <Text style={styles.wordText}>{currentWord?.word}</Text>
+              {showMeaning && (
+                <Text style={styles.meaningText}>{currentWord?.meaning}</Text>
+              )}
+            </TouchableOpacity>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity 
-            style={styles.unknownBtn} 
-            onPress={handleUnknown}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.unknownBtnText}>still learning</Text>
-          </TouchableOpacity>
+            {/* Progress */}
+            <Text style={styles.progressText}>
+              {currentIndex + 1} / {words.length}
+            </Text>
 
-          <TouchableOpacity 
-            style={styles.knownBtn} 
-            onPress={handleKnown}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.knownBtnText}>got it</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            {/* Navigation */}
+            <View style={styles.navContainer}>
+              <TouchableOpacity 
+                style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]} 
+                onPress={handlePrev}
+                disabled={currentIndex === 0}
+              >
+                <Text style={styles.navButtonText}>←</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.navButton, currentIndex === words.length - 1 && styles.navButtonDisabled]} 
+                onPress={handleNext}
+                disabled={currentIndex === words.length - 1}
+              >
+                <Text style={styles.navButtonText}>→</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     </Screen>
   );
 }
@@ -179,132 +119,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    padding: 20,
+    backgroundColor: '#E5E5E5',
   },
-  backBtn: {
+  backText: {
     fontSize: 14,
     color: '#000000',
-    letterSpacing: 1,
+    fontFamily: 'serif',
   },
-  progress: {
+  title: {
     fontSize: 14,
-    color: '#666666',
-    letterSpacing: 1,
+    color: '#333333',
+    fontFamily: 'serif',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#666666',
-    letterSpacing: 2,
+  placeholder: {
+    width: 50,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
   },
-  emptyTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 12,
+  startButton: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 40,
+    paddingVertical: 15,
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
+  startButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'serif',
   },
-  cardContainer: {
+  learnContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    padding: 20,
   },
-  card: {
-    width: width - 48,
-    minHeight: 280,
-    borderWidth: 1,
-    borderColor: '#000000',
-    padding: 32,
+  wordCard: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 20,
   },
   wordText: {
-    fontSize: 42,
-    fontWeight: '300',
-    color: '#000000',
-    textAlign: 'center',
-  },
-  pronunciationText: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 12,
-  },
-  tapHint: {
-    fontSize: 12,
-    color: '#999999',
-    marginTop: 24,
-    letterSpacing: 1,
-  },
-  wordTextSmall: {
-    fontSize: 24,
-    fontWeight: '400',
-    color: '#000000',
-    marginBottom: 16,
+    fontSize: 32,
+    fontWeight: '600',
+    color: '#333333',
+    fontFamily: 'serif',
   },
   meaningText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#000000',
-    textAlign: 'center',
-  },
-  divider: {
-    width: 40,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 20,
-  },
-  exampleText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666666',
+    fontFamily: 'serif',
+    marginTop: 20,
+  },
+  progressText: {
     textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 22,
+    fontSize: 14,
+    color: '#999999',
+    fontFamily: 'serif',
+    marginBottom: 20,
   },
-  actions: {
+  navContainer: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 24,
-    paddingBottom: 48,
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
   },
-  unknownBtn: {
-    flex: 1,
-    paddingVertical: 18,
+  navButton: {
+    backgroundColor: '#333333',
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#000000',
   },
-  unknownBtnText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
+  navButtonDisabled: {
+    backgroundColor: '#CCCCCC',
   },
-  knownBtn: {
-    flex: 1,
-    paddingVertical: 18,
-    alignItems: 'center',
-    backgroundColor: '#000000',
-  },
-  knownBtnText: {
+  navButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: 20,
   },
 });
