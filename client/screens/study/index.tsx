@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
     height: 50,
   },
   cardIconLarge: {
-    width: '100%',
-    height: '100%',
+    width: '80%',
+    height: '80%',
   },
   engravedContainer: {
     position: 'absolute',
