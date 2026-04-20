@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, PanResponder, Modal, TextInput, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,23 +13,40 @@ export default function StudyScreen() {
   const params = useSafeSearchParams<{ engravedText?: string }>();
   const engravedText = params.engravedText || '';
 
-  // 购买词汇书卡片可拖动位置
-  const [dangPosition, setDangPosition] = useState({ x: 30, y: 150 });
+  const screenWidth = Dimensions.get('window').width;
 
-  // 购买词汇书卡片的拖动手势
-  const dangPanResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, gestureState) => {
-      setDangPosition({
-        x: Math.max(0, Math.min(100, 30 + gestureState.dx / 3)),
-        y: Math.max(100, Math.min(500, 150 + gestureState.dy))
-      });
-    },
-    onPanResponderRelease: () => {
-      // 拖动结束，保持当前位置
-    },
-  });
+  // 购买词汇书卡片位置和大小
+  const [dangPosition, setDangPosition] = useState({ x: 30, y: 150 });
+  const [dangSize, setDangSize] = useState({ width: 300, height: 150 });
+
+  // 编辑对话框状态
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [tempX, setTempX] = useState('30');
+  const [tempY, setTempY] = useState('150');
+  const [tempWidth, setTempWidth] = useState('300');
+  const [tempHeight, setTempHeight] = useState('150');
+
+  // 打开编辑对话框
+  const openEditModal = () => {
+    setTempX(String(dangPosition.x));
+    setTempY(String(dangPosition.y));
+    setTempWidth(String(dangSize.width));
+    setTempHeight(String(dangSize.height));
+    setEditModalVisible(true);
+  };
+
+  // 保存设置
+  const saveSettings = () => {
+    setDangPosition({
+      x: parseInt(tempX) || 30,
+      y: parseInt(tempY) || 150,
+    });
+    setDangSize({
+      width: parseInt(tempWidth) || 300,
+      height: parseInt(tempHeight) || 150,
+    });
+    setEditModalVisible(false);
+  };
 
   return (
     <Screen>
@@ -71,9 +88,9 @@ export default function StudyScreen() {
             </View>
           </View>
 
-          {/* Card 2 - Left Top - 可拖动 */}
-          <View style={[styles.cardLeftTop, { left: dangPosition.x, top: dangPosition.y }]}>
-            <View {...dangPanResponder.panHandlers} style={styles.cardLargeWrapper}>
+          {/* Card 2 - Left Top */}
+          <View style={[styles.cardLeftTop, { left: dangPosition.x, top: dangPosition.y, width: dangSize.width, height: dangSize.height }]}>
+            <View style={styles.cardLargeWrapper}>
               <TouchableOpacity style={styles.cardLarge} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
                 <Image source={iconDang} style={styles.cardIconLarge} resizeMode="cover" />
               </TouchableOpacity>
@@ -115,6 +132,84 @@ export default function StudyScreen() {
             <View style={styles.redLineVertical} />
           </View>
         </View>
+
+        {/* 编辑按钮 */}
+        <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
+          <Text style={styles.editButtonText}>编辑</Text>
+        </TouchableOpacity>
+
+        {/* 编辑对话框 */}
+        <Modal
+          visible={editModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>调整卡片位置和大小</Text>
+
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>X 位置:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempX}
+                  onChangeText={setTempX}
+                  keyboardType="numeric"
+                  placeholder="0-375"
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>Y 位置:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempY}
+                  onChangeText={setTempY}
+                  keyboardType="numeric"
+                  placeholder="100-600"
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>宽度:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempWidth}
+                  onChangeText={setTempWidth}
+                  keyboardType="numeric"
+                  placeholder="100-300"
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <Text style={styles.inputLabel}>高度:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempHeight}
+                  onChangeText={setTempHeight}
+                  keyboardType="numeric"
+                  placeholder="50-200"
+                />
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setEditModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>取消</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.saveButton]}
+                  onPress={saveSettings}
+                >
+                  <Text style={styles.saveButtonText}>保存</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </Screen>
   );
@@ -277,5 +372,90 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'serif',
     marginTop: 8,
+  },
+  // 编辑按钮
+  editButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    backgroundColor: '#333',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    zIndex: 100,
+  },
+  editButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // 对话框
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#666',
+    width: 70,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  saveButton: {
+    backgroundColor: '#333',
+    marginLeft: 10,
+  },
+  saveButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
