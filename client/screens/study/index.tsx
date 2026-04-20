@@ -163,12 +163,12 @@ const styles = StyleSheet.create({
   },
   engravedText: {
     fontSize: 28,
-    color: '#A08060',
+    color: '#D4B896',
     fontFamily: 'serif',
     fontWeight: '600',
-    textShadowColor: '#5C4033',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
+    textShadowColor: '#8B6914',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
     marginBottom: -8,
   },
   engravedCharWrapper: {
