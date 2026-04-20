@@ -30,9 +30,8 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* Brand Name */}
           {/* Tagline */}
-          <Text style={styles.tagline} numberOfLines={1}>phantasia connects us</Text>
+          <Text style={styles.tagline}>phantasia connects us</Text>
 
           {/* Divider Line */}
           <View style={styles.dividerLine} />
@@ -61,12 +60,12 @@ const styles = StyleSheet.create({
   },
   headerBar: {
     backgroundColor: '#F5F5F5',
-    paddingVertical: 20,
+    paddingVertical: 24,
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 18,
-    color: '#444444',
+    fontSize: 16,
+    color: '#333333',
     fontFamily: 'serif',
     fontStyle: 'italic',
     letterSpacing: 3,
@@ -75,36 +74,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 50,
-    marginLeft: 20,
+    marginBottom: 40,
   },
   logoImage: {
-    width: 180,
-    height: 180,
-  },
-  brandName: {
-    fontSize: 22,
-    color: '#333333',
-    fontWeight: '400',
-    letterSpacing: 3,
-    marginBottom: 12,
+    width: 140,
+    height: 140,
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666666',
     fontFamily: 'serif',
     fontStyle: 'italic',
-    letterSpacing: 1,
-    marginBottom: 10,
-    paddingHorizontal: 20,
+    letterSpacing: 2,
+    marginBottom: 20,
   },
   dividerLine: {
-    width: 60,
+    width: 50,
     height: 1,
     backgroundColor: '#E0E0E0',
     marginTop: 20,
@@ -114,22 +103,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 80,
-    flexDirection: 'row',
+    paddingRight: 20,
+    paddingBottom: 20,
     alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    paddingRight: 24,
-    paddingBottom: 24,
   },
   nextButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#000000',
     backgroundColor: '#FFFFFF',
   },
   nextText: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#333333',
     fontFamily: 'serif',
     fontStyle: 'italic',
