@@ -228,9 +228,8 @@ const styles = StyleSheet.create({
   cardLeftTop: {
     position: 'absolute',
     top: 220,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    left: 30,
+    alignItems: 'flex-start',
   },
   cardRightMiddle: {
     position: 'absolute',
