@@ -11,12 +11,7 @@ export default function StudyScreen() {
     <Screen>
       <SafeAreaView style={styles.container}>
         {/* Top Status Bar */}
-        <View style={styles.statusBar}>
-          <View style={styles.statusRight}>
-            <Text style={styles.statusIcon}>[ ]</Text>
-            <Text style={styles.statusIcon}>=</Text>
-          </View>
-        </View>
+        <View style={styles.statusBar} />
 
         {/* Cards Container */}
         <View style={styles.cardsContainer}>
@@ -84,25 +79,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    height: 40,
     backgroundColor: '#FFFFFF',
-  },
-  statusRight: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  statusText: {
-    fontSize: 10,
-    color: '#666666',
-    fontFamily: 'serif',
-  },
-  statusIcon: {
-    fontSize: 14,
-    color: '#666666',
   },
   cardsContainer: {
     flex: 1,
