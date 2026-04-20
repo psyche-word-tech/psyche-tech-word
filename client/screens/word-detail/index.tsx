@@ -327,13 +327,13 @@ const styles = StyleSheet.create({
 	},
 	exampleText: {
 		fontSize: 14,
-		color: '#333333',
+		color: '#228B22',
 		fontFamily: 'serif',
 		lineHeight: 22,
 	},
 	exampleTranslation: {
 		fontSize: 12,
-		color: '#888888',
+		color: '#228B22',
 		fontFamily: 'serif',
 		marginTop: 4,
 	},
