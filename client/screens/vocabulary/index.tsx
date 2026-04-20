@@ -31,8 +31,9 @@ export default function VocabularyPage() {
   const selectedBook = wordBooks.find(book => book.selected);
 
   const handleBuy = () => {
-    if (selectedBook) {
-      router.push('/purchase', { bookName: selectedBook.name });
+    const selectedBooks = wordBooks.filter(book => book.selected);
+    if (selectedBooks.length > 0) {
+      router.push('/purchase', { books: JSON.stringify(selectedBooks) });
     }
   };
 

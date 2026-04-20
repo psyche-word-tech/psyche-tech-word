@@ -2,10 +2,17 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
+interface Book {
+  id: number;
+  name: string;
+  price: number;
+}
+
 export default function PurchasePage() {
   const router = useSafeRouter();
-  const params = useSafeSearchParams<{ bookName?: string }>();
-  const bookName = params.bookName || '高中词汇';
+  const params = useSafeSearchParams<{ books?: string }>();
+  const books: Book[] = params.books ? JSON.parse(params.books) : [];
+  const bookName = books.map(b => b.name).join('、');
 
   return (
     <Screen>
