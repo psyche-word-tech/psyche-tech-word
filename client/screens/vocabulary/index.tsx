@@ -32,7 +32,7 @@ export default function VocabularyPage() {
 
   const handleBuy = () => {
     if (selectedBook) {
-      router.push('/purchase');
+      router.push('/purchase', { bookName: selectedBook.name });
     }
   };
 
