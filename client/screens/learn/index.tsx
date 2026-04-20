@@ -101,6 +101,8 @@ export default function LearnPage() {
 		{ id: 3, name: '不会', letter: 'z', count: 0 },
 	]);
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
+	const [wordCategories, setWordCategories] = useState<Record<number, number>>({});
+	const [showKnownList, setShowKnownList] = useState(false);
 
 	useEffect(() => {
 		fetchWords();
@@ -121,6 +123,7 @@ export default function LearnPage() {
 
 	const handleDrop = async (wordId: number, categoryId: number) => {
 		setUsedWords(prev => new Set([...prev, wordId]));
+		setWordCategories(prev => ({ ...prev, [wordId]: categoryId }));
 		setCategories(cats =>
 			cats.map(cat =>
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
@@ -137,6 +140,13 @@ export default function LearnPage() {
 	};
 
 	const availableWords = words.filter(w => !usedWords.has(w.id));
+	const knownWords = words.filter(w => wordCategories[w.id] === 1);
+
+	const handleCategoryPress = (categoryId: number) => {
+		if (categoryId === 1) {
+			setShowKnownList(!showKnownList);
+		}
+	};
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
@@ -175,7 +185,7 @@ export default function LearnPage() {
 					<View style={styles.categoryContainer}>
 						<View style={styles.categoryRow}>
 							{categories.map((cat) => (
-								<View key={cat.id} style={styles.categoryItem}>
+								<TouchableOpacity key={cat.id} style={styles.categoryItem} onPress={() => handleCategoryPress(cat.id)}>
 									<View style={styles.categoryCardLarge}>
 										<Text style={styles.categoryNameText}>{cat.name}</Text>
 										<Text style={styles.categoryLetterText}>({cat.letter})</Text>
@@ -183,9 +193,20 @@ export default function LearnPage() {
 									<View style={styles.categoryCountBadge}>
 										<Text style={styles.categoryCountText}>{cat.count}</Text>
 									</View>
-								</View>
+								</TouchableOpacity>
 							))}
 						</View>
+
+						{/* 已会单词列表 */}
+						{showKnownList && knownWords.length > 0 && (
+							<View style={styles.knownListContainer}>
+								{knownWords.map((word) => (
+									<View key={word.id} style={styles.knownWordItem}>
+										<Text style={styles.knownWordText}>{word.word}</Text>
+									</View>
+								))}
+							</View>
+						)}
 					</View>
 
 					{/* Instruction */}
@@ -302,6 +323,24 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 		fontWeight: '600',
+	},
+	knownListContainer: {
+		marginTop: 20,
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		justifyContent: 'center',
+		gap: 10,
+	},
+	knownWordItem: {
+		backgroundColor: '#F5F5F5',
+		paddingHorizontal: 15,
+		paddingVertical: 8,
+		borderRadius: 6,
+	},
+	knownWordText: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
 	},
 	instructionContainer: {
 		padding: 20,
