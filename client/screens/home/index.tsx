@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 3,
     marginBottom: 10,
+    marginRight: 30,
   },
   dividerLine: {
     width: 60,
