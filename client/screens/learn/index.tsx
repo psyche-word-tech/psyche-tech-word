@@ -21,9 +21,10 @@ interface Category {
 interface DraggableWordProps {
 	word: Word;
 	onDrop: (categoryId: number) => void;
+	onPress: () => void;
 }
 
-function DraggableWord({ word, onDrop }: DraggableWordProps) {
+function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 	const translateX = useSharedValue(0);
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
@@ -79,11 +80,13 @@ function DraggableWord({ word, onDrop }: DraggableWordProps) {
 	return (
 		<GestureDetector gesture={panGesture}>
 			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-				<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
-					<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
-						{word.word}
-					</Text>
-				</View>
+				<TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+					<View style={[styles.wordCard, droppedCategory !== null && styles.wordCardUsed]}>
+						<Text style={[styles.wordCardText, droppedCategory !== null && styles.wordCardTextUsed]}>
+							{word.word}
+						</Text>
+					</View>
+				</TouchableOpacity>
 			</Animated.View>
 		</GestureDetector>
 	);
@@ -149,6 +152,7 @@ export default function LearnPage() {
 										key={word.id}
 										word={word}
 										onDrop={(categoryId) => handleDrop(word.id, categoryId)}
+										onPress={() => router.push('/word-detail', { wordId: word.id, word: word.word, meaning: word.meaning })}
 									/>
 								))}
 							</View>
