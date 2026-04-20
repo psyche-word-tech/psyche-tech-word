@@ -164,6 +164,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#C9A96E',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
+    transform: [{ rotate: '-90deg' }],
   },
   engravedGradient: {
     position: 'absolute',
