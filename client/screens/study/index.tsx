@@ -3,6 +3,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
 const iconMountain = require('@/assets/icon.png');
+const iconRock = require('@/assets/rock.png');
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -18,7 +19,7 @@ export default function StudyScreen() {
           {/* Card 1 - Top Center */}
           <View style={styles.cardTopCenter}>
             <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-              <Image source={iconMountain} style={styles.cardIcon} resizeMode="contain" />
+              <Image source={iconRock} style={styles.cardIcon} resizeMode="contain" />
             </TouchableOpacity>
             <View style={styles.labelRight}>
               <View style={styles.redLine} />
