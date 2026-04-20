@@ -32,6 +32,8 @@ export default function RootLayout() {
         <Stack.Screen name="my-vocabulary" options={{ title: "" }} />
         <Stack.Screen name="word-detail" options={{ title: "" }} />
         <Stack.Screen name="known-words" options={{ title: "" }} />
+        <Stack.Screen name="vague-words" options={{ title: "" }} />
+        <Stack.Screen name="unknown-words" options={{ title: "" }} />
       </Stack>
       <Toast />
     </Provider>

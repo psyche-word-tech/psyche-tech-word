@@ -143,6 +143,10 @@ export default function LearnPage() {
 	const handleCategoryPress = (categoryId: number) => {
 		if (categoryId === 1) {
 			router.push('/known-words');
+		} else if (categoryId === 2) {
+			router.push('/vague-words');
+		} else if (categoryId === 3) {
+			router.push('/unknown-words');
 		}
 	};
 
