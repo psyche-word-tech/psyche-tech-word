@@ -15,10 +15,10 @@ const STORAGE_KEY = 'bought_wordbooks';
 // 词汇书ID对应的数据库表
 // 只有已购买的词汇书才能调取对应数据库
 const BOOK_TABLE_MAP: Record<number, { table: string | null; purchased: boolean }> = {
-  1: { table: null, purchased: false }, // 高中词汇 - 未购买
-  2: { table: null, purchased: false }, // 四级词汇 - 未购买
-  3: { table: null, purchased: false }, // 六级词汇 - 未购买
-  4: { table: 'words_b', purchased: true }, // 考研词汇 - 已购买
+  1: { table: 'words_a', purchased: true }, // 高中词汇 - 已购买
+  2: { table: 'words_b', purchased: true }, // 考研词汇 - 已购买
+  3: { table: null, purchased: false }, // 四级词汇 - 未购买
+  4: { table: null, purchased: false }, // 六级词汇 - 未购买
 };
 
 export default function MyVocabularyPage() {
