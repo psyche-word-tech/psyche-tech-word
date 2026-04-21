@@ -378,14 +378,14 @@ const styles = StyleSheet.create({
 	statusSection: {
 		flexDirection: 'row',
 		justifyContent: 'center',
-		gap: 12,
-		paddingVertical: 16,
+		gap: 16,
+		paddingVertical: 20,
 		paddingHorizontal: 16,
 	},
 	statusButton: {
-		paddingHorizontal: 14,
-		paddingVertical: 6,
-		borderRadius: 6,
+		paddingHorizontal: 20,
+		paddingVertical: 10,
+		borderRadius: 8,
 	},
 	knownButton: {
 		backgroundColor: '#4CAF50',
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F44336',
 	},
 	statusText: {
-		fontSize: 12,
+		fontSize: 14,
 		color: '#FFFFFF',
 		fontFamily: 'Times New Roman',
 		fontWeight: 'bold',
