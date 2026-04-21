@@ -19,41 +19,14 @@ export default function StudyScreen() {
         {/* Top Status Bar */}
         <View style={styles.statusBar} />
 
-        {/* 上半部分：购买词汇书（100% 宽） */}
+        {/* 上半部分：刻字（100% 宽） */}
         <View style={styles.topSection}>
           <TouchableOpacity 
             style={styles.topCard} 
             activeOpacity={0.9} 
-            onPress={() => router.push('/vocabulary')}
-          >
-            <Image source={iconDang} style={styles.topImage} resizeMode="cover" />
-            <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>购买词汇书</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* 下半部分：L 形布局 */}
-        <View style={styles.bottomSection}>
-          {/* 左下：我的词汇书 */}
-          <TouchableOpacity 
-            style={styles.bottomLeftCard} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/my-vocabulary')}
-          >
-            <Image source={iconMyVocab} style={styles.bottomImage} resizeMode="cover" />
-            <View style={styles.bottomLabelContainer}>
-              <Text style={styles.bottomLabel}>我的词汇书</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* 右下：刻字 */}
-          <TouchableOpacity 
-            style={styles.bottomRightCard} 
-            activeOpacity={0.9} 
             onPress={() => router.push('/engrave')}
           >
-            <Image source={iconRock} style={styles.bottomImage} resizeMode="cover" />
+            <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
             {engravedText.length > 0 && (
               <View style={styles.engravedOverlay}>
                 <LinearGradient
@@ -67,8 +40,35 @@ export default function StudyScreen() {
                 </View>
               </View>
             )}
+            <View style={styles.topLabelContainer}>
+              <Text style={styles.topLabel}>刻字</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 下半部分：L 形布局 */}
+        <View style={styles.bottomSection}>
+          {/* 左下：购买词汇书 */}
+          <TouchableOpacity 
+            style={styles.bottomLeftCard} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/vocabulary')}
+          >
+            <Image source={iconDang} style={styles.bottomImage} resizeMode="cover" />
             <View style={styles.bottomLabelContainer}>
-              <Text style={styles.bottomLabel}>刻字</Text>
+              <Text style={styles.bottomLabel}>购买词汇书</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* 右下：我的词汇书 */}
+          <TouchableOpacity 
+            style={styles.bottomRightCard} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/my-vocabulary')}
+          >
+            <Image source={iconMyVocab} style={styles.bottomImage} resizeMode="cover" />
+            <View style={styles.bottomLabelContainer}>
+              <Text style={styles.bottomLabel}>我的词汇书</Text>
             </View>
           </TouchableOpacity>
         </View>
