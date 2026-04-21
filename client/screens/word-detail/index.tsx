@@ -297,6 +297,7 @@ const styles = StyleSheet.create({
 		fontWeight: 'bold',
 		color: '#333333',
 		fontFamily: 'Times New Roman',
+		textAlign: 'center',
 	},
 	speakerIcon: {
 		marginLeft: 12,
@@ -307,6 +308,7 @@ const styles = StyleSheet.create({
 		color: '#999999',
 		fontFamily: 'Times New Roman',
 		marginTop: 8,
+		textAlign: 'center',
 	},
 	section: {
 		paddingHorizontal: 16,
