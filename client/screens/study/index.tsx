@@ -145,22 +145,22 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginVertical: 4,
   },
-  // 刻字主体 - 深色凿刻效果
+  // 刻字主体 - 高对比度白色
   engravedText: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: '#1A0F08',
+    color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
-  // 高光层 - 模拟光照
+  // 高光层 - 纯白高亮
   engravedTextHighlight: {
     position: 'absolute',
     top: -1,
     left: -1,
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.9)',
   },
 });
