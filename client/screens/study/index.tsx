@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const iconRock = require('@/assets/rock.jpg');
 const iconDang = require('@/assets/dang.png');
+const iconMyVocab = require('@/assets/my-vocab.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -66,6 +67,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
+              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="cover" />
               <Text style={styles.gridLabel}>我的词汇书</Text>
             </TouchableOpacity>
           </View>
