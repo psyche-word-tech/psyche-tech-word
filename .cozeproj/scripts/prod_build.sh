@@ -20,6 +20,20 @@ check_command() {
   fi
 }
 
+# ==================== 环境变量配置 ====================
+# 如果未设置 EXPO_PUBLIC_BACKEND_BASE_URL，使用默认值
+if [ -z "${EXPO_PUBLIC_BACKEND_BASE_URL:-}" ]; then
+  # 从 COZE_PROJECT_DOMAIN_DEFAULT 或 COZE_PREVIEW_DIR 获取
+  if [ -n "${COZE_PROJECT_DOMAIN_DEFAULT:-}" ]; then
+    export EXPO_PUBLIC_BACKEND_BASE_URL="$COZE_PROJECT_DOMAIN_DEFAULT"
+  elif [ -n "${COZE_PREVIEW_DIR:-}" ]; then
+    # 从预览目录推断 API 地址
+    export EXPO_PUBLIC_BACKEND_BASE_URL="http://localhost:9091"
+  fi
+fi
+
+info "EXPO_PUBLIC_BACKEND_BASE_URL: ${EXPO_PUBLIC_BACKEND_BASE_URL:-not set}"
+
 info "==================== 开始构建 ===================="
 info "开始执行构建脚本（build_prod.sh）..."
 info "正在检查依赖命令是否存在..."

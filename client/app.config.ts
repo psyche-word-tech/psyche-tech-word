@@ -3,6 +3,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 const appName = process.env.COZE_PROJECT_NAME || process.env.EXPO_PUBLIC_COZE_PROJECT_NAME || '应用';
 const projectId = process.env.COZE_PROJECT_ID || process.env.EXPO_PUBLIC_COZE_PROJECT_ID;
 const slugAppName = projectId ? `app${projectId}` : 'myapp';
+const backendBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || '';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
@@ -29,6 +30,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
+    },
+    "extra": {
+      "backendBaseUrl": backendBaseUrl
     },
     "plugins": [
       process.env.EXPO_PUBLIC_BACKEND_BASE_URL ? [
@@ -63,8 +67,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-camera",
         {
-          "cameraPermission": `单词记App需要访问相机以拍摄照片和视频。`,
-          "microphonePermission": `单词记App需要访问麦克风以录制视频声音。`,
+          "cameraPermission": `单词记App需要相机以拍摄照片和视频。`,
+          "microphonePermission": `单词记App需要麦克风以录制视频声音。`,
           "recordAudioAndroid": true
         }
       ],
