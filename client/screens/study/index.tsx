@@ -20,16 +20,29 @@ export default function StudyScreen() {
   return (
     <Screen style={{ padding: 0 }}>
       <SafeAreaView style={styles.container}>
-        {/* 上面部分：合并的购买词汇书 */}
+        {/* 上面部分：刻字 */}
         <View style={styles.topSection}>
           <TouchableOpacity 
             style={styles.topCard} 
             activeOpacity={0.9} 
-            onPress={() => router.push('/vocabulary')}
+            onPress={() => router.push('/engrave')}
           >
-            <Image source={iconDang} style={styles.topImage} resizeMode="cover" />
+            <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
+            {engravedText.length > 0 && (
+              <View style={styles.engravedOverlay}>
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+                  style={styles.engravedGradient}
+                />
+                <View style={styles.engravedTextContainer}>
+                  {engravedText.split('').map((char, index) => (
+                    <Text key={index} style={styles.engravedText}>{char}</Text>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>购买词汇书</Text>
+              <Text style={styles.topLabel}>刻字</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -41,24 +54,11 @@ export default function StudyScreen() {
             <TouchableOpacity 
               style={styles.gridItem} 
               activeOpacity={0.9} 
-              onPress={() => router.push('/engrave')}
+              onPress={() => router.push('/vocabulary')}
             >
-              <Image source={iconRock} style={styles.gridImage} resizeMode="cover" />
-              {engravedText.length > 0 && (
-                <View style={styles.engravedOverlay}>
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
-                    style={styles.engravedGradient}
-                  />
-                  <View style={styles.engravedTextContainer}>
-                    {engravedText.split('').map((char, index) => (
-                      <Text key={index} style={styles.engravedText}>{char}</Text>
-                    ))}
-                  </View>
-                </View>
-              )}
+              <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
               <View style={styles.gridLabelContainer}>
-                <Text style={styles.gridLabel}>刻字</Text>
+                <Text style={styles.gridLabel}>购买词汇书</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.gridItem}>
@@ -70,9 +70,16 @@ export default function StudyScreen() {
             <View style={styles.gridItem}>
               <View style={styles.emptyCard} />
             </View>
-            <View style={styles.gridItem}>
-              <View style={styles.emptyCard} />
-            </View>
+            <TouchableOpacity 
+              style={styles.gridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/my-vocabulary')}
+            >
+              <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
+              <View style={styles.gridLabelContainer}>
+                <Text style={styles.gridLabel}>我的词汇书</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
