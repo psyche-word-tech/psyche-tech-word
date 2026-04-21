@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 interface WordBook {
   id: number;
@@ -33,7 +34,7 @@ export default function MyVocabularyPage() {
       const loadBooks = async () => {
         try {
           // 从API获取所有词汇书
-          const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks`);
+          const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks`);
           const allBooks = await response.json();
           
           if (!Array.isArray(allBooks)) {
@@ -203,17 +204,15 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
   },
   guideLine: {
-    position: 'absolute',
-    top: 60,
-    left: -30,
-    width: 60,
-    height: 1,
+    width: 1,
+    height: 30,
     backgroundColor: '#CCCCCC',
+    marginTop: 8,
   },
   guideLineWithDot: {
-    backgroundColor: 'transparent',
+    height: 0,
+    marginTop: 0,
   },
-  // Modal 样式
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -222,22 +221,24 @@ const styles = StyleSheet.create({
   },
   alertBox: {
     backgroundColor: '#FFFFFF',
-    padding: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     borderRadius: 8,
-    minWidth: 250,
+    minWidth: 200,
     alignItems: 'center',
   },
   alertText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333333',
     fontFamily: 'serif',
-    marginBottom: 20,
+    marginBottom: 16,
     textAlign: 'center',
   },
   alertButton: {
-    backgroundColor: '#333333',
-    paddingHorizontal: 40,
-    paddingVertical: 10,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 4,
   },
   alertButtonText: {
     fontSize: 14,

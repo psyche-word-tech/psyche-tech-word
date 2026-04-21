@@ -1,14 +1,13 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 interface Book {
   id: number;
   name: string;
   price: number;
 }
-
-const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
 export default function PurchasePage() {
   const router = useSafeRouter();
@@ -19,7 +18,7 @@ export default function PurchasePage() {
   const handleConfirm = async () => {
     try {
       // 调用 API 将 words_a 复制到 words_b
-      await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/purchase`, {
+      await fetch(`${API_BASE_URL}/api/v1/wordbooks/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
 import Slider from '@react-native-community/slider';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 interface Word {
 	id: number;
@@ -43,7 +44,7 @@ export default function WordDetailPage() {
 					 * 服务端文件：server/src/routes/wordbooks.ts
 					 * 接口：GET /api/v1/wordbooks/:table
 					 */
-					const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
+					const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
 					const data = await response.json();
 					if (Array.isArray(data) && data.length > 0 && !isInitialized.current) {
 						setWordsList(data);
@@ -107,7 +108,7 @@ export default function WordDetailPage() {
 			 * 接口：POST /api/v1/wordbooks/move
 			 * Body 参数：sourceTable: string, targetTable: string, wordId: number
 			 */
-			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/move`, {
+			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -203,51 +204,30 @@ export default function WordDetailPage() {
 					</View>
 
 					{/* Familiarity Slider */}
-					<View style={styles.sliderContainer}>
+					<View style={styles.sliderSection}>
+						<Text style={styles.sliderLabel}>熟悉度：{familiarity}%</Text>
 						<View style={styles.sliderLabels}>
-							<Text style={styles.sliderLabelText}>不熟悉</Text>
-							<Text style={styles.sliderValueText}>{familiarity}%</Text>
-							<Text style={styles.sliderLabelText}>熟悉</Text>
+							<Text style={styles.sliderMinText}>最不熟悉</Text>
+							<Text style={styles.sliderMaxText}>最熟悉</Text>
 						</View>
 						<Slider
 							style={styles.slider}
 							minimumValue={0}
 							maximumValue={100}
-							step={1}
 							value={familiarity}
-							onValueChange={setFamiliarity}
+							onValueChange={(value) => setFamiliarity(Math.round(value))}
 							minimumTrackTintColor="#4CAF50"
 							maximumTrackTintColor="#E0E0E0"
 							thumbTintColor="#4CAF50"
 						/>
 					</View>
 
-					{/* Comment Section */}
-					<View style={styles.section}>
-						<Text style={styles.sectionLabel}>评论区</Text>
-						<View style={styles.commentItem}>
-							<Text style={styles.commentId}>用户123</Text>
-							<View style={styles.commentRow}>
-								<Text style={styles.commentText}>很实用的单词</Text>
-								<Ionicons name="checkmark" size={14} color="#999999" />
-							</View>
+					{/* Comments Section */}
+					<View style={styles.commentsSection}>
+						<Text style={styles.commentsLabel}>评论区</Text>
+						<View style={styles.commentInputContainer}>
+							<Text style={styles.placeholderText}>添加评论...</Text>
 						</View>
-						<View style={styles.divider} />
-						<View style={styles.commentItem}>
-							<Text style={styles.commentId}>用户456</Text>
-							<View style={styles.commentRow}>
-								<Text style={styles.commentText}>收藏了</Text>
-								<Ionicons name="checkmark" size={14} color="#999999" />
-							</View>
-						</View>
-					</View>
-
-					{/* Bottom Note */}
-					<View style={styles.bottomNote}>
-						<Text style={styles.noteText}>
-							勾选图标表示该例句或评论已被作者采纳。{'\n'}
-							付费可打印词汇书，详情请咨询客服。
-						</Text>
 					</View>
 				</ScrollView>
 			</View>
@@ -262,21 +242,21 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		flexDirection: 'row',
-		alignItems: 'center',
 		justifyContent: 'space-between',
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: '#E5E5E5',
+		alignItems: 'center',
+		padding: 20,
+		backgroundColor: '#F5F5F5',
 	},
 	backText: {
 		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
+		color: '#666666',
+		fontFamily: 'serif',
 	},
 	headerTitle: {
 		fontSize: 16,
 		color: '#333333',
-		fontFamily: 'Times New Roman',
+		fontFamily: 'serif',
+		fontWeight: '600',
 	},
 	placeholder: {
 		width: 50,
@@ -287,105 +267,82 @@ const styles = StyleSheet.create({
 	wordSection: {
 		alignItems: 'center',
 		paddingVertical: 40,
+		backgroundColor: '#FAFAFA',
 	},
 	wordRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		gap: 12,
 	},
 	wordText: {
 		fontSize: 36,
-		fontWeight: 'bold',
+		fontWeight: '700',
 		color: '#333333',
 		fontFamily: 'Times New Roman',
 		textAlign: 'center',
 	},
 	speakerIcon: {
-		marginLeft: 12,
 		padding: 8,
 	},
 	phoneticText: {
-		fontSize: 16,
-		color: '#999999',
+		fontSize: 18,
+		color: '#666666',
 		fontFamily: 'Times New Roman',
 		marginTop: 8,
-		textAlign: 'center',
 	},
 	section: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingHorizontal: 20,
+		paddingVertical: 16,
+		borderBottomWidth: 1,
+		borderBottomColor: '#EEEEEE',
 	},
 	sectionLabel: {
 		fontSize: 14,
+		fontWeight: '600',
 		color: '#333333',
-		fontFamily: 'Times New Roman',
-		fontWeight: 'bold',
+		fontFamily: 'serif',
 		marginBottom: 8,
 	},
 	meaningText: {
-		fontSize: 16,
+		fontSize: 14,
 		color: '#333333',
-		fontFamily: 'Times New Roman',
-		lineHeight: 24,
+		fontFamily: 'serif',
+		lineHeight: 22,
 	},
 	divider: {
 		height: 1,
-		backgroundColor: '#E5E5E5',
-		marginTop: 12,
+		backgroundColor: '#EEEEEE',
+		marginTop: 16,
 	},
 	exampleRow: {
 		flexDirection: 'row',
-		alignItems: 'center',
 		justifyContent: 'space-between',
+		alignItems: 'center',
 	},
 	exampleText: {
 		fontSize: 14,
 		color: '#333333',
 		fontFamily: 'Times New Roman',
+		fontStyle: 'italic',
 		flex: 1,
-		lineHeight: 22,
 	},
 	exampleIcons: {
 		flexDirection: 'row',
-		gap: 8,
-	},
-	iconText: {
-		fontSize: 16,
-		color: '#999999',
-	},
-	commentItem: {
-		paddingVertical: 8,
-	},
-	commentId: {
-		fontSize: 12,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
-		marginBottom: 4,
-	},
-	commentRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-	},
-	commentText: {
-		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
-	},
-	checkIcon: {
-		fontSize: 14,
-		color: '#999999',
+		gap: 12,
+		marginLeft: 12,
 	},
 	statusSection: {
 		flexDirection: 'row',
-		justifyContent: 'center',
-		gap: 16,
+		justifyContent: 'space-around',
 		paddingVertical: 20,
-		paddingHorizontal: 16,
+		paddingHorizontal: 20,
 	},
 	statusButton: {
 		paddingHorizontal: 20,
-		paddingVertical: 10,
+		paddingVertical: 12,
 		borderRadius: 8,
+		minWidth: 90,
+		alignItems: 'center',
 	},
 	knownButton: {
 		backgroundColor: '#4CAF50',
@@ -398,50 +355,65 @@ const styles = StyleSheet.create({
 	},
 	statusText: {
 		fontSize: 14,
+		fontWeight: '600',
 		color: '#FFFFFF',
-		fontFamily: 'Times New Roman',
-		fontWeight: 'bold',
+		fontFamily: 'serif',
 	},
-	sliderContainer: {
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		backgroundColor: '#F8F8F8',
-		marginHorizontal: 16,
-		marginBottom: 16,
-		borderRadius: 8,
+	sliderSection: {
+		paddingHorizontal: 20,
+		paddingVertical: 16,
+		borderTopWidth: 1,
+		borderTopColor: '#EEEEEE',
+	},
+	sliderLabel: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#333333',
+		fontFamily: 'serif',
+		marginBottom: 8,
 	},
 	sliderLabels: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		alignItems: 'center',
-		marginBottom: 8,
+		marginBottom: 4,
 	},
-	sliderLabelText: {
+	sliderMinText: {
 		fontSize: 12,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
+		color: '#999999',
+		fontFamily: 'serif',
 	},
-	sliderValueText: {
-		fontSize: 14,
-		color: '#4CAF50',
-		fontFamily: 'Times New Roman',
-		fontWeight: 'bold',
+	sliderMaxText: {
+		fontSize: 12,
+		color: '#999999',
+		fontFamily: 'serif',
 	},
 	slider: {
 		width: '100%',
 		height: 40,
 	},
-	bottomNote: {
-		marginHorizontal: 16,
-		marginBottom: 30,
-		padding: 12,
+	commentsSection: {
+		paddingHorizontal: 20,
+		paddingVertical: 16,
+		borderTopWidth: 1,
+		borderTopColor: '#EEEEEE',
+	},
+	commentsLabel: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#333333',
+		fontFamily: 'serif',
+		marginBottom: 12,
+	},
+	commentInputContainer: {
 		backgroundColor: '#F5F5F5',
 		borderRadius: 8,
+		padding: 12,
+		minHeight: 80,
+		justifyContent: 'flex-start',
 	},
-	noteText: {
-		fontSize: 12,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
-		lineHeight: 18,
+	placeholderText: {
+		fontSize: 14,
+		color: '#999999',
+		fontFamily: 'serif',
 	},
 });
