@@ -24,7 +24,7 @@ export default function StudyScreen() {
           activeOpacity={0.9} 
           onPress={() => router.push('/engrave')}
         >
-          <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
+          <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
             <View style={styles.engravedOverlay}>
               <LinearGradient
@@ -50,7 +50,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={iconDang} style={styles.gridImageFull} resizeMode="cover" />
+              <Image source={iconDang} style={styles.gridImageFull} resizeMode="stretch" />
               <Text style={styles.gridLabel}>购买词汇书</Text>
             </TouchableOpacity>
             <View style={styles.gridItem}>
@@ -67,7 +67,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
-              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="cover" />
+              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
               <Text style={styles.gridLabel}>我的词汇书</Text>
             </TouchableOpacity>
           </View>
