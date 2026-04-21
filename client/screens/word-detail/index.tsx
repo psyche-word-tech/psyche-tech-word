@@ -187,6 +187,19 @@ export default function WordDetailPage() {
 						</View>
 					</View>
 
+					{/* Status Buttons */}
+					<View style={styles.statusSection}>
+						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
+							<Text style={styles.statusText}>已会(x)</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
+							<Text style={styles.statusText}>模糊(y)</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
+							<Text style={styles.statusText}>不会(z)</Text>
+						</TouchableOpacity>
+					</View>
+
 					{/* Comment Section */}
 					<View style={styles.section}>
 						<Text style={styles.sectionLabel}>评论区</Text>
@@ -213,19 +226,6 @@ export default function WordDetailPage() {
 							勾选图标表示该例句或评论已被作者采纳。{'\n'}
 							付费可打印词汇书，详情请咨询客服。
 						</Text>
-					</View>
-
-					{/* Status Buttons */}
-					<View style={styles.statusSection}>
-						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
-							<Text style={styles.statusText}>已会(x)</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
-							<Text style={styles.statusText}>模糊(y)</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
-							<Text style={styles.statusText}>不会(z)</Text>
-						</TouchableOpacity>
 					</View>
 				</ScrollView>
 			</View>
