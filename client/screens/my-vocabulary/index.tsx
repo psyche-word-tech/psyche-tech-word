@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,6 +11,15 @@ interface WordBook {
 }
 
 const STORAGE_KEY = 'bought_wordbooks';
+
+// 词汇书ID对应的数据库表
+// 只有考研词汇(id:4)对应words_b，其他词汇暂不开放
+const BOOK_TABLE_MAP: Record<number, string | null> = {
+  1: null, // 高中词汇 - 暂不开放
+  2: null, // 四级词汇 - 暂不开放
+  3: null, // 六级词汇 - 暂不开放
+  4: 'words_b', // 考研词汇
+};
 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
@@ -47,6 +56,18 @@ export default function MyVocabularyPage() {
     }, [params.books])
   );
 
+  const handleLearnPress = (book: WordBook) => {
+    const table = BOOK_TABLE_MAP[book.id];
+    
+    if (table) {
+      // 有对应的数据库表，跳转到单词列表
+      router.push('/word-list', { table });
+    } else {
+      // 暂不开放的词汇书，提示用户
+      Alert.alert('提示', `${book.name}暂未开放`, [{ text: '确定' }]);
+    }
+  };
+
   return (
     <Screen>
       <View style={styles.container}>
@@ -71,7 +92,7 @@ export default function MyVocabularyPage() {
               </View>
               
               {/* Learn Button */}
-              <TouchableOpacity style={styles.learnButton} onPress={() => router.push('/word-list', { table: 'words_b' })}>
+              <TouchableOpacity style={styles.learnButton} onPress={() => handleLearnPress(book)}>
                 <View style={styles.learnTextContainer}>
                   <Text style={styles.learnText}>开</Text>
                   <Text style={styles.learnText}>始</Text>
