@@ -9,8 +9,8 @@ const iconDang = require('@/assets/dang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SQUARE_SIZE = SCREEN_WIDTH / 2; // 正方形边长 = 屏幕宽度的一半
-const TOP_HEIGHT = SCREEN_HEIGHT - SQUARE_SIZE; // 上面部分高度
+const GRID_SIZE = (SCREEN_WIDTH - 24) / 2; // 田字格边长，减去间距
+const TOP_HEIGHT = SCREEN_HEIGHT / 2; // 上半部分高度
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -20,34 +20,37 @@ export default function StudyScreen() {
   return (
     <Screen style={{ padding: 0 }}>
       <SafeAreaView style={styles.container}>
-        {/* 上面部分：刻字 */}
+        {/* 上半部分 */}
         <View style={styles.topSection}>
-          <TouchableOpacity 
-            style={styles.topCard} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/engrave')}
-          >
-            <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
-            {engravedText.length > 0 && (
-              <View style={styles.engravedOverlay}>
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
-                  style={styles.engravedGradient}
-                />
-                <View style={styles.engravedTextContainer}>
-                  {engravedText.split('').map((char, index) => (
-                    <Text key={index} style={styles.engravedText}>{char}</Text>
-                  ))}
+          {/* 区域一：刻字（正方形，居中） */}
+          <View style={styles.topCenterContainer}>
+            <TouchableOpacity 
+              style={styles.topCard} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/engrave')}
+            >
+              <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
+              {engravedText.length > 0 && (
+                <View style={styles.engravedOverlay}>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+                    style={styles.engravedGradient}
+                  />
+                  <View style={styles.engravedTextContainer}>
+                    {engravedText.split('').map((char, index) => (
+                      <Text key={index} style={styles.engravedText}>{char}</Text>
+                    ))}
+                  </View>
                 </View>
+              )}
+              <View style={styles.topLabelContainer}>
+                <Text style={styles.topLabel}>刻字</Text>
               </View>
-            )}
-            <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>刻字</Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* 下面部分：正方形田字格（2x2） */}
+        {/* 下半部分：田字格（2x2） */}
         <View style={styles.bottomSection}>
           {/* 上一行 */}
           <View style={styles.gridRow}>
@@ -93,10 +96,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   topSection: {
+    height: TOP_HEIGHT,
+    backgroundColor: '#FFFFFF',
+  },
+  topCenterContainer: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
   },
   topCard: {
-    flex: 1,
+    width: GRID_SIZE,
+    height: GRID_SIZE,
     backgroundColor: '#E8E0D5',
   },
   topImage: {
@@ -117,8 +128,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   bottomSection: {
-    width: SQUARE_SIZE,
-    height: SQUARE_SIZE,
+    flex: 1,
   },
   gridRow: {
     flex: 1,
@@ -127,6 +137,7 @@ const styles = StyleSheet.create({
   gridItem: {
     flex: 1,
     backgroundColor: '#E8E0D5',
+    margin: 4,
   },
   gridImage: {
     width: '100%',
@@ -144,28 +155,6 @@ const styles = StyleSheet.create({
   },
   gridLabel: {
     fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  squareCard: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E8E0D5',
-  },
-  squareImage: {
-    width: '100%',
-    height: '100%',
-  },
-  squareLabelContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-  },
-  squareLabel: {
-    fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.5)',
