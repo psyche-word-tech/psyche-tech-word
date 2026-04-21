@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
+import { Audio } from 'expo-av';
 
 interface Word {
 	id: number;
@@ -24,9 +25,11 @@ export default function WordDetailPage() {
 	});
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [wordsList, setWordsList] = useState<Word[]>([]);
+	const [isPlaying, setIsPlaying] = useState(false);
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
+	const soundRef = useRef<Audio.Sound | null>(null);
 
 	// 页面加载时获取单词列表
 	useFocusEffect(
@@ -51,8 +54,47 @@ export default function WordDetailPage() {
 		}, [sourceTable])
 	);
 
-	const handlePronounce = () => {
-		console.log('Pronounce:', word.word);
+	// 清理音频资源
+	useEffect(() => {
+		return () => {
+			if (soundRef.current) {
+				soundRef.current.unloadAsync();
+			}
+		};
+	}, []);
+
+	const handlePronounce = async () => {
+		if (!word.word || isPlaying) return;
+		
+		try {
+			setIsPlaying(true);
+			
+			// 先停止之前的音频
+			if (soundRef.current) {
+				await soundRef.current.unloadAsync();
+			}
+			
+			// 使用有道词典API发音
+			const pronunciationUrl = `https://dict.youdao.com/dictvoice?type=1&word=${encodeURIComponent(word.word)}`;
+			
+			const { sound } = await Audio.Sound.createAsync(
+				{ uri: pronunciationUrl },
+				{ shouldPlay: true }
+			);
+			soundRef.current = sound;
+			
+			// 播放结束后清理
+			sound.setOnPlaybackStatusUpdate((status) => {
+				if (status.isLoaded && status.didJustFinish) {
+					setIsPlaying(false);
+					sound.unloadAsync();
+				}
+			});
+		} catch (error) {
+			console.error('Failed to play pronunciation:', error);
+			setIsPlaying(false);
+			Alert.alert('错误', '发音播放失败');
+		}
 	};
 
 	const handleStatusChange = async (targetTable: string, label: string) => {
