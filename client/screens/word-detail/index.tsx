@@ -271,12 +271,12 @@ const styles = StyleSheet.create({
 	backText: {
 		fontSize: 14,
 		color: '#666666',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 	},
 	headerTitle: {
 		fontSize: 16,
 		color: '#666666',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 	},
 	placeholder: {
 		width: 50,
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
 	phoneticText: {
 		fontSize: 16,
 		color: '#999999',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		marginTop: 8,
 	},
 	section: {
@@ -315,14 +315,14 @@ const styles = StyleSheet.create({
 	sectionLabel: {
 		fontSize: 14,
 		color: '#333333',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		fontWeight: 'bold',
 		marginBottom: 8,
 	},
 	meaningText: {
 		fontSize: 16,
 		color: '#C8102E',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		lineHeight: 24,
 	},
 	divider: {
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
 	exampleText: {
 		fontSize: 14,
 		color: '#333333',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		flex: 1,
 		lineHeight: 22,
 	},
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
 	commentId: {
 		fontSize: 12,
 		color: '#666666',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		marginBottom: 4,
 	},
 	commentRow: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
 	commentText: {
 		fontSize: 14,
 		color: '#333333',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 	},
 	checkIcon: {
 		fontSize: 14,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
 	statusText: {
 		fontSize: 14,
 		color: '#FFFFFF',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		fontWeight: 'bold',
 	},
 	sliderContainer: {
@@ -417,12 +417,12 @@ const styles = StyleSheet.create({
 	sliderLabelText: {
 		fontSize: 12,
 		color: '#999999',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 	},
 	sliderValueText: {
 		fontSize: 14,
 		color: '#4CAF50',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		fontWeight: 'bold',
 	},
 	slider: {
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
 	noteText: {
 		fontSize: 12,
 		color: '#999999',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 		lineHeight: 18,
 	},
 });
