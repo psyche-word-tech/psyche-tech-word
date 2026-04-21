@@ -137,7 +137,7 @@ router.post('/move', async (req, res) => {
 router.get('/:table/count', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'user_words'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'user_words'];
 
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });

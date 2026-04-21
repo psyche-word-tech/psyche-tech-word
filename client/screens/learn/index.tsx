@@ -131,16 +131,32 @@ export default function LearnPage() {
 
 	const fetchData = async () => {
 		try {
-			// 从指定的词汇表获取单词
-			const wordsRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
+			// 同时获取源词汇表和 xyz 表的数量
+			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_x/count`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_y/count`),
+				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_z/count`)
+			]);
+
 			const wordsResult = await wordsRes.json();
+			const xResult = await xRes.json();
+			const yResult = await yRes.json();
+			const zResult = await zRes.json();
 
 			if (Array.isArray(wordsResult)) {
 				setWords(wordsResult);
 
 				// 重置已用单词状态
 				setUsedWords(new Set());
-				setCategories(cats => cats.map(cat => ({ ...cat, count: 0 })));
+				
+				// 设置分类数量（从数据库获取）
+				setCategories(cats => cats.map(cat => {
+					if (cat.id === 1) return { ...cat, count: xResult.count || 0 };
+					if (cat.id === 2) return { ...cat, count: yResult.count || 0 };
+					if (cat.id === 3) return { ...cat, count: zResult.count || 0 };
+					return cat;
+				}));
 			}
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
