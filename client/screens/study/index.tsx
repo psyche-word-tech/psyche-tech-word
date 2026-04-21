@@ -8,25 +8,53 @@ const iconRock = require('@/assets/rock.jpg');
 const iconDang = require('@/assets/dang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SQUARE_SIZE = SCREEN_WIDTH / 2; // 正方形边长 = 屏幕宽度的一半
+const TOP_HEIGHT = SCREEN_HEIGHT - SQUARE_SIZE; // 上面部分高度
+
 export default function StudyScreen() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ engravedText?: string }>();
   const engravedText = params.engravedText || '';
 
   return (
-    <Screen>
+    <Screen style={{ padding: 0 }}>
       <SafeAreaView style={styles.container}>
-        {/* Top Status Bar */}
-        <View style={styles.statusBar} />
-
-        {/* 上半部分：占屏幕 1/3，刻字（100% 宽，2:1 比例） */}
+        {/* 上面部分：购买词汇书 + 我的词汇书（左右各半） */}
         <View style={styles.topSection}>
+          {/* 左：购买词汇书 */}
           <TouchableOpacity 
-            style={styles.topCard} 
+            style={styles.topLeftCard} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/vocabulary')}
+          >
+            <Image source={iconDang} style={styles.topImage} resizeMode="cover" />
+            <View style={styles.topLabelContainer}>
+              <Text style={styles.topLabel}>购买词汇书</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* 右：我的词汇书 */}
+          <TouchableOpacity 
+            style={styles.topRightCard} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/my-vocabulary')}
+          >
+            <Image source={iconMyVocab} style={styles.topImage} resizeMode="cover" />
+            <View style={styles.topLabelContainer}>
+              <Text style={styles.topLabel}>我的词汇书</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 下面部分：正方形 - 刻字 */}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity 
+            style={styles.squareCard} 
             activeOpacity={0.9} 
             onPress={() => router.push('/engrave')}
           >
-            <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
+            <Image source={iconRock} style={styles.squareImage} resizeMode="cover" />
             {engravedText.length > 0 && (
               <View style={styles.engravedOverlay}>
                 <LinearGradient
@@ -40,53 +68,10 @@ export default function StudyScreen() {
                 </View>
               </View>
             )}
-            <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>刻字</Text>
+            <View style={styles.squareLabelContainer}>
+              <Text style={styles.squareLabel}>刻字</Text>
             </View>
           </TouchableOpacity>
-        </View>
-
-        {/* 下半部分：占屏幕 2/3，2x2 网格 */}
-        <View style={styles.bottomSection}>
-          {/* 上一行：购买词汇书（压缩高度） */}
-          <View style={styles.gridRow}>
-            {/* 左上：购买词汇书 */}
-            <TouchableOpacity 
-              style={styles.gridItemTop} 
-              activeOpacity={0.9} 
-              onPress={() => router.push('/vocabulary')}
-            >
-              <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
-              <View style={styles.gridLabelContainer}>
-                <Text style={styles.gridLabel}>购买词汇书</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* 右上：空白 */}
-            <View style={styles.gridItemTop}>
-              <View style={styles.emptyCard} />
-            </View>
-          </View>
-
-          {/* 下一行 */}
-          <View style={styles.gridRow}>
-            {/* 左下：空白 */}
-            <View style={styles.gridItem}>
-              <View style={styles.emptyCard} />
-            </View>
-
-            {/* 右下：我的词汇书 */}
-            <TouchableOpacity 
-              style={styles.gridItem} 
-              activeOpacity={0.9} 
-              onPress={() => router.push('/my-vocabulary')}
-            >
-              <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
-              <View style={styles.gridLabelContainer}>
-                <Text style={styles.gridLabel}>我的词汇书</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
         </View>
       </SafeAreaView>
     </Screen>
@@ -98,17 +83,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  statusBar: {
-    height: 40,
-    backgroundColor: '#FFFFFF',
-  },
   topSection: {
-    width: '100%',
-    height: '33.33%', // 占屏幕 1/3
+    flex: 1,
+    flexDirection: 'row',
   },
-  topCard: {
-    width: '100%',
-    height: '100%',
+  topLeftCard: {
+    flex: 1,
+    backgroundColor: '#E8E0D5',
+  },
+  topRightCard: {
+    flex: 1,
     backgroundColor: '#E8E0D5',
   },
   topImage: {
@@ -117,50 +101,10 @@ const styles = StyleSheet.create({
   },
   topLabelContainer: {
     position: 'absolute',
-    bottom: 16,
-    left: 16,
-  },
-  topLabel: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  bottomSection: {
-    width: '100%',
-    height: '66.67%', // 占屏幕 2/3
-  },
-  gridRow: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  gridItemTop: {
-    flex: 1,
-    height: '90%', // 上压缩高度
-    marginBottom: '10%', // 只下边缘留白
-    backgroundColor: '#E8E0D5',
-  },
-  gridItem: {
-    flex: 1,
-    backgroundColor: '#E8E0D5',
-  },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-  },
-  emptyCard: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-  gridLabelContainer: {
-    position: 'absolute',
     bottom: 12,
     left: 12,
   },
-  gridLabel: {
+  topLabel: {
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
@@ -168,24 +112,25 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  bottomLeftCard: {
-    flex: 1,
+  bottomSection: {
+    width: SQUARE_SIZE,
+    height: SQUARE_SIZE,
+  },
+  squareCard: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#E8E0D5',
   },
-  bottomRightCard: {
-    flex: 1,
-    backgroundColor: '#E8E0D5',
-  },
-  bottomImage: {
+  squareImage: {
     width: '100%',
     height: '100%',
   },
-  bottomLabelContainer: {
+  squareLabelContainer: {
     position: 'absolute',
     bottom: 12,
     left: 12,
   },
-  bottomLabel: {
+  squareLabel: {
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
