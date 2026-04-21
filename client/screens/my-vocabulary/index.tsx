@@ -62,8 +62,8 @@ export default function MyVocabularyPage() {
     const config = BOOK_TABLE_MAP[book.id];
     
     if (config && config.table && config.purchased) {
-      // 已购买且有数据库，跳转到单词列表
-      router.push('/word-list', { table: config.table });
+      // 已购买且有数据库，跳转到学习页面
+      router.push('/learn', { table: config.table });
     } else {
       // 未购买或无数据库，显示提示
       setAlertMessage(`${book.name}暂未开放，请先购买`);

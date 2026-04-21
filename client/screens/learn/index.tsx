@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ interface Word {
 	id: number;
 	word: string;
 	meaning: string;
+	phonetic?: string;
 }
 
 interface Category {
@@ -109,6 +110,9 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 
 export default function LearnPage() {
 	const router = useSafeRouter();
+	const params = useSafeSearchParams<{ table?: string }>();
+	const table = params.table || 'words_b'; // 默认从 words_b 获取
+	
 	const [words, setWords] = useState<Word[]>([]);
 	const [categories, setCategories] = useState<Category[]>([
 		{ id: 1, name: '已会', letter: 'x', count: 0 },
@@ -122,41 +126,21 @@ export default function LearnPage() {
 		useCallback(() => {
 			fetchData();
 			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [])
+		}, [table])
 	);
 
 	const fetchData = async () => {
 		try {
-			// 同时获取单词列表和所有状态
-			const [wordsRes, statusesRes] = await Promise.all([
-				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
-				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
-			]);
-
+			// 从指定的词汇表获取单词
+			const wordsRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
 			const wordsResult = await wordsRes.json();
-			const statusesResult = await statusesRes.json();
 
-			if (wordsResult.data) {
-				setWords(wordsResult.data);
+			if (Array.isArray(wordsResult)) {
+				setWords(wordsResult);
 
-				const usedSet = new Set<number>();
-				const catCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
-				const statusMap: Record<string, number> = { x: 1, y: 2, z: 3 };
-				const statusMapData = statusesResult.data || {};
-
-				wordsResult.data.forEach((word: Word) => {
-					const status = statusMapData[word.id];
-					if (status) {
-						usedSet.add(word.id);
-						const catId = statusMap[status];
-						if (catId) {
-							catCounts[catId]++;
-						}
-					}
-				});
-
-				setUsedWords(usedSet);
-				setCategories(cats => cats.map(cat => ({ ...cat, count: catCounts[cat.id] || 0 })));
+				// 重置已用单词状态
+				setUsedWords(new Set());
+				setCategories(cats => cats.map(cat => ({ ...cat, count: 0 })));
 			}
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
@@ -213,9 +197,12 @@ export default function LearnPage() {
 
 	const handleWordPress = (word: Word) => {
 		router.push('/word-detail', { 
-			wordId: word.id, 
-			word: word.word, 
-			meaning: word.meaning 
+			word: JSON.stringify({
+				id: word.id,
+				word: word.word,
+				phonetic: word.phonetic || '',
+				meaning: word.meaning
+			})
 		});
 	};
 
