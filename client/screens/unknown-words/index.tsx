@@ -10,6 +10,7 @@ interface Word {
 	word: string;
 	phonetic?: string;
 	meaning: string;
+	example?: string;
 }
 
 export default function UnknownWordsPage() {
@@ -47,7 +48,8 @@ export default function UnknownWordsPage() {
 				id: word.id,
 				word: word.word,
 				phonetic: word.phonetic || '',
-				meaning: word.meaning
+				meaning: word.meaning,
+				example: word.example || ''
 			}),
 			table: 'words_z'
 		});
