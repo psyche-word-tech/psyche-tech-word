@@ -11,6 +11,7 @@ interface Word {
 	phonetic?: string;
 	meaning: string;
 	example?: string;
+	translation?: string;
 }
 
 export default function KnownWordsPage() {
@@ -49,7 +50,8 @@ export default function KnownWordsPage() {
 				word: word.word,
 				phonetic: word.phonetic || '',
 				meaning: word.meaning,
-				example: word.example || ''
+				example: word.example || '',
+				translation: word.translation || ''
 			}),
 			table: 'words_x'
 		});
