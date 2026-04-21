@@ -38,7 +38,9 @@ export default function StudyScreen() {
               </View>
             </View>
           )}
-          <Text style={styles.topLabel}>刻字</Text>
+          {engravedText.length === 0 && (
+            <Text style={styles.topLabel}>刻字</Text>
+          )}
         </TouchableOpacity>
 
         {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   engravedTextContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
