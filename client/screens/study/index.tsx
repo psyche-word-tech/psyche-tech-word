@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,8 +16,8 @@ export default function StudyScreen() {
   const engravedText = params.engravedText || '';
 
   return (
-    <Screen safeAreaEdges={['left', 'right', 'bottom']}>
-      <SafeAreaView style={styles.container}>
+    <Screen safeAreaEdges={[]}>
+      <View style={styles.container}>
         {/* 上半部分：区域一（100% 宽，50% 高） */}
         <TouchableOpacity 
           style={styles.topCard} 
@@ -72,7 +72,7 @@ export default function StudyScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </Screen>
   );
 }
