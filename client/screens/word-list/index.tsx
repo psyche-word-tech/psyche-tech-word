@@ -38,7 +38,15 @@ export default function WordListPage() {
   };
 
   const handleWordPress = (word: Word) => {
-    router.push('/word-detail', { word: JSON.stringify(word) });
+    router.push('/word-detail', { 
+      word: JSON.stringify({
+        id: word.id,
+        word: word.word,
+        phonetic: word.phonetic || '',
+        meaning: word.meaning
+      }),
+      table: table
+    });
   };
 
   const renderItem = ({ item }: { item: Word }) => (

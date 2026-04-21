@@ -226,7 +226,8 @@ export default function LearnPage() {
 				word: word.word,
 				phonetic: word.phonetic || '',
 				meaning: word.meaning
-			})
+			}),
+			table: table
 		});
 	};
 

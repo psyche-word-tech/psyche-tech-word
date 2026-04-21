@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ interface Word {
 
 export default function WordDetailPage() {
 	const router = useSafeRouter();
-	const params = useSafeSearchParams<{ word: string }>();
+	const params = useSafeSearchParams<{ word: string; table?: string }>();
 	
 	const [word, setWord] = useState<Word>(() => {
 		if (params.word) {
@@ -22,9 +22,42 @@ export default function WordDetailPage() {
 		return { id: 0, word: '', phonetic: '', meaning: '' };
 	});
 
+	const sourceTable = params.table || 'words_b';
+
 	const handlePronounce = () => {
-		// 发音功能
 		console.log('Pronounce:', word.word);
+	};
+
+	const handleStatusChange = async (targetTable: string, label: string) => {
+		try {
+			/**
+			 * 服务端文件：server/src/routes/wordbooks.ts
+			 * 接口：POST /api/v1/wordbooks/move
+			 * Body 参数：sourceTable: string, targetTable: string, wordId: number
+			 */
+			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					sourceTable: sourceTable,
+					targetTable: targetTable,
+					wordId: word.id
+				}),
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				Alert.alert('成功', `单词已移至"${label}"`, [
+					{ text: '确定', onPress: () => router.back() }
+				]);
+			} else {
+				Alert.alert('失败', result.error || '移动失败');
+			}
+		} catch (error) {
+			console.error('Failed to move word:', error);
+			Alert.alert('错误', '移动失败，请重试');
+		}
 	};
 
 	return (
@@ -94,13 +127,13 @@ export default function WordDetailPage() {
 
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
-						<TouchableOpacity style={styles.statusButton}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_x', '已会')}>
 							<Text style={styles.statusText}>已会(x)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_y', '模糊')}>
 							<Text style={styles.statusText}>模糊(y)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton}>
+						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_z', '不会')}>
 							<Text style={styles.statusText}>不会(z)</Text>
 						</TouchableOpacity>
 					</View>

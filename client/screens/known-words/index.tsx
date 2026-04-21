@@ -48,7 +48,8 @@ export default function KnownWordsPage() {
 				word: word.word,
 				phonetic: word.phonetic || '',
 				meaning: word.meaning
-			})
+			}),
+			table: 'words_x'
 		});
 	};
 
