@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,6 +7,9 @@ const iconMountain = require('@/assets/icon.png');
 const iconRock = require('@/assets/rock.jpg');
 const iconDang = require('@/assets/dang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GRID_SIZE = (SCREEN_WIDTH - 48) / 2; // 2列网格，每格正方形，间距16
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -19,74 +22,60 @@ export default function StudyScreen() {
         {/* Top Status Bar */}
         <View style={styles.statusBar} />
 
-        {/* Cards Container */}
-        <View style={styles.cardsContainer}>
-          {/* Card 1 - Top Center */}
-          <View style={styles.cardTopCenter}>
-            <View style={styles.cardLargeWrapper}>
-              <TouchableOpacity 
-                style={styles.cardLarge} 
-                activeOpacity={0.8} 
-                onPress={() => router.push('/engrave')}
-              >
-                <Image source={iconRock} style={styles.cardIconLarge} resizeMode="cover" />
-                {engravedText.length > 0 && (
-                  <View style={styles.engravedContainer}>
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.3)']}
-                      style={styles.engravedGradient}
-                    />
-                    <View style={styles.engravedTextContainer}>
-                      {engravedText.split('').map((char, index) => (
-                        <View key={index} style={styles.engravedCharWrapper}>
-                          <Text style={styles.engravedText}>{char}</Text>
-                        </View>
-                      ))}
-                    </View>
+        {/* 2x2 Grid Container */}
+        <View style={styles.gridContainer}>
+          {/* 左上 - 购买词汇书（悬崖图） */}
+          <View style={styles.gridItem}>
+            <TouchableOpacity 
+              style={styles.gridCard} 
+              activeOpacity={0.8} 
+              onPress={() => router.push('/vocabulary')}
+            >
+              <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
+            </TouchableOpacity>
+            <Text style={styles.gridLabel}>购买词汇书</Text>
+          </View>
+
+          {/* 右上 - 空白 */}
+          <View style={styles.gridItem}>
+            <View style={styles.emptyCard} />
+          </View>
+
+          {/* 左下 - 我的词汇书（书房图） */}
+          <View style={styles.gridItem}>
+            <TouchableOpacity 
+              style={styles.gridCard} 
+              activeOpacity={0.8} 
+              onPress={() => router.push('/my-vocabulary')}
+            >
+              <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
+            </TouchableOpacity>
+            <Text style={styles.gridLabel}>我的词汇书</Text>
+          </View>
+
+          {/* 右下 - 古风桌案图（磨刀石/刻字） */}
+          <View style={styles.gridItem}>
+            <TouchableOpacity 
+              style={styles.gridCard} 
+              activeOpacity={0.8} 
+              onPress={() => router.push('/engrave')}
+            >
+              <Image source={iconRock} style={styles.gridImage} resizeMode="cover" />
+              {engravedText.length > 0 && (
+                <View style={styles.engravedOverlay}>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+                    style={styles.engravedGradient}
+                  />
+                  <View style={styles.engravedTextContainer}>
+                    {engravedText.split('').map((char, index) => (
+                      <Text key={index} style={styles.engravedText}>{char}</Text>
+                    ))}
                   </View>
-                )}
-              </TouchableOpacity>
-            </View>
-            <View style={styles.labelRight}>
-              <Text style={styles.cardLabel}>刻字</Text>
-            </View>
-          </View>
-
-          {/* Card 2 - Left Top */}
-          <View style={styles.cardLeftTop}>
-            <TouchableOpacity style={styles.cardMediumLeft} activeOpacity={0.8} onPress={() => router.push('/vocabulary')}>
-              <Image source={iconDang} style={styles.cardIconMedium} resizeMode="cover" />
+                </View>
+              )}
             </TouchableOpacity>
-            <Text style={styles.cardLabelBelow}>购买词汇书</Text>
-          </View>
-
-          {/* Card 3 - Right Middle */}
-          <View style={styles.cardRightEnd}>
-            <TouchableOpacity style={styles.cardLargeWide} activeOpacity={0.8} onPress={() => router.push('/my-vocabulary')}>
-              <Image source={iconMyVocab} style={styles.cardIconLarge} resizeMode="cover" />
-            </TouchableOpacity>
-            <Text style={styles.cardLabelBelow}>我的词汇书</Text>
-          </View>
-
-          {/* Card 4 - Left Bottom */}
-          <View style={styles.cardLeftBottom}>
-            <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            </TouchableOpacity>
-            <View style={styles.labelRight}>
-              <Text style={styles.cardLabel}>磨刀石</Text>
-            </View>
-          </View>
-
-          {/* Card 5 - Center */}
-          <View style={styles.cardCenter}>
-            <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            </TouchableOpacity>
-          </View>
-
-          {/* Card 6 - Bottom Center */}
-          <View style={styles.cardBottomCenter}>
-            <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            </TouchableOpacity>
+            <Text style={styles.gridLabel}>刻字</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -97,101 +86,55 @@ export default function StudyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   statusBar: {
     height: 40,
     backgroundColor: '#FFFFFF',
   },
-  cardsContainer: {
+  gridContainer: {
     flex: 1,
-    position: 'relative',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
   },
-  card: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
+  gridItem: {
+    width: `${50}%`,
+    aspectRatio: 1,
+    padding: 8,
     alignItems: 'center',
   },
-  cardLargeWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  cardLarge: {
-    width: '100%',
-    height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 0,
-  },
-  imageContainer: {
+  gridCard: {
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#E8E0D5',
+    shadowColor: '#8B7355',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  cardIcon: {
-    width: 50,
-    height: 50,
-  },
-  cardIconLarge: {
+  gridImage: {
     width: '100%',
     height: '100%',
   },
-  cardMedium: {
-    width: '50%',
-    height: 75,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#8B7355',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  cardMediumWide: {
-    width: '80%',
-    height: 75,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#8B7355',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  cardLargeWide: {
-    width: '100%',
-    height: 100,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#8B7355',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  cardMediumLeft: {
-    width: '85%',
-    height: 120,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#8B7355',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-    alignSelf: 'flex-start',
-  },
-  cardIconMedium: {
+  emptyCard: {
     width: '100%',
     height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E0D5',
   },
-  engravedContainer: {
+  gridLabel: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#5C4033',
+    fontWeight: '500',
+  },
+  engravedOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -199,36 +142,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  // 发光外层（外发光）
-  engravedGlow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  engravedText: {
-    fontSize: 28,
-    color: '#D4B896',
-    fontFamily: 'serif',
-    fontWeight: '600',
-    textShadowColor: '#8B6914',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-    marginBottom: -8,
-  },
-  engravedCharWrapper: {
-    marginRight: 12,
-  },
-  engravedTextContainer: {
-    flexDirection: 'column',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxHeight: 180,
   },
   engravedGradient: {
     position: 'absolute',
@@ -237,83 +150,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  cardTopCenter: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  imageWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  cardLeftTop: {
-    position: 'absolute',
-    top: 220,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  cardRightMiddle: {
-    position: 'absolute',
-    top: 320,
-    right: 30,
-    alignItems: 'center',
-  },
-  cardRightEnd: {
-    position: 'absolute',
-    top: 320,
-    right: 0,
-    alignItems: 'flex-end',
-  },
-  cardLeftBottom: {
-    position: 'absolute',
-    top: 450,
-    left: 30,
-    alignItems: 'flex-start',
-  },
-  cardCenter: {
-    position: 'absolute',
-    top: 300,
-    right: 80,
-    alignItems: 'center',
-  },
-  cardBottomCenter: {
-    position: 'absolute',
-    bottom: 40,
-    left: '50%',
-    marginLeft: -40,
-    alignItems: 'center',
-  },
-  labelRight: {
+  engravedTextContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
   },
-  redLine: {
-    width: 25,
-    height: 2,
-    backgroundColor: '#CC0000',
-    marginRight: 4,
-  },
-  redLineVertical: {
-    width: 2,
-    height: 30,
-    backgroundColor: '#CC0000',
-    marginTop: 8,
-  },
-  cardLabel: {
-    fontSize: 12,
-    color: '#000000',
-    fontFamily: 'serif',
-  },
-  cardLabelBelow: {
-    fontSize: 12,
-    color: '#000000',
-    fontFamily: 'serif',
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    marginLeft: 40,
+  engravedText: {
+    fontSize: 28,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });
