@@ -48,11 +48,11 @@ export default function StudyScreen() {
 
         {/* 下半部分：占屏幕 2/3，2x2 网格 */}
         <View style={styles.bottomSection}>
-          {/* 上一行 */}
+          {/* 上一行：购买词汇书（压缩高度） */}
           <View style={styles.gridRow}>
             {/* 左上：购买词汇书 */}
             <TouchableOpacity 
-              style={styles.gridItem} 
+              style={styles.gridItemTop} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
@@ -63,7 +63,7 @@ export default function StudyScreen() {
             </TouchableOpacity>
 
             {/* 右上：空白 */}
-            <View style={styles.gridItem}>
+            <View style={styles.gridItemTop}>
               <View style={styles.emptyCard} />
             </View>
           </View>
@@ -135,6 +135,12 @@ const styles = StyleSheet.create({
   gridRow: {
     flex: 1,
     flexDirection: 'row',
+  },
+  gridItemTop: {
+    flex: 1,
+    height: '90%', // 上压缩高度
+    marginVertical: '5%', // 上下留白
+    backgroundColor: '#E8E0D5',
   },
   gridItem: {
     flex: 1,
