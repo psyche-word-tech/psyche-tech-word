@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +25,8 @@ export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -63,8 +65,9 @@ export default function MyVocabularyPage() {
       // 有对应的数据库表，跳转到单词列表
       router.push('/word-list', { table });
     } else {
-      // 暂不开放的词汇书，提示用户
-      Alert.alert('提示', `${book.name}暂未开放`, [{ text: '确定' }]);
+      // 暂不开放的词汇书，显示弹窗
+      setAlertMessage(`${book.name}暂未开放`);
+      setAlertVisible(true);
     }
   };
 
@@ -106,6 +109,26 @@ export default function MyVocabularyPage() {
             </View>
           ))}
         </View>
+
+        {/* Custom Alert Modal */}
+        <Modal
+          visible={alertVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setAlertVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.alertBox}>
+              <Text style={styles.alertText}>{alertMessage}</Text>
+              <TouchableOpacity 
+                style={styles.alertButton}
+                onPress={() => setAlertVisible(false)}
+              >
+                <Text style={styles.alertButtonText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </Screen>
   );
@@ -174,26 +197,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   learnText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#666666',
     fontFamily: 'serif',
   },
   guideLine: {
-    width: 1,
-    height: 200,
-    backgroundColor: '#B8D4E8',
-    marginTop: 20,
+    position: 'absolute',
+    top: 60,
+    left: -30,
+    width: 60,
+    height: 1,
+    backgroundColor: '#CCCCCC',
   },
   guideLineWithDot: {
-    position: 'relative',
+    backgroundColor: 'transparent',
   },
-  dot: {
-    position: 'absolute',
-    bottom: -4,
-    left: -3,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  // Modal 样式
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertBox: {
+    backgroundColor: '#FFFFFF',
+    padding: 30,
+    borderRadius: 8,
+    minWidth: 250,
+    alignItems: 'center',
+  },
+  alertText: {
+    fontSize: 16,
+    color: '#333333',
+    fontFamily: 'serif',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  alertButton: {
     backgroundColor: '#333333',
+    paddingHorizontal: 40,
+    paddingVertical: 10,
+  },
+  alertButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
   },
 });
