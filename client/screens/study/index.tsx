@@ -4,7 +4,7 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const iconMountain = require('@/assets/icon.png');
-const iconRock = require('@/assets/rock.png');
+const iconRock = require('@/assets/rock.jpg');
 const iconDang = require('@/assets/dang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 
