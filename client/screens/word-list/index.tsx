@@ -9,7 +9,6 @@ interface Word {
   phonetic: string;
   meaning: string;
   example?: string;
-  translation?: string;
 }
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
@@ -46,8 +45,7 @@ export default function WordListPage() {
         word: word.word,
         phonetic: word.phonetic || '',
         meaning: word.meaning,
-        example: word.example || '',
-        translation: word.translation || ''
+        example: word.example || ''
       }),
       table: table
     });

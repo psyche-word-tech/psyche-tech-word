@@ -12,7 +12,6 @@ interface Word {
 	phonetic: string;
 	meaning: string;
 	example?: string;
-	translation?: string;
 }
 
 export default function WordDetailPage() {
@@ -179,25 +178,12 @@ export default function WordDetailPage() {
 						<Text style={styles.sectionLabel}>例句：</Text>
 						<View style={styles.exampleRow}>
 							<Text style={styles.exampleText}>
-								{word.example 
-									? word.example.split(word.word).map((part, index, arr) => 
-										index < arr.length - 1 
-											? <Text key={index}><Text style={styles.boldWord}>{word.word}</Text></Text>
-											: part
-									)
-									: `The word "${word.word}" has a meaning.`
-								}
+								{word.example || `The word "${word.word}" has a meaning.`}
 							</Text>
 							<View style={styles.exampleIcons}>
 								<Ionicons name="pencil" size={16} color="#999999" />
 								<Ionicons name="checkmark" size={16} color="#999999" />
 							</View>
-						</View>
-						{/* Translation */}
-						<View style={styles.translationContainer}>
-							<Text style={styles.translationText}>
-								{word.translation || `这个词的意思是"${word.meaning}"。`}
-							</Text>
 						</View>
 					</View>
 
@@ -333,22 +319,6 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 		flex: 1,
 		lineHeight: 22,
-	},
-	boldWord: {
-		fontWeight: 'bold',
-		color: '#C8102E',
-	},
-	translationContainer: {
-		marginTop: 8,
-		paddingTop: 8,
-		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
-	},
-	translationText: {
-		fontSize: 13,
-		color: '#666666',
-		fontFamily: 'serif',
-		lineHeight: 20,
 	},
 	exampleIcons: {
 		flexDirection: 'row',

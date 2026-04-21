@@ -11,7 +11,6 @@ interface Word {
 	phonetic?: string;
 	meaning: string;
 	example?: string;
-	translation?: string;
 }
 
 export default function VagueWordsPage() {
@@ -50,8 +49,7 @@ export default function VagueWordsPage() {
 				word: word.word,
 				phonetic: word.phonetic || '',
 				meaning: word.meaning,
-				example: word.example || '',
-				translation: word.translation || ''
+				example: word.example || ''
 			}),
 			table: 'words_y'
 		});
