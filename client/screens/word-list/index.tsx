@@ -23,7 +23,7 @@ export default function WordListPage() {
 
   const fetchWords = async () => {
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
+      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words`);
       const data = await response.json();
       setWords(data);
     } catch (error) {

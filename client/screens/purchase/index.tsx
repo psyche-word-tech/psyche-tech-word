@@ -11,6 +11,8 @@ interface Book {
 
 const STORAGE_KEY = 'bought_wordbooks';
 
+const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+
 export default function PurchasePage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
@@ -18,16 +20,34 @@ export default function PurchasePage() {
   const bookName = books.map(b => b.name).join('、');
 
   const handleConfirm = async () => {
-    const existing = await AsyncStorage.getItem(STORAGE_KEY);
-    const existingBooks: Book[] = existing ? JSON.parse(existing) : [];
-    const merged = [...existingBooks];
-    books.forEach(newBook => {
-      if (!merged.find(b => b.id === newBook.id)) {
-        merged.push(newBook);
-      }
-    });
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-    router.replace('/word-list');
+    try {
+      // 获取所有单词ID
+      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
+      const allWords = await response.json();
+      const wordIds = allWords.map((w: any) => w.id);
+      
+      // 调用API将单词添加到用户词汇表
+      await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wordIds }),
+      });
+
+      // 保存到本地存储
+      const existing = await AsyncStorage.getItem(STORAGE_KEY);
+      const existingBooks: Book[] = existing ? JSON.parse(existing) : [];
+      const merged = [...existingBooks];
+      books.forEach(newBook => {
+        if (!merged.find(b => b.id === newBook.id)) {
+          merged.push(newBook);
+        }
+      });
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      
+      router.replace('/word-list');
+    } catch (error) {
+      console.error('Purchase error:', error);
+    }
   };
 
   return (
