@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topLabel: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#333333',
     fontWeight: '600',
   },
