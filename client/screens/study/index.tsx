@@ -4,6 +4,7 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const iconRock = require('@/assets/rock.jpg');
+const iconDang = require('@/assets/dang.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -44,10 +45,11 @@ export default function StudyScreen() {
           {/* 上一行：区域二、区域三 */}
           <View style={styles.gridRow}>
             <TouchableOpacity 
-              style={[styles.gridItem, styles.gridItemFilled]} 
+              style={styles.gridItem} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
+              <Image source={iconDang} style={styles.gridImageFull} resizeMode="cover" />
               <Text style={styles.gridLabel}>购买词汇书</Text>
             </TouchableOpacity>
             <View style={styles.gridItem}>
@@ -60,7 +62,7 @@ export default function StudyScreen() {
               <View style={styles.emptyCard} />
             </View>
             <TouchableOpacity 
-              style={[styles.gridItem, styles.gridItemFilled]} 
+              style={styles.gridItem} 
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
@@ -106,18 +108,17 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     flex: 1,
-    backgroundColor: '#E8E0D5',
   },
-  // 充满整个区域的按钮
-  gridItemFilled: {
-    justifyContent: 'center',
-    alignItems: 'center',
+  gridImageFull: {
+    ...StyleSheet.absoluteFillObject,
   },
   gridLabel: {
     fontSize: 14,
-    color: '#333333',
+    color: '#FFFFFF',
     fontWeight: '600',
-    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   emptyCard: {
     width: '100%',
