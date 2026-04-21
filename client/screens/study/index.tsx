@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const iconRock = require('@/assets/rock.jpg');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -20,6 +22,7 @@ export default function StudyScreen() {
           activeOpacity={0.9} 
           onPress={() => router.push('/engrave')}
         >
+          <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
           {engravedText.length > 0 && (
             <View style={styles.engravedOverlay}>
               <LinearGradient
@@ -78,14 +81,19 @@ const styles = StyleSheet.create({
   topCard: {
     height: HALF_HEIGHT,
     width: '100%',
-    backgroundColor: '#E8E0D5',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  topImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
   topLabel: {
     fontSize: 14,
-    color: '#333333',
+    color: '#FFFFFF',
     fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   // 下半部分：2x2 排列（区域二、三、四、五）
   bottomSection: {
