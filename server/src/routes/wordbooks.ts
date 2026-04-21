@@ -13,7 +13,7 @@ router.post('/purchase', async (req, res) => {
     const { sourceTable, targetTable } = req.body;
 
     // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
     if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
@@ -168,7 +168,7 @@ router.get('/:table/count', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
 
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
