@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
 		fontSize: 36,
 		fontWeight: 'bold',
 		color: '#333333',
-		fontFamily: 'serif',
+		fontFamily: 'Times New Roman',
 	},
 	speakerIcon: {
 		marginLeft: 12,
