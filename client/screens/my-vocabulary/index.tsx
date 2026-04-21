@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@/utils/apiConfig';
+import { useApiConfig } from '@/contexts/ApiConfigContext';
 
 interface WordBook {
   id: number;
@@ -25,6 +25,7 @@ const BOOK_TABLE_MAP: Record<number, { table: string | null; purchased: boolean 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
+  const { apiBaseUrl } = useApiConfig();
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -34,7 +35,7 @@ export default function MyVocabularyPage() {
       const loadBooks = async () => {
         try {
           // 从API获取所有词汇书
-          const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks`);
+          const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks`);
           const allBooks = await response.json();
           
           if (!Array.isArray(allBooks)) {
@@ -57,7 +58,7 @@ export default function MyVocabularyPage() {
         }
       };
       loadBooks();
-    }, [])
+    }, [apiBaseUrl])
   );
 
   const handleLearnPress = (book: WordBook) => {
@@ -87,29 +88,36 @@ export default function MyVocabularyPage() {
 
         {/* Word Books Grid */}
         <View style={styles.gridContainer}>
-          {boughtBooks.map((book: WordBook, index: number) => (
-            <View key={book.id} style={styles.bookItem}>
-              {/* Book Tag */}
-              <View style={styles.tagContainer}>
-                {book.name.split('').map((char, i) => (
-                  <Text key={i} style={styles.tagText}>{char}</Text>
-                ))}
-              </View>
-              
-              {/* Learn Button */}
-              <TouchableOpacity style={styles.learnButton} onPress={() => handleLearnPress(book)}>
-                <View style={styles.learnTextContainer}>
-                  <Text style={styles.learnText}>开</Text>
-                  <Text style={styles.learnText}>始</Text>
-                  <Text style={styles.learnText}>学</Text>
-                  <Text style={styles.learnText}>习</Text>
+          {boughtBooks.length > 0 ? (
+            boughtBooks.map((book: WordBook, index: number) => (
+              <View key={book.id} style={styles.bookItem}>
+                {/* Book Tag */}
+                <View style={styles.tagContainer}>
+                  {book.name.split('').map((char, i) => (
+                    <Text key={i} style={styles.tagText}>{char}</Text>
+                  ))}
                 </View>
-              </TouchableOpacity>
-              
-              {/* Guide Line */}
-              <View style={[styles.guideLine, index === 0 && styles.guideLineWithDot]} />
+                
+                {/* Learn Button */}
+                <TouchableOpacity style={styles.learnButton} onPress={() => handleLearnPress(book)}>
+                  <View style={styles.learnTextContainer}>
+                    <Text style={styles.learnText}>开</Text>
+                    <Text style={styles.learnText}>始</Text>
+                    <Text style={styles.learnText}>学</Text>
+                    <Text style={styles.learnText}>习</Text>
+                  </View>
+                </TouchableOpacity>
+                
+                {/* Guide Line */}
+                <View style={[styles.guideLine, index === 0 && styles.guideLineWithDot]} />
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>暂无词汇书</Text>
+              <Text style={styles.emptyHint}>请先购买词汇书</Text>
             </View>
-          ))}
+          )}
         </View>
 
         {/* Alert Modal */}
@@ -212,6 +220,23 @@ const styles = StyleSheet.create({
   guideLineWithDot: {
     height: 0,
     marginTop: 0,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999999',
+    fontFamily: 'serif',
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    fontFamily: 'serif',
   },
   modalOverlay: {
     flex: 1,

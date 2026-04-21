@@ -6,7 +6,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { API_BASE_URL } from '@/utils/apiConfig';
+import { useApiConfig } from '@/contexts/ApiConfigContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ITEM_WIDTH = SCREEN_WIDTH / 3;
@@ -113,6 +113,7 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
+	const { apiBaseUrl } = useApiConfig();
 	const table = params.table || 'words_b'; // 默认从 words_b 获取
 	
 	const [words, setWords] = useState<Word[]>([]);
@@ -135,7 +136,7 @@ export default function LearnPage() {
 		useCallback(() => {
 			fetchData();
 			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [table])
+		}, [table, apiBaseUrl])
 	);
 
 	const fetchData = async () => {
@@ -146,7 +147,7 @@ export default function LearnPage() {
 			let wordsTable = table;
 
 			// 首先尝试指定表
-			const wordsRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${wordsTable}`);
+			const wordsRes = await fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`);
 			const wordsData = await wordsRes.json();
 			if (Array.isArray(wordsData) && wordsData.length > 0) {
 				wordsResult = wordsData;
@@ -154,7 +155,7 @@ export default function LearnPage() {
 				// 尝试其他表
 				for (const t of possibleTables) {
 					if (t === wordsTable) continue;
-					const res = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${t}`);
+					const res = await fetch(`${apiBaseUrl}/api/v1/wordbooks/${t}`);
 					const data = await res.json();
 					if (Array.isArray(data) && data.length > 0) {
 						wordsResult = data;
@@ -166,9 +167,9 @@ export default function LearnPage() {
 
 			// 获取 xyz 分类数据
 			const [xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
 			]);
 
 			const xResult = await xRes.json();
@@ -206,7 +207,7 @@ export default function LearnPage() {
 			 * 接口：POST /api/v1/wordbooks/move
 			 * Body 参数：sourceTable: string, targetTable: string, wordId: number
 			 */
-			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
+			await fetch(`${apiBaseUrl}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

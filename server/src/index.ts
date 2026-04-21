@@ -17,6 +17,13 @@ app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// 返回 API 配置信息给前端
+app.get('/api/v1/config', (req, res) => {
+  const baseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 
+                  `${req.protocol}://${req.get('host')}`;
+  res.json({ apiBaseUrl: baseUrl });
+});
+
 // Routes
 app.use('/api/v1/words', wordsRouter);
 app.use('/api/v1/user-words', userWordsRouter);
