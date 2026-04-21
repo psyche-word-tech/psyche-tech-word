@@ -83,8 +83,6 @@ const styles = StyleSheet.create({
   topSection: {
     height: HALF_HEIGHT,
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    padding: 4,
   },
   topCard: {
     flex: 1,
@@ -107,8 +105,6 @@ const styles = StyleSheet.create({
   bottomSection: {
     height: HALF_HEIGHT,
     width: '100%',
-    padding: 4,
-    paddingTop: 0,
   },
   gridRow: {
     flex: 1,
@@ -117,7 +113,6 @@ const styles = StyleSheet.create({
   gridItem: {
     flex: 1,
     backgroundColor: '#E8E0D5',
-    margin: 4,
   },
   // 充满整个区域的按钮
   gridItemFilled: {
