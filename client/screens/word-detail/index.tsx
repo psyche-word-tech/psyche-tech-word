@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 
 interface Word {
 	id: number;
@@ -21,8 +22,34 @@ export default function WordDetailPage() {
 		}
 		return { id: 0, word: '', phonetic: '', meaning: '' };
 	});
+	const [currentIndex, setCurrentIndex] = useState(0);
+	const [wordsList, setWordsList] = useState<Word[]>([]);
 
 	const sourceTable = params.table || 'words_b';
+	const isInitialized = useRef(false);
+
+	// 页面加载时获取单词列表
+	useFocusEffect(
+		useCallback(() => {
+			const fetchWordsList = async () => {
+				try {
+					/**
+					 * 服务端文件：server/src/routes/wordbooks.ts
+					 * 接口：GET /api/v1/wordbooks/:table
+					 */
+					const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
+					const data = await response.json();
+					if (Array.isArray(data) && data.length > 0 && !isInitialized.current) {
+						setWordsList(data);
+						isInitialized.current = true;
+					}
+				} catch (error) {
+					console.error('Failed to fetch words:', error);
+				}
+			};
+			fetchWordsList();
+		}, [sourceTable])
+	);
 
 	const handlePronounce = () => {
 		console.log('Pronounce:', word.word);
@@ -48,9 +75,21 @@ export default function WordDetailPage() {
 			const result = await response.json();
 
 			if (result.success) {
-				Alert.alert('成功', `单词已移至"${label}"`, [
-					{ text: '确定', onPress: () => router.back() }
-				]);
+				// 从列表中移除当前单词
+				const newList = wordsList.filter(w => w.id !== word.id);
+				setWordsList(newList);
+
+				// 显示下一个单词
+				if (newList.length > 0) {
+					const nextIndex = currentIndex < newList.length ? currentIndex : 0;
+					setCurrentIndex(nextIndex);
+					setWord(newList[nextIndex]);
+					Alert.alert('成功', `单词已移至"${label}"，显示下一个单词`);
+				} else {
+					Alert.alert('完成', `单词已移至"${label}"，该列表已无更多单词`, [
+						{ text: '确定', onPress: () => router.back() }
+					]);
+				}
 			} else {
 				Alert.alert('失败', result.error || '移动失败');
 			}
