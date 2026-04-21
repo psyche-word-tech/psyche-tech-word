@@ -47,31 +47,46 @@ export default function StudyScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 下面部分：正方形 - 刻字 */}
+        {/* 下面部分：正方形田字格（2x2） */}
         <View style={styles.bottomSection}>
-          <TouchableOpacity 
-            style={styles.squareCard} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/engrave')}
-          >
-            <Image source={iconRock} style={styles.squareImage} resizeMode="cover" />
-            {engravedText.length > 0 && (
-              <View style={styles.engravedOverlay}>
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
-                  style={styles.engravedGradient}
-                />
-                <View style={styles.engravedTextContainer}>
-                  {engravedText.split('').map((char, index) => (
-                    <Text key={index} style={styles.engravedText}>{char}</Text>
-                  ))}
+          {/* 上一行 */}
+          <View style={styles.gridRow}>
+            <TouchableOpacity 
+              style={styles.gridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/engrave')}
+            >
+              <Image source={iconRock} style={styles.gridImage} resizeMode="cover" />
+              {engravedText.length > 0 && (
+                <View style={styles.engravedOverlay}>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+                    style={styles.engravedGradient}
+                  />
+                  <View style={styles.engravedTextContainer}>
+                    {engravedText.split('').map((char, index) => (
+                      <Text key={index} style={styles.engravedText}>{char}</Text>
+                    ))}
+                  </View>
                 </View>
+              )}
+              <View style={styles.gridLabelContainer}>
+                <Text style={styles.gridLabel}>刻字</Text>
               </View>
-            )}
-            <View style={styles.squareLabelContainer}>
-              <Text style={styles.squareLabel}>刻字</Text>
+            </TouchableOpacity>
+            <View style={styles.gridItem}>
+              <View style={styles.emptyCard} />
             </View>
-          </TouchableOpacity>
+          </View>
+          {/* 下一行 */}
+          <View style={styles.gridRow}>
+            <View style={styles.gridItem}>
+              <View style={styles.emptyCard} />
+            </View>
+            <View style={styles.gridItem}>
+              <View style={styles.emptyCard} />
+            </View>
+          </View>
         </View>
       </SafeAreaView>
     </Screen>
@@ -115,6 +130,36 @@ const styles = StyleSheet.create({
   bottomSection: {
     width: SQUARE_SIZE,
     height: SQUARE_SIZE,
+  },
+  gridRow: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  gridItem: {
+    flex: 1,
+    backgroundColor: '#E8E0D5',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  emptyCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  gridLabelContainer: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+  },
+  gridLabel: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   squareCard: {
     width: '100%',
