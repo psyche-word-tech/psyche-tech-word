@@ -39,7 +39,9 @@ export default function StudyScreen() {
             </View>
           )}
           {engravedText.length === 0 && (
-            <Text style={styles.topLabel}>刻字</Text>
+            <View style={styles.labelContainer}>
+              <Text style={styles.topLabel}>刻字</Text>
+            </View>
           )}
         </TouchableOpacity>
 
@@ -53,7 +55,9 @@ export default function StudyScreen() {
               onPress={() => router.push('/vocabulary')}
             >
               <Image source={iconDang} style={styles.gridImageFull} resizeMode="stretch" />
-              <Text style={styles.gridLabel}>购买词汇书</Text>
+              <View style={styles.labelContainer}>
+                <Text style={styles.gridLabel}>购买词汇书</Text>
+              </View>
             </TouchableOpacity>
             <View style={styles.gridItem}>
               <View style={styles.emptyCard} />
@@ -70,7 +74,9 @@ export default function StudyScreen() {
               onPress={() => router.push('/my-vocabulary')}
             >
               <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
-              <Text style={styles.gridLabel}>我的词汇书</Text>
+              <View style={styles.labelContainer}>
+                <Text style={styles.gridLabel}>我的词汇书</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -82,6 +88,15 @@ export default function StudyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // 文字在区域下方居中
+  labelContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topCard: {
     height: HALF_HEIGHT,
