@@ -80,7 +80,6 @@ export default function StudyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   topCard: {
     height: HALF_HEIGHT,
