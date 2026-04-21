@@ -58,7 +58,7 @@ export default function WordListPage() {
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>考研词汇</Text>
+          <Text style={styles.title}>我的词汇书</Text>
           <View style={styles.placeholder} />
         </View>
 
