@@ -120,6 +120,13 @@ export default function LearnPage() {
 		{ id: 2, name: '模糊', letter: 'y', count: 0 },
 		{ id: 3, name: '不会', letter: 'z', count: 0 },
 	]);
+	
+	// 分类颜色配置
+	const categoryColors = {
+		1: { bg: '#4CAF50', badge: '#388E3C' }, // 已会 - 绿色
+		2: { bg: '#FF9800', badge: '#F57C00' }, // 模糊 - 橙色
+		3: { bg: '#F44336', badge: '#D32F2F' }, // 不会 - 红色
+	};
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
 	// 页面返回时自动刷新数据
@@ -272,11 +279,11 @@ export default function LearnPage() {
 						<View style={styles.categoryRow}>
 							{categories.map((cat) => (
 								<TouchableOpacity key={cat.id} style={styles.categoryItem} onPress={() => handleCategoryPress(cat.id)}>
-									<View style={styles.categoryCardLarge}>
+									<View style={[styles.categoryCardLarge, { backgroundColor: categoryColors[cat.id as keyof typeof categoryColors].bg }]}>
 										<Text style={styles.categoryNameText}>{cat.name}</Text>
 										<Text style={styles.categoryLetterText}>({cat.letter})</Text>
 									</View>
-									<View style={styles.categoryCountBadge}>
+									<View style={[styles.categoryCountBadge, { backgroundColor: categoryColors[cat.id as keyof typeof categoryColors].badge }]}>
 										<Text style={styles.categoryCountText}>{cat.count}</Text>
 									</View>
 								</TouchableOpacity>
@@ -364,7 +371,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	categoryCardLarge: {
-		backgroundColor: '#4A4A4A',
 		paddingHorizontal: 12,
 		paddingVertical: 15,
 		borderRadius: 6,
@@ -384,7 +390,6 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	categoryCountBadge: {
-		backgroundColor: '#4A90D9',
 		borderRadius: 10,
 		width: 20,
 		height: 20,
