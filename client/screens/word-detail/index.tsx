@@ -11,6 +11,7 @@ interface Word {
 	word: string;
 	phonetic: string;
 	meaning: string;
+	example?: string;
 }
 
 export default function WordDetailPage() {
@@ -177,7 +178,7 @@ export default function WordDetailPage() {
 						<Text style={styles.sectionLabel}>例句：</Text>
 						<View style={styles.exampleRow}>
 							<Text style={styles.exampleText}>
-								Education gives you an {word.word} in life.
+								{word.example || `The word "${word.word}" has a meaning.`}
 							</Text>
 							<View style={styles.exampleIcons}>
 								<Ionicons name="pencil" size={16} color="#999999" />
