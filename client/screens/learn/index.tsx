@@ -139,33 +139,51 @@ export default function LearnPage() {
 
 	const fetchData = async () => {
 		try {
-			// 同时获取源词汇表和 xyz 表的数据
-			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`),
+			// 尝试多个可能的表名
+			const possibleTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e'];
+			let wordsResult: Word[] = [];
+			let wordsTable = table;
+
+			// 首先尝试指定表
+			const wordsRes = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${wordsTable}`);
+			const wordsData = await wordsRes.json();
+			if (Array.isArray(wordsData) && wordsData.length > 0) {
+				wordsResult = wordsData;
+			} else {
+				// 尝试其他表
+				for (const t of possibleTables) {
+					if (t === wordsTable) continue;
+					const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${t}`);
+					const data = await res.json();
+					if (Array.isArray(data) && data.length > 0) {
+						wordsResult = data;
+						wordsTable = t;
+						break;
+					}
+				}
+			}
+
+			// 获取 xyz 分类数据
+			const [xRes, yRes, zRes] = await Promise.all([
 				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_x`),
 				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_y`),
 				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_z`)
 			]);
 
-			const wordsResult = await wordsRes.json();
 			const xResult = await xRes.json();
 			const yResult = await yRes.json();
 			const zResult = await zRes.json();
 
-			if (Array.isArray(wordsResult)) {
-				setWords(wordsResult);
-
-				// 重置已用单词状态
-				setUsedWords(new Set());
-				
-				// 设置分类数量（从数组长度获取）
-				setCategories(cats => cats.map(cat => {
-					if (cat.id === 1) return { ...cat, count: Array.isArray(xResult) ? xResult.length : 0 };
-					if (cat.id === 2) return { ...cat, count: Array.isArray(yResult) ? yResult.length : 0 };
-					if (cat.id === 3) return { ...cat, count: Array.isArray(zResult) ? zResult.length : 0 };
-					return cat;
-				}));
-			}
+			// 更新单词列表
+			setWords(wordsResult);
+			setUsedWords(new Set());
+			
+			// 更新分类数量
+			setCategories([
+				{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
+				{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
+				{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
+			]);
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
 		}
