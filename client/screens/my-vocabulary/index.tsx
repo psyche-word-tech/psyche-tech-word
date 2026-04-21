@@ -71,7 +71,7 @@ export default function MyVocabularyPage() {
               </View>
               
               {/* Learn Button */}
-              <TouchableOpacity style={styles.learnButton} onPress={() => router.push('/learn')}>
+              <TouchableOpacity style={styles.learnButton} onPress={() => router.push('/word-list')}>
                 <View style={styles.learnTextContainer}>
                   <Text style={styles.learnText}>开</Text>
                   <Text style={styles.learnText}>始</Text>
