@@ -20,29 +20,16 @@ export default function StudyScreen() {
   return (
     <Screen style={{ padding: 0 }}>
       <SafeAreaView style={styles.container}>
-        {/* 上面部分：购买词汇书 + 我的词汇书（左右各半） */}
+        {/* 上面部分：合并的购买词汇书 */}
         <View style={styles.topSection}>
-          {/* 左：购买词汇书 */}
           <TouchableOpacity 
-            style={styles.topLeftCard} 
+            style={styles.topCard} 
             activeOpacity={0.9} 
             onPress={() => router.push('/vocabulary')}
           >
             <Image source={iconDang} style={styles.topImage} resizeMode="cover" />
             <View style={styles.topLabelContainer}>
               <Text style={styles.topLabel}>购买词汇书</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* 右：我的词汇书 */}
-          <TouchableOpacity 
-            style={styles.topRightCard} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/my-vocabulary')}
-          >
-            <Image source={iconMyVocab} style={styles.topImage} resizeMode="cover" />
-            <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>我的词汇书</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -100,13 +87,8 @@ const styles = StyleSheet.create({
   },
   topSection: {
     flex: 1,
-    flexDirection: 'row',
   },
-  topLeftCard: {
-    flex: 1,
-    backgroundColor: '#E8E0D5',
-  },
-  topRightCard: {
+  topCard: {
     flex: 1,
     backgroundColor: '#E8E0D5',
   },
