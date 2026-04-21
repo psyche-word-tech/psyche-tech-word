@@ -48,39 +48,45 @@ export default function StudyScreen() {
 
         {/* 下半部分：占屏幕 2/3，2x2 网格 */}
         <View style={styles.bottomSection}>
-          {/* 左上：购买词汇书 */}
-          <TouchableOpacity 
-            style={styles.gridItem} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/vocabulary')}
-          >
-            <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
-            <View style={styles.gridLabelContainer}>
-              <Text style={styles.gridLabel}>购买词汇书</Text>
-            </View>
-          </TouchableOpacity>
+          {/* 上一行 */}
+          <View style={styles.gridRow}>
+            {/* 左上：购买词汇书 */}
+            <TouchableOpacity 
+              style={styles.gridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/vocabulary')}
+            >
+              <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
+              <View style={styles.gridLabelContainer}>
+                <Text style={styles.gridLabel}>购买词汇书</Text>
+              </View>
+            </TouchableOpacity>
 
-          {/* 右上：空白 */}
-          <View style={styles.gridItem}>
-            <View style={styles.emptyCard} />
+            {/* 右上：空白 */}
+            <View style={styles.gridItem}>
+              <View style={styles.emptyCard} />
+            </View>
           </View>
 
-          {/* 左下：空白 */}
-          <View style={styles.gridItem}>
-            <View style={styles.emptyCard} />
-          </View>
-
-          {/* 右下：我的词汇书 */}
-          <TouchableOpacity 
-            style={styles.gridItem} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/my-vocabulary')}
-          >
-            <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
-            <View style={styles.gridLabelContainer}>
-              <Text style={styles.gridLabel}>我的词汇书</Text>
+          {/* 下一行 */}
+          <View style={styles.gridRow}>
+            {/* 左下：空白 */}
+            <View style={styles.gridItem}>
+              <View style={styles.emptyCard} />
             </View>
-          </TouchableOpacity>
+
+            {/* 右下：我的词汇书 */}
+            <TouchableOpacity 
+              style={styles.gridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/my-vocabulary')}
+            >
+              <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
+              <View style={styles.gridLabelContainer}>
+                <Text style={styles.gridLabel}>我的词汇书</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     </Screen>
@@ -125,12 +131,13 @@ const styles = StyleSheet.create({
   bottomSection: {
     width: '100%',
     height: '66.67%', // 占屏幕 2/3
+  },
+  gridRow: {
+    flex: 1,
     flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   gridItem: {
-    width: '50%',
-    height: '50%',
+    flex: 1,
     backgroundColor: '#E8E0D5',
   },
   gridImage: {
