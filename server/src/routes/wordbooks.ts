@@ -65,6 +65,72 @@ router.post('/purchase', async (req, res) => {
 });
 
 /**
+ * POST /api/v1/wordbooks/move
+ * 将单词移动到目标表（已会/模糊/不会）
+ * Body: { sourceTable: 'words_b', targetTable: 'words_x', wordId: 1 }
+ */
+router.post('/move', async (req, res) => {
+  try {
+    const { sourceTable, targetTable, wordId } = req.body;
+
+    // 验证参数
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    if (!wordId) {
+      res.status(400).json({ error: 'Word ID is required' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    // 从源表获取单词
+    const { data: word, error: fetchError } = await client
+      .from(sourceTable)
+      .select('*')
+      .eq('id', wordId)
+      .maybeSingle();
+
+    if (fetchError) {
+      res.status(500).json({ error: fetchError.message });
+      return;
+    }
+
+    if (!word) {
+      res.status(404).json({ error: 'Word not found' });
+      return;
+    }
+
+    // 准备插入数据（移除 id 让数据库自动生成）
+    const { id, ...wordData } = word;
+
+    // 插入到目标表
+    const { error: insertError } = await client
+      .from(targetTable)
+      .insert(wordData);
+
+    if (insertError) {
+      res.status(500).json({ error: insertError.message });
+      return;
+    }
+
+    // 从源表删除
+    await client.from(sourceTable).delete().eq('id', wordId);
+
+    res.json({
+      success: true,
+      message: `Word moved to ${targetTable}`
+    });
+  } catch (err) {
+    console.error('Error moving word:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/v1/wordbooks/:table/count
  * 获取指定词汇表的单词数量
  */

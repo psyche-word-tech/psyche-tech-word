@@ -148,24 +148,32 @@ export default function LearnPage() {
 	};
 
 	const handleDrop = async (wordId: number, categoryId: number) => {
-		// 获取状态字母
-		const statusMap: Record<number, string> = { 1: 'x', 2: 'y', 3: 'z' };
-		const status = statusMap[categoryId];
+		// 分类ID对应的目标表
+		const targetTableMap: Record<number, string> = {
+			1: 'words_x', // 已会
+			2: 'words_y', // 模糊
+			3: 'words_z'  // 不会
+		};
+		const targetTable = targetTableMap[categoryId];
 
-		// 保存到数据库
+		// 调用API将单词移动到对应表
 		try {
 			/**
-			 * 服务端文件：server/src/routes/words.ts
-			 * 接口：PUT /api/v1/words/:id/status
-			 * Body 参数：status: string -- x=已会, y=模糊, z=不会
+			 * 服务端文件：server/src/routes/wordbooks.ts
+			 * 接口：POST /api/v1/wordbooks/move
+			 * Body 参数：sourceTable: string, targetTable: string, wordId: number
 			 */
-			await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/${wordId}/status`, {
-				method: 'PUT',
+			await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/move`, {
+				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ status }),
+				body: JSON.stringify({
+					sourceTable: table,
+					targetTable: targetTable,
+					wordId: wordId
+				}),
 			});
 		} catch (error) {
-			console.error('Failed to save word status:', error);
+			console.error('Failed to move word:', error);
 		}
 
 		setUsedWords(prev => new Set([...prev, wordId]));
