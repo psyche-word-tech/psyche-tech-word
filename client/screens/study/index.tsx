@@ -175,8 +175,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   cardMediumLeft: {
-    width: '50%',
-    height: 75,
+    width: '70%',
+    height: 100,
     borderRadius: 4,
     overflow: 'hidden',
     backgroundColor: '#8B7355',
