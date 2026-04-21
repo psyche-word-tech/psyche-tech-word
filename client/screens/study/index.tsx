@@ -57,7 +57,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
+              <Image source={iconDang} style={styles.gridImageFull} resizeMode="cover" />
               <View style={styles.gridLabelContainer}>
                 <Text style={styles.gridLabel}>购买词汇书</Text>
               </View>
@@ -136,6 +136,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#E8E0D5',
     margin: 4,
+  },
+  // 布满整个区域的图片样式
+  gridImageFull: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   gridImage: {
     width: '100%',
