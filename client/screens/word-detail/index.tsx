@@ -270,12 +270,12 @@ const styles = StyleSheet.create({
 	},
 	backText: {
 		fontSize: 14,
-		color: '#666666',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 	},
 	headerTitle: {
 		fontSize: 16,
-		color: '#666666',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 	},
 	placeholder: {
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
 	},
 	meaningText: {
 		fontSize: 16,
-		color: '#C8102E',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 		lineHeight: 24,
 	},
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
 	},
 	commentId: {
 		fontSize: 12,
-		color: '#666666',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 		marginBottom: 4,
 	},
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
 	},
 	sliderLabelText: {
 		fontSize: 12,
-		color: '#999999',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 	},
 	sliderValueText: {
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
 	},
 	noteText: {
 		fontSize: 12,
-		color: '#999999',
+		color: '#333333',
 		fontFamily: 'Times New Roman',
 		lineHeight: 18,
 	},
