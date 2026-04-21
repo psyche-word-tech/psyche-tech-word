@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, PanResponder, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import Slider from '@react-native-community/slider';
 
 interface Word {
 	id: number;
@@ -12,70 +13,6 @@ interface Word {
 	phonetic: string;
 	meaning: string;
 	example?: string;
-}
-
-// 自定义熟悉度滑动条组件
-function FamiliaritySlider({ value, onValueChange }: { value: number; onValueChange: (val: number) => void }) {
-	const sliderWidth = useRef(Dimensions.get('window').width - 80);
-	const [localValue, setLocalValue] = useState(value);
-
-	// 根据值计算颜色 (0=红, 100=绿)
-	const getTrackColor = (val: number) => {
-		const ratio = val / 100;
-		// 从红到黄的渐变 (左侧)
-		const red = 244;
-		const green = Math.round(67 + (175 - 67) * ratio);
-		return `rgb(${red}, ${green}, 67)`;
-	};
-
-	const panResponder = useRef(
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => true,
-			onMoveShouldSetPanResponder: () => true,
-			onPanResponderGrant: (evt) => {
-				const x = evt.nativeEvent.locationX;
-				const newValue = Math.round((x / sliderWidth.current) * 100);
-				const clampedValue = Math.max(0, Math.min(100, newValue));
-				setLocalValue(clampedValue);
-			},
-			onPanResponderMove: (evt) => {
-				const x = evt.nativeEvent.locationX;
-				const newValue = Math.round((x / sliderWidth.current) * 100);
-				const clampedValue = Math.max(0, Math.min(100, newValue));
-				setLocalValue(clampedValue);
-			},
-			onPanResponderRelease: () => {
-				onValueChange(localValue);
-			},
-		})
-	).current;
-
-	// 更新本地值
-	useEffect(() => {
-		setLocalValue(value);
-	}, [value]);
-
-	const trackColor = getTrackColor(localValue);
-
-	return (
-		<View style={styles.sliderContainer}>
-			<View style={styles.sliderLabels}>
-				<Text style={styles.sliderLabelText}>不熟悉</Text>
-				<Text style={[styles.sliderValueText, { color: trackColor }]}>{localValue}%</Text>
-				<Text style={styles.sliderLabelText}>熟悉</Text>
-			</View>
-			<View
-				style={styles.sliderTrack}
-				onLayout={(e) => { sliderWidth.current = e.nativeEvent.layout.width; }}
-			>
-				<View style={[styles.sliderFill, { width: `${localValue}%`, backgroundColor: trackColor }]} />
-				<View
-					{...panResponder.panHandlers}
-					style={[styles.sliderThumb, { left: `${localValue}%`, backgroundColor: trackColor }]}
-				/>
-			</View>
-		</View>
-	);
 }
 
 export default function WordDetailPage() {
@@ -266,7 +203,24 @@ export default function WordDetailPage() {
 					</View>
 
 					{/* Familiarity Slider */}
-					<FamiliaritySlider value={familiarity} onValueChange={setFamiliarity} />
+					<View style={styles.sliderContainer}>
+						<View style={styles.sliderLabels}>
+							<Text style={styles.sliderLabelText}>不熟悉</Text>
+							<Text style={styles.sliderValueText}>{familiarity}%</Text>
+							<Text style={styles.sliderLabelText}>熟悉</Text>
+						</View>
+						<Slider
+							style={styles.slider}
+							minimumValue={0}
+							maximumValue={100}
+							step={1}
+							value={familiarity}
+							onValueChange={setFamiliarity}
+							minimumTrackTintColor="#4CAF50"
+							maximumTrackTintColor="#E0E0E0"
+							thumbTintColor="#4CAF50"
+						/>
+					</View>
 
 					{/* Comment Section */}
 					<View style={styles.section}>
@@ -467,34 +421,13 @@ const styles = StyleSheet.create({
 	},
 	sliderValueText: {
 		fontSize: 14,
+		color: '#4CAF50',
 		fontFamily: 'serif',
 		fontWeight: 'bold',
 	},
-	sliderTrack: {
+	slider: {
 		width: '100%',
-		height: 6,
-		backgroundColor: '#E0E0E0',
-		borderRadius: 3,
-		position: 'relative',
-	},
-	sliderFill: {
-		height: '100%',
-		borderRadius: 3,
-	},
-	sliderThumb: {
-		position: 'absolute',
-		top: -9,
-		width: 24,
-		height: 24,
-		borderRadius: 12,
-		marginLeft: -12,
-		borderWidth: 3,
-		borderColor: '#FFFFFF',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.2,
-		shadowRadius: 3,
-		elevation: 4,
+		height: 40,
 	},
 	bottomNote: {
 		marginHorizontal: 16,
