@@ -207,6 +207,14 @@ export default function WordDetailPage() {
 						</View>
 					</View>
 
+					{/* Bottom Note */}
+					<View style={styles.bottomNote}>
+						<Text style={styles.noteText}>
+							勾选图标表示该例句或评论已被作者采纳。{'\n'}
+							付费可打印词汇书，详情请咨询客服。
+						</Text>
+					</View>
+
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
 						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
@@ -218,14 +226,6 @@ export default function WordDetailPage() {
 						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
 							<Text style={styles.statusText}>不会(z)</Text>
 						</TouchableOpacity>
-					</View>
-
-					{/* Bottom Note */}
-					<View style={styles.bottomNote}>
-						<Text style={styles.noteText}>
-							勾选图标表示该例句或评论已被作者采纳。{'\n'}
-							付费可打印词汇书，详情请咨询客服。
-						</Text>
 					</View>
 				</ScrollView>
 			</View>
