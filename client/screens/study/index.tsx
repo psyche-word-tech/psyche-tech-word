@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   gridItemTop: {
     flex: 1,
     height: '90%', // 上压缩高度
-    marginVertical: '5%', // 上下留白
+    marginBottom: '10%', // 只下边缘留白
     backgroundColor: '#E8E0D5',
   },
   gridItem: {
