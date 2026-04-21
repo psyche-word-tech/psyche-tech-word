@@ -26,10 +26,14 @@ export default function StudyScreen() {
           <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
             <View style={styles.engravedTextContainer}>
-              {engravedText.split('').map((char, index) => (
-                <View key={index} style={styles.engravedCharWrapper}>
-                  <Text style={styles.engravedText}>{char}</Text>
-                  <Text style={styles.engravedTextHighlight}>{char}</Text>
+              {engravedText.split(' ').map((word, wordIndex) => (
+                <View key={wordIndex} style={styles.engravedWordColumn}>
+                  {word.split('').map((char, charIndex) => (
+                    <View key={charIndex} style={styles.engravedCharWrapper}>
+                      <Text style={styles.engravedText}>{char}</Text>
+                      <Text style={styles.engravedTextHighlight}>{char}</Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>
@@ -137,29 +141,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   engravedTextContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  engravedWordColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
   engravedCharWrapper: {
     position: 'relative',
-    marginVertical: 4,
   },
-  // 刻字主体 - 高对比度白色
+  // 刻字主体
   engravedText: {
-    fontSize: 36,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    letterSpacing: 0,
     textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  // 高光层 - 纯白高亮
+  // 高光层
   engravedTextHighlight: {
     position: 'absolute',
-    top: -1,
-    left: -1,
-    fontSize: 36,
+    top: -0.5,
+    left: -0.5,
+    fontSize: 20,
     fontWeight: 'bold',
     color: 'rgba(255,255,255,0.9)',
   },
