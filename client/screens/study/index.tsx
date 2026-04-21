@@ -45,13 +45,11 @@ export default function StudyScreen() {
           {/* 上一行：区域二、区域三 */}
           <View style={styles.gridRow}>
             <TouchableOpacity 
-              style={styles.gridItem} 
+              style={[styles.gridItem, styles.gridItemFilled]} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <View style={styles.gridLabelContainer}>
-                <Text style={styles.gridLabel}>购买词汇书</Text>
-              </View>
+              <Text style={styles.gridLabel}>购买词汇书</Text>
             </TouchableOpacity>
             <View style={styles.gridItem}>
               <View style={styles.emptyCard} />
@@ -63,13 +61,11 @@ export default function StudyScreen() {
               <View style={styles.emptyCard} />
             </View>
             <TouchableOpacity 
-              style={styles.gridItem} 
+              style={[styles.gridItem, styles.gridItemFilled]} 
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
-              <View style={styles.gridLabelContainer}>
-                <Text style={styles.gridLabel}>我的词汇书</Text>
-              </View>
+              <Text style={styles.gridLabel}>我的词汇书</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -123,23 +119,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8E0D5',
     margin: 4,
   },
+  // 充满整个区域的按钮
+  gridItemFilled: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gridLabel: {
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   emptyCard: {
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
-  },
-  gridLabelContainer: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-  },
-  gridLabel: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   engravedOverlay: {
     position: 'absolute',
