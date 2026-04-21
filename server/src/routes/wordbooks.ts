@@ -27,6 +27,37 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/wordbooks/:table
+ * 获取指定表的单词列表
+ */
+router.get('/:table', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    
+    if (!validTables.includes(table)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from(table)
+      .select('*')
+      .order('id');
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.json(data || []);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/v1/wordbooks/purchase
  * 购买词汇书：将源数据库的单词复制到目标数据库
  * Body: { sourceTable: 'words_a', targetTable: 'words_b' }
