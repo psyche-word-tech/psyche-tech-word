@@ -31,23 +31,31 @@ export default function MyVocabularyPage() {
   useFocusEffect(
     useCallback(() => {
       const loadBooks = async () => {
-        // 如果有传入的books参数，先合并保存
-        if (params.books) {
-          const newBooks: WordBook[] = JSON.parse(params.books);
+        try {
+          // 先从API获取所有词汇书
+          const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks`);
+          const allBooks = await response.json();
+          
+          // 只保留已购买的
+          const purchasedBooks = allBooks.filter((book: any) => book.purchased);
+          
           // 获取已有的
           const existing = await AsyncStorage.getItem(STORAGE_KEY);
           const existingBooks: WordBook[] = existing ? JSON.parse(existing) : [];
+          
           // 合并去重
           const merged = [...existingBooks];
-          newBooks.forEach(newBook => {
+          purchasedBooks.forEach((newBook: any) => {
             if (!merged.find(b => b.id === newBook.id)) {
-              merged.push(newBook);
+              merged.push({ id: newBook.id, name: newBook.name });
             }
           });
+          
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           setBoughtBooks(merged);
-        } else {
-          // 从存储读取
+        } catch (error) {
+          console.error('加载词汇书失败:', error);
+          // 失败时从本地存储读取
           const stored = await AsyncStorage.getItem(STORAGE_KEY);
           if (stored) {
             setBoughtBooks(JSON.parse(stored));
