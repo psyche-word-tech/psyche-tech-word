@@ -15,30 +15,26 @@ export default function StudyScreen() {
     <Screen safeAreaEdges={['left', 'right', 'bottom']}>
       <SafeAreaView style={styles.container}>
         {/* 上半部分：区域一（100% 宽，50% 高） */}
-        <View style={styles.topSection}>
-          <TouchableOpacity 
-            style={styles.topCard} 
-            activeOpacity={0.9} 
-            onPress={() => router.push('/engrave')}
-          >
-            {engravedText.length > 0 && (
-              <View style={styles.engravedOverlay}>
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
-                  style={styles.engravedGradient}
-                />
-                <View style={styles.engravedTextContainer}>
-                  {engravedText.split('').map((char, index) => (
-                    <Text key={index} style={styles.engravedText}>{char}</Text>
-                  ))}
-                </View>
+        <TouchableOpacity 
+          style={styles.topCard} 
+          activeOpacity={0.9} 
+          onPress={() => router.push('/engrave')}
+        >
+          {engravedText.length > 0 && (
+            <View style={styles.engravedOverlay}>
+              <LinearGradient
+                colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
+                style={styles.engravedGradient}
+              />
+              <View style={styles.engravedTextContainer}>
+                {engravedText.split('').map((char, index) => (
+                  <Text key={index} style={styles.engravedText}>{char}</Text>
+                ))}
               </View>
-            )}
-            <View style={styles.topLabelContainer}>
-              <Text style={styles.topLabel}>刻字</Text>
             </View>
-          </TouchableOpacity>
-        </View>
+          )}
+          <Text style={styles.topLabel}>刻字</Text>
+        </TouchableOpacity>
 
         {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
         <View style={styles.bottomSection}>
@@ -79,18 +75,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  // 区域一：占满上半部分（100% 宽，50% 高）
-  topSection: {
+  topCard: {
     height: HALF_HEIGHT,
     width: '100%',
-  },
-  topCard: {
-    flex: 1,
     backgroundColor: '#E8E0D5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  topLabelContainer: {
     justifyContent: 'center',
     alignItems: 'center',
   },
