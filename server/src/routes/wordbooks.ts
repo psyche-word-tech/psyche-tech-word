@@ -4,6 +4,29 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 const router = express.Router();
 
 /**
+ * GET /api/v1/wordbooks
+ * 获取所有词汇书列表
+ */
+router.get('/', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from('wordbooks')
+      .select('*')
+      .order('id');
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.json(data || []);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/v1/wordbooks/purchase
  * 购买词汇书：将源数据库的单词复制到目标数据库
  * Body: { sourceTable: 'words_a', targetTable: 'words_b' }
