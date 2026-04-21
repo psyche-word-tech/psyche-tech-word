@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const iconRock = require('@/assets/rock.jpg');
 const iconDang = require('@/assets/dang.png');
@@ -26,16 +25,13 @@ export default function StudyScreen() {
         >
           <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
-            <View style={styles.engravedOverlay}>
-              <LinearGradient
-                colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.4)']}
-                style={styles.engravedGradient}
-              />
-              <View style={styles.engravedTextContainer}>
-                {engravedText.split('').map((char, index) => (
-                  <Text key={index} style={styles.engravedText}>{char}</Text>
-                ))}
-              </View>
+            <View style={styles.engravedTextContainer}>
+              {engravedText.split('').map((char, index) => (
+                <View key={index} style={styles.engravedCharWrapper}>
+                  <Text style={styles.engravedText}>{char}</Text>
+                  <Text style={styles.engravedTextHighlight}>{char}</Text>
+                </View>
+              ))}
             </View>
           )}
           {engravedText.length === 0 && (
@@ -140,33 +136,31 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#FFFFFF',
   },
-  engravedOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  engravedGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
   engravedTextContainer: {
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  engravedCharWrapper: {
+    position: 'relative',
+    marginVertical: 4,
+  },
+  // 刻字主体 - 深色凿刻效果
   engravedText: {
-    fontSize: 24,
-    color: '#FFFFFF',
+    fontSize: 32,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    color: '#1A0F08',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  // 高光层 - 模拟光照
+  engravedTextHighlight: {
+    position: 'absolute',
+    top: -1,
+    left: -1,
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'rgba(255,255,255,0.3)',
   },
 });
