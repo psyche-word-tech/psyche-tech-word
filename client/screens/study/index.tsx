@@ -87,19 +87,17 @@ const styles = StyleSheet.create({
   topCard: {
     flex: 1,
     backgroundColor: '#E8E0D5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topLabelContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topLabel: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: 18,
+    color: '#333333',
     fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   // 下半部分：2x2 排列（区域二、三、四、五）
   bottomSection: {
