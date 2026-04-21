@@ -10,8 +10,7 @@ const iconMyVocab = require('@/assets/my-vocab.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GRID_SIZE = (SCREEN_WIDTH - 32) / 2; // 田字格边长，减去间距
-const TOP_HEIGHT = SCREEN_HEIGHT / 2; // 上半部分高度（50%）
-const BOTTOM_ITEM_HEIGHT = (SCREEN_HEIGHT / 2) / 2 - 4; // 下半部分每个格子高度
+const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
 
 export default function StudyScreen() {
   const router = useSafeRouter();
@@ -19,7 +18,7 @@ export default function StudyScreen() {
   const engravedText = params.engravedText || '';
 
   return (
-    <Screen style={{ padding: 0 }}>
+    <Screen safeAreaEdges={['left', 'right', 'bottom']}>
       <SafeAreaView style={styles.container}>
         {/* 上半部分：区域一（100% 宽，50% 高） */}
         <View style={styles.topSection}>
@@ -95,7 +94,7 @@ const styles = StyleSheet.create({
   },
   // 区域一：占满上半部分（100% 宽，50% 高）
   topSection: {
-    height: TOP_HEIGHT,
+    height: HALF_HEIGHT,
     width: '100%',
     backgroundColor: '#FFFFFF',
     padding: 4,
@@ -123,7 +122,7 @@ const styles = StyleSheet.create({
   },
   // 下半部分：2x2 排列（区域二、三、四、五）
   bottomSection: {
-    height: TOP_HEIGHT,
+    height: HALF_HEIGHT,
     width: '100%',
     padding: 4,
     paddingTop: 0,
