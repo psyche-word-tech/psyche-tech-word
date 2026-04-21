@@ -27,7 +27,7 @@ export default function PurchasePage() {
       }
     });
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-    router.replace('/my-vocabulary');
+    router.replace('/word-list');
   };
 
   return (
