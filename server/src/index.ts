@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import wordsRouter from "./routes/words";
 import userWordsRouter from "./routes/user-words";
+import wordbooksRouter from "./routes/wordbooks";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -19,6 +20,7 @@ app.get('/api/v1/health', (req, res) => {
 // Routes
 app.use('/api/v1/words', wordsRouter);
 app.use('/api/v1/user-words', userWordsRouter);
+app.use('/api/v1/wordbooks', wordbooksRouter);
 
 
 app.listen(port, () => {

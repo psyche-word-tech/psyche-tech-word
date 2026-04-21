@@ -1,0 +1,130 @@
+import express from 'express';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
+
+const router = express.Router();
+
+/**
+ * POST /api/v1/wordbooks/purchase
+ * 购买词汇书：将源数据库的单词复制到目标数据库
+ * Body: { sourceTable: 'words_a', targetTable: 'words_b' }
+ */
+router.post('/purchase', async (req, res) => {
+  try {
+    const { sourceTable, targetTable } = req.body;
+
+    // 验证参数
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d'];
+    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    // 清空目标表
+    await client.from(targetTable).delete().neq('id', 0);
+
+    // 从源表获取所有单词
+    const { data: sourceWords, error: fetchError } = await client
+      .from(sourceTable)
+      .select('*');
+
+    if (fetchError) {
+      res.status(500).json({ error: fetchError.message });
+      return;
+    }
+
+    if (!sourceWords || sourceWords.length === 0) {
+      res.status(404).json({ error: 'No words found in source table' });
+      return;
+    }
+
+    // 准备插入数据（移除 id 让数据库自动生成）
+    const wordsToInsert = sourceWords.map(({ id, ...rest }) => rest);
+
+    // 插入到目标表
+    const { data: insertedWords, error: insertError } = await client
+      .from(targetTable)
+      .insert(wordsToInsert)
+      .select();
+
+    if (insertError) {
+      res.status(500).json({ error: insertError.message });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully copied ${insertedWords?.length || 0} words from ${sourceTable} to ${targetTable}`,
+      count: insertedWords?.length || 0
+    });
+  } catch (err) {
+    console.error('Error purchasing wordbook:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/v1/wordbooks/:table/count
+ * 获取指定词汇表的单词数量
+ */
+router.get('/:table/count', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'user_words'];
+
+    if (!validTables.includes(table)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+    const { count, error } = await client
+      .from(table)
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.json({ table, count: count || 0 });
+  } catch (err) {
+    console.error('Error counting words:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/v1/wordbooks/:table
+ * 获取指定词汇表的所有单词
+ */
+router.get('/:table', async (req, res) => {
+  try {
+    const { table } = req.params;
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d'];
+
+    if (!validTables.includes(table)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from(table)
+      .select('*')
+      .order('id');
+
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+
+    res.json(data || []);
+  } catch (err) {
+    console.error('Error fetching words:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;

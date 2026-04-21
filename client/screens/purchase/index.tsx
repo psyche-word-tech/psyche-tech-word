@@ -1,15 +1,12 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Book {
   id: number;
   name: string;
   price: number;
 }
-
-const STORAGE_KEY = 'bought_wordbooks';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
@@ -21,32 +18,22 @@ export default function PurchasePage() {
 
   const handleConfirm = async () => {
     try {
-      // 获取所有单词ID
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`);
-      const allWords = await response.json();
-      const wordIds = allWords.map((w: any) => w.id);
-      
-      // 调用API将单词添加到用户词汇表
-      await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/purchase`, {
+      // 调用 API 将 words_a 复制到 words_b
+      await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wordIds }),
+        body: JSON.stringify({
+          sourceTable: 'words_a',
+          targetTable: 'words_b'
+        }),
       });
 
-      // 保存到本地存储
-      const existing = await AsyncStorage.getItem(STORAGE_KEY);
-      const existingBooks: Book[] = existing ? JSON.parse(existing) : [];
-      const merged = [...existingBooks];
-      books.forEach(newBook => {
-        if (!merged.find(b => b.id === newBook.id)) {
-          merged.push(newBook);
-        }
-      });
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-      
-      router.replace('/word-list');
+      // 返回购买界面
+      router.replace('/vocabulary');
     } catch (error) {
       console.error('Purchase error:', error);
+      // 即使失败也返回
+      router.replace('/vocabulary');
     }
   };
 
@@ -112,8 +99,9 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
   },
   title: {
-    fontSize: 14,
-    color: '#333333',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
     fontFamily: 'serif',
   },
   placeholder: {
@@ -123,55 +111,53 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 20,
   },
   dialog: {
     width: '100%',
-    borderWidth: 2,
-    borderColor: '#4A90D9',
-    borderStyle: 'dashed',
+    maxWidth: 320,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   emptySpace: {
     height: 80,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    padding: 20,
+    alignItems: 'center',
   },
   mainText: {
-    fontSize: 14,
-    color: '#333333',
-    fontFamily: 'serif',
+    fontSize: 16,
+    color: '#000000',
     textAlign: 'center',
-    marginBottom: 20,
+    fontFamily: 'serif',
+    marginBottom: 30,
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 30,
+    gap: 20,
   },
   button: {
-    backgroundColor: '#7CB342',
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 14,
+    color: '#000000',
     fontFamily: 'serif',
-    fontWeight: '600',
   },
   noticeBar: {
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 12,
+    backgroundColor: '#E5E5E5',
+    padding: 12,
+    alignItems: 'center',
   },
   noticeText: {
     fontSize: 12,
-    color: '#888888',
+    color: '#666666',
     fontFamily: 'serif',
-    textAlign: 'center',
   },
 });

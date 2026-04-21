@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
 interface Word {
@@ -14,16 +14,20 @@ const EXPO_PUBLIC_BACKEND_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
 export default function WordListPage() {
   const router = useSafeRouter();
+  const params = useSafeSearchParams<{ table?: string }>();
+  const table = params.table || 'words_b'; // 默认从 words_b 获取
+  
   const [words, setWords] = useState<Word[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchWords();
-  }, []);
+  }, [table]);
 
   const fetchWords = async () => {
     try {
-      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words`);
+      // 从指定的词汇表获取单词
+      const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
       const data = await response.json();
       setWords(data);
     } catch (error) {
@@ -98,16 +102,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
   },
   backText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#000000',
+    fontFamily: 'serif',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    fontFamily: 'serif',
   },
   placeholder: {
     width: 50,
@@ -115,11 +122,12 @@ const styles = StyleSheet.create({
   countBar: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F0F0F0',
   },
   countText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: 'serif',
   },
   loadingContainer: {
     flex: 1,
@@ -127,36 +135,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: 14,
+    color: '#999999',
+    fontFamily: 'serif',
   },
   listContent: {
     padding: 16,
   },
   wordItem: {
-    backgroundColor: '#F8F8F8',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
   },
   wordHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'baseline',
+    marginBottom: 4,
   },
   wordText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginRight: 12,
+    color: '#000000',
+    fontFamily: 'serif',
+    marginRight: 8,
   },
   phoneticText: {
     fontSize: 14,
-    color: '#999',
+    color: '#999999',
+    fontFamily: 'serif',
   },
   meaningText: {
     fontSize: 14,
-    color: '#666',
+    color: '#333333',
+    fontFamily: 'serif',
     lineHeight: 20,
   },
 });
