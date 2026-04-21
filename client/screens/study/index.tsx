@@ -19,7 +19,7 @@ export default function StudyScreen() {
         {/* Top Status Bar */}
         <View style={styles.statusBar} />
 
-        {/* 上半部分：刻字（100% 宽） */}
+        {/* 上半部分：占屏幕 1/3，刻字（100% 宽，2:1 比例） */}
         <View style={styles.topSection}>
           <TouchableOpacity 
             style={styles.topCard} 
@@ -46,9 +46,9 @@ export default function StudyScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 下半部分：L 形布局 */}
+        {/* 下半部分：占屏幕 2/3 */}
         <View style={styles.bottomSection}>
-          {/* 左下：购买词汇书 */}
+          {/* 左：购买词汇书 */}
           <TouchableOpacity 
             style={styles.bottomLeftCard} 
             activeOpacity={0.9} 
@@ -60,7 +60,7 @@ export default function StudyScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* 右下：我的词汇书 */}
+          {/* 右：我的词汇书 */}
           <TouchableOpacity 
             style={styles.bottomRightCard} 
             activeOpacity={0.9} 
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     width: '100%',
-    aspectRatio: 2, // 宽高比 2:1
+    height: '33.33%', // 占屏幕 1/3
   },
   topCard: {
     width: '100%',
@@ -113,7 +113,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   bottomSection: {
-    flex: 1,
+    width: '100%',
+    height: '66.67%', // 占屏幕 2/3
     flexDirection: 'row',
   },
   bottomLeftCard: {
