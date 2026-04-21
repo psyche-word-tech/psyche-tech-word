@@ -32,27 +32,20 @@ export default function MyVocabularyPage() {
     useCallback(() => {
       const loadBooks = async () => {
         try {
-          // 先从API获取所有词汇书
+          // 从API获取所有词汇书
           const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks`);
           const allBooks = await response.json();
           
+          if (!Array.isArray(allBooks)) {
+            throw new Error('API返回数据格式错误');
+          }
+          
           // 只保留已购买的
-          const purchasedBooks = allBooks.filter((book: any) => book.purchased);
+          const purchasedBooks = allBooks
+            .filter((book: any) => book.purchased)
+            .map((book: any) => ({ id: book.id, name: book.name }));
           
-          // 获取已有的
-          const existing = await AsyncStorage.getItem(STORAGE_KEY);
-          const existingBooks: WordBook[] = existing ? JSON.parse(existing) : [];
-          
-          // 合并去重
-          const merged = [...existingBooks];
-          purchasedBooks.forEach((newBook: any) => {
-            if (!merged.find(b => b.id === newBook.id)) {
-              merged.push({ id: newBook.id, name: newBook.name });
-            }
-          });
-          
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          setBoughtBooks(merged);
+          setBoughtBooks(purchasedBooks);
         } catch (error) {
           console.error('加载词汇书失败:', error);
           // 失败时从本地存储读取
@@ -63,7 +56,7 @@ export default function MyVocabularyPage() {
         }
       };
       loadBooks();
-    }, [params.books])
+    }, [])
   );
 
   const handleLearnPress = (book: WordBook) => {
