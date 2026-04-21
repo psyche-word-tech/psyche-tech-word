@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,20 +13,17 @@ interface WordBook {
 const STORAGE_KEY = 'bought_wordbooks';
 
 // 词汇书ID对应的数据库表
-// 只有考研词汇(id:4)对应words_b，其他词汇暂不开放
-const BOOK_TABLE_MAP: Record<number, string | null> = {
-  1: null, // 高中词汇 - 暂不开放
-  2: null, // 四级词汇 - 暂不开放
-  3: null, // 六级词汇 - 暂不开放
-  4: 'words_b', // 考研词汇
+const BOOK_TABLE_MAP: Record<number, string> = {
+  1: 'words_a',  // 高中词汇
+  2: 'words_c',  // 四级词汇
+  3: 'words_d',  // 六级词汇
+  4: 'words_b',  // 考研词汇
 };
 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ books?: string }>();
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -60,15 +57,7 @@ export default function MyVocabularyPage() {
 
   const handleLearnPress = (book: WordBook) => {
     const table = BOOK_TABLE_MAP[book.id];
-    
-    if (table) {
-      // 有对应的数据库表，跳转到单词列表
-      router.push('/word-list', { table });
-    } else {
-      // 暂不开放的词汇书，显示弹窗
-      setAlertMessage(`${book.name}暂未开放`);
-      setAlertVisible(true);
-    }
+    router.push('/word-list', { table });
   };
 
   return (
@@ -109,26 +98,6 @@ export default function MyVocabularyPage() {
             </View>
           ))}
         </View>
-
-        {/* Custom Alert Modal */}
-        <Modal
-          visible={alertVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setAlertVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.alertBox}>
-              <Text style={styles.alertText}>{alertMessage}</Text>
-              <TouchableOpacity 
-                style={styles.alertButton}
-                onPress={() => setAlertVisible(false)}
-              >
-                <Text style={styles.alertButtonText}>确定</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </View>
     </Screen>
   );
