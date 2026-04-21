@@ -19,9 +19,13 @@ app.get('/api/v1/health', (req, res) => {
 
 // 返回 API 配置信息给前端
 app.get('/api/v1/config', (req, res) => {
+  // 优先使用环境变量，其次使用请求来源
   const baseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 
                   `${req.protocol}://${req.get('host')}`;
-  res.json({ apiBaseUrl: baseUrl });
+  res.json({ 
+    apiBaseUrl: baseUrl,
+    version: '1.0.0'
+  });
 });
 
 // Routes

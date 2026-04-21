@@ -1,9 +1,11 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
+// 从环境变量或 .env 文件获取后端地址
+const backendBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || '';
+
 const appName = process.env.COZE_PROJECT_NAME || process.env.EXPO_PUBLIC_COZE_PROJECT_NAME || '应用';
 const projectId = process.env.COZE_PROJECT_ID || process.env.EXPO_PUBLIC_COZE_PROJECT_ID;
 const slugAppName = projectId ? `app${projectId}` : 'myapp';
-const backendBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || '';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
@@ -31,16 +33,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
+    // 关键：将后端地址注入到 extra 中，供运行时使用
     "extra": {
-      "backendBaseUrl": backendBaseUrl
+      ...config.extra,
+      "backendBaseUrl": backendBaseUrl || 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site'
     },
     "plugins": [
-      process.env.EXPO_PUBLIC_BACKEND_BASE_URL ? [
-        "expo-router",
-        {
-          "origin": process.env.EXPO_PUBLIC_BACKEND_BASE_URL
-        }
-      ] : 'expo-router',
+      'expo-router',
       [
         "expo-splash-screen",
         {

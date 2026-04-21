@@ -3,6 +3,17 @@ if [ -z "${BASH_VERSION:-}" ]; then exec /usr/bin/env bash "$0" "$@"; fi
 set -euo pipefail
 ROOT_DIR="$(pwd)"
 
+# ==================== 环境变量配置 ====================
+# 确保 EXPO_PUBLIC_BACKEND_BASE_URL 在构建时被 Expo 识别
+# 优先级：已有环境变量 > COZE_PROJECT_DOMAIN_DEFAULT > localhost
+if [ -z "${EXPO_PUBLIC_BACKEND_BASE_URL:-}" ]; then
+  if [ -n "${COZE_PROJECT_DOMAIN_DEFAULT:-}" ]; then
+    export EXPO_PUBLIC_BACKEND_BASE_URL="$COZE_PROJECT_DOMAIN_DEFAULT"
+  fi
+fi
+
+echo "[BUILD] EXPO_PUBLIC_BACKEND_BASE_URL: ${EXPO_PUBLIC_BACKEND_BASE_URL:-not set}"
+
 # ==================== 工具函数 ====================
 info() {
   echo "[INFO] $1"
@@ -20,42 +31,30 @@ check_command() {
   fi
 }
 
-# ==================== 环境变量配置 ====================
-# 如果未设置 EXPO_PUBLIC_BACKEND_BASE_URL，使用默认值
-if [ -z "${EXPO_PUBLIC_BACKEND_BASE_URL:-}" ]; then
-  # 从 COZE_PROJECT_DOMAIN_DEFAULT 或 COZE_PREVIEW_DIR 获取
-  if [ -n "${COZE_PROJECT_DOMAIN_DEFAULT:-}" ]; then
-    export EXPO_PUBLIC_BACKEND_BASE_URL="$COZE_PROJECT_DOMAIN_DEFAULT"
-  elif [ -n "${COZE_PREVIEW_DIR:-}" ]; then
-    # 从预览目录推断 API 地址
-    export EXPO_PUBLIC_BACKEND_BASE_URL="http://localhost:9091"
-  fi
-fi
-
-info "EXPO_PUBLIC_BACKEND_BASE_URL: ${EXPO_PUBLIC_BACKEND_BASE_URL:-not set}"
-
 info "==================== 开始构建 ===================="
-info "开始执行构建脚本（build_prod.sh）..."
+info "开始执行构建脚本..."
 info "正在检查依赖命令是否存在..."
-# 检查核心命令
 check_command "pnpm"
 check_command "npm"
 
 # ==================== 安装 Node 依赖 ====================
 info "==================== 安装 Node 依赖 ===================="
-info "开始安装 Node 依赖"
 if [ -f "$ROOT_DIR/package.json" ]; then
-  info "进入目录：$ROOT_DIR"
   info "正在执行：pnpm install"
   (cd "$ROOT_DIR" && pnpm install --registry=https://registry.npmmirror.com) || error "Node 依赖安装失败"
-else
-  warn "未找到 $ROOT_DIR/package.json 文件，请检查路径是否正确"
 fi
-info "==================== 依赖安装完成！====================\n"
+info "==================== 依赖安装完成！===================="
+
+info "==================== Expo 构建（设置环境变量）===================="
+info "开始构建 Expo 应用..."
+# 关键：确保环境变量被传递给 expo build
+cd "$ROOT_DIR/client"
+EXPO_PUBLIC_BACKEND_BASE_URL="${EXPO_PUBLIC_BACKEND_BASE_URL:-}" npx expo export --platform all || error "Expo 构建失败"
+info "==================== Expo 构建完成！===================="
 
 info "==================== dist打包 ===================="
 info "开始执行：pnpm run build (server)"
 (pushd "$ROOT_DIR/server" > /dev/null && pnpm run build; popd > /dev/null) || error "dist打包失败"
-info "==================== dist打包完成！====================\n"
+info "==================== dist打包完成！===================="
 
-info "下一步：执行 ./prod_run.sh 启动服务"
+info "构建完成！"

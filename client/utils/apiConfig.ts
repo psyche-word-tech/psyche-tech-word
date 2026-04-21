@@ -1,7 +1,9 @@
 // API 配置
 // 动态从后端获取 API 地址
 
-const DEFAULT_API_URL = 'http://localhost:9091';
+// 生产环境默认域名（部署平台域名）
+const DEFAULT_PROD_API_URL = 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site';
+const LOCAL_API_URL = 'http://localhost:9091';
 
 let cachedApiUrl: string | null = null;
 
@@ -14,7 +16,8 @@ export const fetchApiConfig = async (): Promise<string> => {
   // 尝试多个可能的地址
   const possibleUrls = [
     process.env.EXPO_PUBLIC_BACKEND_BASE_URL,
-    DEFAULT_API_URL,
+    DEFAULT_PROD_API_URL,
+    LOCAL_API_URL,
   ].filter(Boolean) as string[];
 
   for (const url of possibleUrls) {
@@ -41,8 +44,8 @@ export const fetchApiConfig = async (): Promise<string> => {
     }
   }
   
-  // 所有尝试都失败，使用默认地址
-  return DEFAULT_API_URL;
+  // 所有尝试都失败，使用生产环境默认地址
+  return DEFAULT_PROD_API_URL;
 };
 
 // 同步获取 API URL（使用缓存或环境变量）
@@ -59,9 +62,8 @@ export const getApiUrl = (): string => {
   }
   
   // 兜底：返回默认地址
-  return DEFAULT_API_URL;
+  return DEFAULT_PROD_API_URL;
 };
 
 // 兼容旧代码 - 同步返回
-// 注意：在生产环境中，这个值可能不正确，需要先调用 fetchApiConfig
 export const API_BASE_URL = getApiUrl();
