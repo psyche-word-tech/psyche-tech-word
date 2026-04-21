@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import Slider from '@react-native-community/slider';
 
 interface Word {
 	id: number;
@@ -27,6 +28,7 @@ export default function WordDetailPage() {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [wordsList, setWordsList] = useState<Word[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
+	const [familiarity, setFamiliarity] = useState(50); // 0-100, 0=完全不熟悉, 100=非常熟悉
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
@@ -198,6 +200,26 @@ export default function WordDetailPage() {
 						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
 							<Text style={styles.statusText}>不会(z)</Text>
 						</TouchableOpacity>
+					</View>
+
+					{/* Familiarity Slider */}
+					<View style={styles.sliderContainer}>
+						<View style={styles.sliderLabels}>
+							<Text style={styles.sliderLabelText}>不熟悉</Text>
+							<Text style={styles.sliderValueText}>{familiarity}%</Text>
+							<Text style={styles.sliderLabelText}>熟悉</Text>
+						</View>
+						<Slider
+							style={styles.slider}
+							minimumValue={0}
+							maximumValue={100}
+							step={1}
+							value={familiarity}
+							onValueChange={setFamiliarity}
+							minimumTrackTintColor="#4CAF50"
+							maximumTrackTintColor="#E0E0E0"
+							thumbTintColor="#4CAF50"
+						/>
 					</View>
 
 					{/* Comment Section */}
@@ -377,6 +399,35 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 		fontWeight: 'bold',
+	},
+	sliderContainer: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		backgroundColor: '#F8F8F8',
+		marginHorizontal: 16,
+		marginBottom: 16,
+		borderRadius: 8,
+	},
+	sliderLabels: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: 8,
+	},
+	sliderLabelText: {
+		fontSize: 12,
+		color: '#999999',
+		fontFamily: 'serif',
+	},
+	sliderValueText: {
+		fontSize: 14,
+		color: '#4CAF50',
+		fontFamily: 'serif',
+		fontWeight: 'bold',
+	},
+	slider: {
+		width: '100%',
+		height: 40,
 	},
 	bottomNote: {
 		marginHorizontal: 16,
