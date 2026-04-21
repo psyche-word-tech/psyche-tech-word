@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 
 interface Word {
 	id: number;
 	word: string;
+	phonetic?: string;
 	meaning: string;
 }
 
@@ -14,26 +17,23 @@ export default function UnknownWordsPage() {
 	const [unknownWords, setUnknownWords] = useState<Word[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		fetchUnknownWords();
-	}, []);
+	// 页面返回时自动刷新数据
+	useFocusEffect(
+		useCallback(() => {
+			fetchUnknownWords();
+		}, [])
+	);
 
 	const fetchUnknownWords = async () => {
 		try {
 			setLoading(true);
-			const [wordsRes, statusesRes] = await Promise.all([
-				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words`),
-				fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/words/statuses/all`)
-			]);
-
-			const wordsResult = await wordsRes.json();
-			const statusesResult = await statusesRes.json();
-			const statusMapData = statusesResult.data || {};
-
-			if (wordsResult.data) {
-				const unknown = wordsResult.data.filter((word: Word) => statusMapData[word.id] === 'z');
-				setUnknownWords(unknown);
-			}
+			/**
+			 * 服务端文件：server/src/routes/wordbooks.ts
+			 * 接口：GET /api/v1/wordbooks/words_z
+			 */
+			const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_z`);
+			const data = await response.json();
+			setUnknownWords(Array.isArray(data) ? data : []);
 		} catch (error) {
 			console.error('Failed to fetch unknown words:', error);
 		} finally {
@@ -42,8 +42,28 @@ export default function UnknownWordsPage() {
 	};
 
 	const handleWordPress = (word: Word) => {
-		router.push('/word-detail', { wordId: word.id, word: word.word, meaning: word.meaning });
+		router.push('/word-detail', { 
+			word: JSON.stringify({
+				id: word.id,
+				word: word.word,
+				phonetic: word.phonetic || '',
+				meaning: word.meaning
+			})
+		});
 	};
+
+	const renderItem = ({ item }: { item: Word }) => (
+		<TouchableOpacity 
+			style={styles.wordItem}
+			onPress={() => handleWordPress(item)}
+		>
+			<View style={styles.wordHeader}>
+				<Text style={styles.wordText}>{item.word}</Text>
+				<Text style={styles.phoneticText}>{item.phonetic}</Text>
+			</View>
+			<Text style={styles.meaningText} numberOfLines={2}>{item.meaning}</Text>
+		</TouchableOpacity>
+	);
 
 	return (
 		<Screen>
@@ -58,8 +78,8 @@ export default function UnknownWordsPage() {
 				</View>
 
 				{/* Stats */}
-				<View style={styles.statsContainer}>
-					<Text style={styles.statsText}>共 {unknownWords.length} 个不会单词</Text>
+				<View style={styles.statsBar}>
+					<Text style={styles.statsText}>共 {unknownWords.length} 个单词</Text>
 				</View>
 
 				{/* Word List */}
@@ -67,30 +87,18 @@ export default function UnknownWordsPage() {
 					<View style={styles.loadingContainer}>
 						<Text style={styles.loadingText}>加载中...</Text>
 					</View>
-				) : unknownWords.length > 0 ? (
-					<FlatList
-						data={unknownWords}
-						keyExtractor={(item) => item.id.toString()}
-						contentContainerStyle={styles.listContent}
-						renderItem={({ item }) => (
-							<TouchableOpacity 
-								style={styles.wordItem}
-								onPress={() => handleWordPress(item)}
-							>
-								<View style={styles.wordLeft}>
-									<Text style={styles.wordText}>{item.word}</Text>
-								</View>
-								<View style={styles.wordRight}>
-									<Text style={styles.meaningText}>{item.meaning}</Text>
-								</View>
-							</TouchableOpacity>
-						)}
-					/>
-				) : (
+				) : unknownWords.length === 0 ? (
 					<View style={styles.emptyContainer}>
 						<Text style={styles.emptyText}>暂无不会单词</Text>
-						<Text style={styles.emptyHint}>将单词拖入&quot;不会&quot;分类即可添加</Text>
 					</View>
+				) : (
+					<FlatList
+						data={unknownWords}
+						renderItem={renderItem}
+						keyExtractor={item => item.id.toString()}
+						contentContainerStyle={styles.listContent}
+						showsVerticalScrollIndicator={false}
+					/>
 				)}
 			</View>
 		</Screen>
@@ -104,10 +112,12 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		flexDirection: 'row',
-		justifyContent: 'space-between',
 		alignItems: 'center',
-		padding: 20,
-		backgroundColor: '#E5E5E5',
+		justifyContent: 'space-between',
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: '#E5E5E5',
 	},
 	backText: {
 		fontSize: 14,
@@ -116,55 +126,22 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		fontSize: 16,
-		color: '#333333',
+		fontWeight: 'bold',
+		color: '#000000',
 		fontFamily: 'serif',
-		fontWeight: '600',
 	},
 	placeholder: {
 		width: 50,
 	},
-	statsContainer: {
-		padding: 20,
-		backgroundColor: '#F8F8F8',
-		borderBottomWidth: 1,
-		borderBottomColor: '#E0E0E0',
+	statsBar: {
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		backgroundColor: '#F0F0F0',
 	},
 	statsText: {
-		fontSize: 14,
+		fontSize: 12,
 		color: '#666666',
 		fontFamily: 'serif',
-	},
-	listContent: {
-		padding: 20,
-	},
-	wordItem: {
-		backgroundColor: '#F5F5F5',
-		paddingHorizontal: 20,
-		paddingVertical: 18,
-		borderRadius: 8,
-		marginBottom: 12,
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-	},
-	wordLeft: {
-		flex: 1,
-	},
-	wordText: {
-		fontSize: 18,
-		color: '#333333',
-		fontFamily: 'serif',
-		fontWeight: '600',
-	},
-	wordRight: {
-		flex: 2,
-		marginLeft: 15,
-	},
-	meaningText: {
-		fontSize: 14,
-		color: '#666666',
-		fontFamily: 'serif',
-		textAlign: 'right',
 	},
 	loadingContainer: {
 		flex: 1,
@@ -180,17 +157,41 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		padding: 40,
 	},
 	emptyText: {
-		fontSize: 16,
+		fontSize: 14,
 		color: '#999999',
 		fontFamily: 'serif',
-		marginBottom: 10,
 	},
-	emptyHint: {
-		fontSize: 12,
-		color: '#CCCCCC',
+	listContent: {
+		padding: 16,
+	},
+	wordItem: {
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: '#E5E5E5',
+	},
+	wordHeader: {
+		flexDirection: 'row',
+		alignItems: 'baseline',
+		marginBottom: 4,
+	},
+	wordText: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		color: '#000000',
 		fontFamily: 'serif',
+		marginRight: 8,
+	},
+	phoneticText: {
+		fontSize: 14,
+		color: '#999999',
+		fontFamily: 'serif',
+	},
+	meaningText: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
+		lineHeight: 20,
 	},
 });
