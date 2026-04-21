@@ -46,29 +46,39 @@ export default function StudyScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 下半部分：占屏幕 2/3 */}
+        {/* 下半部分：占屏幕 2/3，2x2 网格 */}
         <View style={styles.bottomSection}>
-          {/* 左：购买词汇书 */}
+          {/* 左上：购买词汇书 */}
           <TouchableOpacity 
-            style={styles.bottomLeftCard} 
+            style={styles.gridItem} 
             activeOpacity={0.9} 
             onPress={() => router.push('/vocabulary')}
           >
-            <Image source={iconDang} style={styles.bottomImage} resizeMode="cover" />
-            <View style={styles.bottomLabelContainer}>
-              <Text style={styles.bottomLabel}>购买词汇书</Text>
+            <Image source={iconDang} style={styles.gridImage} resizeMode="cover" />
+            <View style={styles.gridLabelContainer}>
+              <Text style={styles.gridLabel}>购买词汇书</Text>
             </View>
           </TouchableOpacity>
 
-          {/* 右：我的词汇书 */}
+          {/* 右上：空白 */}
+          <View style={styles.gridItem}>
+            <View style={styles.emptyCard} />
+          </View>
+
+          {/* 左下：空白 */}
+          <View style={styles.gridItem}>
+            <View style={styles.emptyCard} />
+          </View>
+
+          {/* 右下：我的词汇书 */}
           <TouchableOpacity 
-            style={styles.bottomRightCard} 
+            style={styles.gridItem} 
             activeOpacity={0.9} 
             onPress={() => router.push('/my-vocabulary')}
           >
-            <Image source={iconMyVocab} style={styles.bottomImage} resizeMode="cover" />
-            <View style={styles.bottomLabelContainer}>
-              <Text style={styles.bottomLabel}>我的词汇书</Text>
+            <Image source={iconMyVocab} style={styles.gridImage} resizeMode="cover" />
+            <View style={styles.gridLabelContainer}>
+              <Text style={styles.gridLabel}>我的词汇书</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -116,6 +126,34 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '66.67%', // 占屏幕 2/3
     flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  gridItem: {
+    width: '50%',
+    height: '50%',
+    backgroundColor: '#E8E0D5',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+  },
+  emptyCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  gridLabelContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+  },
+  gridLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   bottomLeftCard: {
     flex: 1,
