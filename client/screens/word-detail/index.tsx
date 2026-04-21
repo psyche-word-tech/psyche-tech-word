@@ -209,13 +209,13 @@ export default function WordDetailPage() {
 
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_x', '已会')}>
+						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
 							<Text style={styles.statusText}>已会(x)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_y', '模糊')}>
+						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
 							<Text style={styles.statusText}>模糊(y)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={styles.statusButton} onPress={() => handleStatusChange('words_z', '不会')}>
+						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
 							<Text style={styles.statusText}>不会(z)</Text>
 						</TouchableOpacity>
 					</View>
@@ -359,15 +359,24 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 	statusButton: {
-		backgroundColor: '#E5E5E5',
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 8,
 	},
+	knownButton: {
+		backgroundColor: '#4CAF50',
+	},
+	vagueButton: {
+		backgroundColor: '#FF9800',
+	},
+	unknownButton: {
+		backgroundColor: '#F44336',
+	},
 	statusText: {
 		fontSize: 14,
-		color: '#333333',
+		color: '#FFFFFF',
 		fontFamily: 'serif',
+		fontWeight: 'bold',
 	},
 	bottomNote: {
 		marginHorizontal: 16,
