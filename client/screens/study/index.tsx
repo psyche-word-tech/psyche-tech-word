@@ -46,46 +46,40 @@ export default function StudyScreen() {
           )}
         </TouchableOpacity>
 
-        {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
+        {/* 下半部分：购买词汇书大图 + 我的词汇书 + 齿轮 */}
         <View style={styles.bottomSection}>
-          {/* 上一行：区域二、区域三 */}
-          <View style={styles.gridRow}>
-            <TouchableOpacity 
-              style={styles.gridItem} 
-              activeOpacity={0.9} 
-              onPress={() => router.push('/vocabulary')}
-            >
-              <Image source={iconDang} style={styles.gridImageFull} resizeMode="stretch" />
-              <View style={styles.labelContainer}>
-                <Text style={styles.gridLabel}>购买词汇书</Text>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.gridItem}>
-              <View style={styles.emptyCard} />
+          {/* 购买词汇书 - 占据整个下半区域，右下角与我的词汇书左上角接触 */}
+          <TouchableOpacity 
+            style={styles.dangLargeContainer} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/vocabulary')}
+          >
+            <Image source={iconDang} style={styles.dangLargeImage} resizeMode="stretch" />
+            <View style={styles.labelContainer}>
+              <Text style={styles.gridLabel}>购买词汇书</Text>
             </View>
-          </View>
-          {/* 下一行：区域四、区域五 */}
-          <View style={styles.gridRow}>
-            <View style={styles.gridItem}>
-              <TouchableOpacity 
-                style={styles.emptyCard}
-                activeOpacity={0.9}
-                onPress={() => router.push('/login')}
-              >
-                <Ionicons name="settings-outline" size={48} color="#666666" />
-              </TouchableOpacity>
+          </TouchableOpacity>
+          
+          {/* 我的词汇书 - 覆盖在右下角 */}
+          <TouchableOpacity 
+            style={styles.myVocabOverlay} 
+            activeOpacity={0.9} 
+            onPress={() => router.push('/my-vocabulary')}
+          >
+            <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
+            <View style={styles.labelContainer}>
+              <Text style={styles.gridLabel}>我的词汇书</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.gridItem} 
-              activeOpacity={0.9} 
-              onPress={() => router.push('/my-vocabulary')}
-            >
-              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
-              <View style={styles.labelContainer}>
-                <Text style={styles.gridLabel}>我的词汇书</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
+          
+          {/* 齿轮 - 覆盖在左下角 */}
+          <TouchableOpacity 
+            style={styles.gearOverlay}
+            activeOpacity={0.9}
+            onPress={() => router.push('/login')}
+          >
+            <Ionicons name="settings-outline" size={48} color="#666666" />
+          </TouchableOpacity>
         </View>
       </View>
     </Screen>
@@ -128,10 +122,45 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  // 下半部分：2x2 排列（区域二、三、四、五）
+  // 下半部分：购买词汇书大图布局
   bottomSection: {
     height: HALF_HEIGHT,
     width: '100%',
+    position: 'relative',
+  },
+  // 购买词汇书大图 - 覆盖整个下半区域
+  dangLargeContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  dangLargeImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // 我的词汇书覆盖层 - 右下角
+  myVocabOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    width: '50%',
+    height: '50%',
+    zIndex: 2,
+  },
+  // 齿轮覆盖层 - 左下角
+  gearOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    width: '50%',
+    height: '50%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    zIndex: 2,
   },
   gridRow: {
     flex: 1,
