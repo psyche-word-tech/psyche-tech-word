@@ -26,11 +26,15 @@ export default function StudyScreen() {
         >
           <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
-            <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3 + 55, flexDirection: 'row' }]}>
-              {engravedText.split('').map((char, charIndex) => (
-                <View key={charIndex} style={{ marginHorizontal: 15 }}>
-                  <Text style={styles.engravedText}>{char}</Text>
-                  <Text style={styles.engravedTextHighlight}>{char}</Text>
+            <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3 + 55, flexDirection: 'column', alignItems: 'center' }]}>
+              {engravedText.split(' ').map((word, wordIndex) => (
+                <View key={wordIndex} style={{ flexDirection: 'row', marginVertical: 5 }}>
+                  {word.split('').map((char, charIndex) => (
+                    <View key={charIndex} style={{ marginHorizontal: 15 }}>
+                      <Text style={styles.engravedText}>{char}</Text>
+                      <Text style={styles.engravedTextHighlight}>{char}</Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>
