@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 
@@ -12,7 +12,6 @@ interface WordBook {
 
 export default function VocabularyPage() {
   const router = useSafeRouter();
-  const [activeTab, setActiveTab] = useState<'exchange' | 'buy'>('exchange');
   const [wordBooks, setWordBooks] = useState<WordBook[]>([
     { id: 1, name: '高中词汇', price: 10, selected: false },
     { id: 2, name: '四级词汇', price: 12, selected: false },
@@ -46,20 +45,7 @@ export default function VocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           
-          <View style={styles.tabs}>
-            <TouchableOpacity onPress={() => setActiveTab('exchange')}>
-              <Text style={[styles.tabText, activeTab === 'exchange' && styles.tabActive]}>
-                兑换
-              </Text>
-              {activeTab === 'exchange' && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveTab('buy')}>
-              <Text style={[styles.tabText, activeTab === 'buy' && styles.tabActive]}>
-                购买
-              </Text>
-              {activeTab === 'buy' && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.title}>购买</Text>
           
           <View style={styles.placeholder} />
         </View>
@@ -95,7 +81,12 @@ export default function VocabularyPage() {
 
         {/* Buy Button */}
         {selectedBook && (
-          <View style={styles.buyButtonContainer}>
+          <View style={styles.bottomContainer}>
+            <View style={styles.selectedInfo}>
+              <Text style={styles.selectedText}>
+                已选择：{selectedBook.name} ({selectedBook.price}蝴蝶币)
+              </Text>
+            </View>
             <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
               <Text style={styles.buyButtonText}>购买</Text>
             </TouchableOpacity>
@@ -123,22 +114,11 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'serif',
   },
-  tabs: {
-    flexDirection: 'row',
-    gap: 30,
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#999999',
-    fontFamily: 'serif',
-  },
-  tabActive: {
+  title: {
+    fontSize: 16,
     color: '#333333',
-  },
-  tabUnderline: {
-    height: 2,
-    backgroundColor: '#333333',
-    marginTop: 4,
+    fontFamily: 'serif',
+    fontWeight: '600',
   },
   placeholder: {
     width: 50,
@@ -197,21 +177,34 @@ const styles = StyleSheet.create({
   },
   currencyText: {
     fontSize: 10,
+    color: '#999999',
+    fontFamily: 'serif',
+  },
+  bottomContainer: {
+    padding: 20,
+    backgroundColor: '#F5F5F5',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  selectedInfo: {
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  selectedText: {
+    fontSize: 14,
     color: '#666666',
     fontFamily: 'serif',
   },
-  buyButtonContainer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-  },
   buyButton: {
-    backgroundColor: '#333333',
-    paddingVertical: 12,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    borderRadius: 8,
     alignItems: 'center',
   },
   buyButtonText: {
+    fontSize: 16,
     color: '#FFFFFF',
-    fontSize: 14,
     fontFamily: 'serif',
+    fontWeight: '600',
   },
 });
