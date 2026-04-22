@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topImage: {
-    width: '100%',
-    height: '100%',
+    width: '90%',
+    height: '90%',
     marginTop: 50,
   },
   topLabel: {
@@ -136,16 +136,14 @@ const styles = StyleSheet.create({
   },
   gridImageFull: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
+    top: '5%',
+    left: '5%',
+    right: '5%',
+    bottom: '5%',
   },
   dangImage: {
-    width: 160,
-    height: 160,
+    width: 140,
+    height: 140,
     marginLeft: -20,
     marginTop: -1,
   },
