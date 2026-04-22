@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
-import { API_BASE_URL } from '@/utils/apiConfig';
+import { useApiConfig } from '@/contexts/ApiConfigContext';
 
 interface Word {
   id: number;
@@ -14,13 +14,14 @@ interface Word {
 
 export default function UnknownWordsPage() {
   const router = useSafeRouter();
+  const { apiBaseUrl } = useApiConfig();
   const [words, setWords] = useState<Word[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`);
+          const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`);
           const data = await response.json();
           if (Array.isArray(data)) {
             setWords(data);
@@ -30,7 +31,7 @@ export default function UnknownWordsPage() {
         }
       };
       fetchWords();
-    }, [])
+    }, [apiBaseUrl])
   );
 
   const handleWordPress = (word: Word) => {
@@ -73,7 +74,8 @@ export default function UnknownWordsPage() {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂不会认单词</Text>
+              <Text style={styles.emptyText}>暂无不会单词</Text>
+              <Text style={styles.emptyHint}>拖动单词到&quot;不会&quot;分类</Text>
             </View>
           )}
         </ScrollView>
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   wordItem: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: '#F5F5F5',
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
@@ -139,6 +141,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#999999',
+    fontFamily: 'serif',
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: '#CCCCCC',
     fontFamily: 'serif',
   },
 });
