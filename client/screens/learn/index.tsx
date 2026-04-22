@@ -141,42 +141,24 @@ export default function LearnPage() {
 
 	const fetchData = async () => {
 		try {
-			// 尝试多个可能的表名
-			const possibleTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e'];
-			let wordsResult: Word[] = [];
-			let wordsTable = table;
+			// 直接使用指定的表
+			const wordsTable = table;
 
-			// 首先尝试指定表
-			const wordsRes = await fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`);
-			const wordsData = await wordsRes.json();
-			if (Array.isArray(wordsData) && wordsData.length > 0) {
-				wordsResult = wordsData;
-			} else {
-				// 尝试其他表
-				for (const t of possibleTables) {
-					if (t === wordsTable) continue;
-					const res = await fetch(`${apiBaseUrl}/api/v1/wordbooks/${t}`);
-					const data = await res.json();
-					if (Array.isArray(data) && data.length > 0) {
-						wordsResult = data;
-						wordsTable = t;
-						break;
-					}
-				}
-			}
-
-			// 获取 xyz 分类数据
-			const [xRes, yRes, zRes] = await Promise.all([
+			// 并行获取单词列表和分类数据
+			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`),
 				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
 				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
 				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
 			]);
 
+			const wordsData = await wordsRes.json();
 			const xResult = await xRes.json();
 			const yResult = await yRes.json();
 			const zResult = await zRes.json();
 
 			// 更新单词列表
+			const wordsResult = Array.isArray(wordsData) ? wordsData : [];
 			setWords(wordsResult);
 			setUsedWords(new Set());
 			
