@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { FontAwesome6 } from '@expo/vector-icons';
+import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
@@ -50,7 +50,7 @@ export default function HomeScreen() {
             style={styles.settingsButton} 
             activeOpacity={0.7}
           >
-            <FontAwesome6 name="gear" size={24} color="#333333" />
+            <Ionicons name="settings-outline" size={24} color="#333333" />
           </TouchableOpacity>
           
           {/* Next Button - bottom right */}
