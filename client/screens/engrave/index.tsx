@@ -1,4 +1,5 @@
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
@@ -55,6 +56,16 @@ export default function EngraveScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+
+        {/* Bottom Action Area */}
+        <View style={styles.bottomAction}>
+          <TouchableOpacity 
+            style={styles.settingsButton} 
+            activeOpacity={0.7}
+          >
+            <Ionicons name="settings-outline" size={24} color="#333333" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </Screen>
@@ -132,5 +143,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#000000',
     fontFamily: 'serif',
+  },
+  bottomAction: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#F5F5F5',
+  },
+  settingsButton: {
+    padding: 10,
+    backgroundColor: '#F5F5F5',
   },
 });
