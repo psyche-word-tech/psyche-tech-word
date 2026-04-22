@@ -16,14 +16,24 @@ export default function LoginPage() {
     }
   };
 
+  const handleSmsLogin = () => {
+    router.push('/sms-login');
+  };
+
+  const handleRegister = () => {
+    router.push('/register');
+  };
+
   return (
     <Screen>
       <View style={styles.container}>
         {/* Top Header Bar */}
         <View style={styles.headerBar}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>← back</Text>
+            <Text style={styles.backText}>← 返回</Text>
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>密码登录</Text>
+          <View style={styles.headerRight} />
         </View>
 
         {/* Login Form */}
@@ -34,22 +44,24 @@ export default function LoginPage() {
             resizeMode="contain"
           />
           
-          <Text style={styles.title}>登录</Text>
-          
+          {/* Username Input */}
           <View style={styles.inputContainer}>
+            <Text style={styles.label}>用户名 / 手机号</Text>
             <TextInput
               style={styles.input}
-              placeholder="用户名"
+              placeholder="请输入用户名或手机号"
               placeholderTextColor="#999999"
               value={username}
               onChangeText={setUsername}
             />
           </View>
           
+          {/* Password Input */}
           <View style={styles.inputContainer}>
+            <Text style={styles.label}>密码</Text>
             <TextInput
               style={styles.input}
-              placeholder="密码"
+              placeholder="请输入密码"
               placeholderTextColor="#999999"
               value={password}
               onChangeText={setPassword}
@@ -57,12 +69,29 @@ export default function LoginPage() {
             />
           </View>
           
+          {/* Login Button */}
           <TouchableOpacity 
             style={styles.loginButton}
             onPress={handleLogin}
           >
             <Text style={styles.loginText}>登录</Text>
           </TouchableOpacity>
+
+          {/* SMS Login Link */}
+          <TouchableOpacity 
+            style={styles.switchButton}
+            onPress={handleSmsLogin}
+          >
+            <Text style={styles.switchText}>短信验证码登录</Text>
+          </TouchableOpacity>
+
+          {/* Register Link */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>还没有账号？</Text>
+            <TouchableOpacity onPress={handleRegister}>
+              <Text style={styles.linkText}>立即注册</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Screen>
@@ -75,7 +104,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerBar: {
-    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
     backgroundColor: '#F5F5F5',
   },
   backText: {
@@ -83,30 +115,36 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'serif',
   },
-  formContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  logoImage: {
-    width: 80,
-    height: 80,
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 20,
+  headerTitle: {
+    fontSize: 16,
     color: '#333333',
     fontFamily: 'serif',
     fontWeight: '600',
+  },
+  headerRight: {
+    width: 50,
+  },
+  formContainer: {
+    flex: 1,
+    paddingHorizontal: 30,
+    paddingTop: 20,
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
+    alignSelf: 'center',
     marginBottom: 30,
   },
   inputContainer: {
-    width: '100%',
     marginBottom: 16,
   },
+  label: {
+    fontSize: 13,
+    color: '#666666',
+    fontFamily: 'serif',
+    marginBottom: 8,
+  },
   input: {
-    width: '100%',
     padding: 14,
     fontSize: 14,
     fontFamily: 'serif',
@@ -114,17 +152,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   loginButton: {
-    width: '100%',
-    padding: 14,
+    padding: 16,
     backgroundColor: '#333333',
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
   },
   loginText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#FFFFFF',
     fontFamily: 'serif',
     fontWeight: '600',
+  },
+  switchButton: {
+    alignSelf: 'center',
+    marginTop: 20,
+    padding: 8,
+  },
+  switchText: {
+    fontSize: 13,
+    color: '#666666',
+    fontFamily: 'serif',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#999999',
+    fontFamily: 'serif',
+  },
+  linkText: {
+    fontSize: 13,
+    color: '#333333',
+    fontFamily: 'serif',
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
