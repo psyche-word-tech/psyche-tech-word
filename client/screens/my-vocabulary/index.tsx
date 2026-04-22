@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
   bookItem: {
     alignItems: 'center',
     position: 'relative',
+    justifyContent: 'center',
   },
   tagContainer: {
     backgroundColor: '#EBEBEB',
