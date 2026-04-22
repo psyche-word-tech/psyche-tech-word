@@ -125,7 +125,7 @@ export default function PurchasePage() {
                 </Text>
               )}
               
-              {/* Button */}
+              {/* Buttons */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity 
                   style={[styles.button, styles.confirmButton]} 
@@ -137,6 +137,13 @@ export default function PurchasePage() {
                   ) : (
                     <Text style={[styles.buttonText, styles.confirmButtonText]}>确认</Text>
                   )}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]} 
+                  onPress={handleCancel}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.buttonText}>取消</Text>
                 </TouchableOpacity>
               </View>
             </View>
