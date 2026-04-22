@@ -26,7 +26,7 @@ export default function StudyScreen() {
         >
           <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
-            <View style={styles.engravedTextContainer}>
+            <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3 }]}>
               {engravedText.split(' ').map((word, wordIndex) => (
                 <View key={wordIndex} style={styles.engravedWordColumn}>
                   {word.split('').map((char, charIndex) => (
@@ -40,7 +40,7 @@ export default function StudyScreen() {
             </View>
           )}
           {engravedText.length === 0 && (
-            <View style={[styles.labelContainer, { position: 'absolute', top: HALF_HEIGHT - 20 }]}>
+            <View style={[styles.labelContainer, { position: 'absolute', top: HALF_HEIGHT }]}>
               <Text style={styles.topLabel}>刻字</Text>
             </View>
           )}
