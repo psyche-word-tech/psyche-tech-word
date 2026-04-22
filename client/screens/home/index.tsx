@@ -79,10 +79,10 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   mainContent: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 40,
+    paddingBottom: 20,
   },
   logoContainer: {
     alignItems: 'center',
