@@ -4,7 +4,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const iconRock = require('@/assets/rock.jpg');
-const iconDang = require('@/assets/dang.png');
+const iconDang = require('@/assets/iconDang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
