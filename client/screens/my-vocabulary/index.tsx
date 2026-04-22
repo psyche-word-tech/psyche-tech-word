@@ -63,8 +63,8 @@ export default function MyVocabularyPage() {
   );
 
   const handleLearnPress = (book: WordBook) => {
-    // 所有已购买的词汇书都使用 words_b 作为学习表
-    router.push('/learn', { table: 'words_b' });
+    // 所有已购买的词汇书都使用 words_a 作为学习表
+    router.push('/learn', { table: 'words_a' });
   };
 
   if (!isConfigLoaded) {
