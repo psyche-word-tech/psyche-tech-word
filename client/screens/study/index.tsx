@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     marginLeft: -20,
+    marginTop: -30,
   },
   gridLabel: {
     fontSize: 14,
