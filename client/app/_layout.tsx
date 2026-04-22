@@ -37,7 +37,6 @@ export default function RootLayout() {
           <Stack.Screen name="vague-words" options={{ title: "" }} />
           <Stack.Screen name="unknown-words" options={{ title: "" }} />
         </Stack>
-        <Toast />
       </Provider>
     </ApiConfigProvider>
   );
