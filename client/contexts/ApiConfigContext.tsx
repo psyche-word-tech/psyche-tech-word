@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchApiConfig } from '@/utils/apiConfig';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+const PROD_API_URL = 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site';
 
 interface ApiConfigContextType {
   apiBaseUrl: string;
@@ -7,8 +8,8 @@ interface ApiConfigContextType {
 }
 
 const ApiConfigContext = createContext<ApiConfigContextType>({
-  apiBaseUrl: 'http://localhost:9091',
-  isConfigLoaded: false,
+  apiBaseUrl: PROD_API_URL,
+  isConfigLoaded: true,
 });
 
 export const useApiConfig = () => useContext(ApiConfigContext);
@@ -18,24 +19,8 @@ interface ApiConfigProviderProps {
 }
 
 export const ApiConfigProvider: React.FC<ApiConfigProviderProps> = ({ children }) => {
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>('http://localhost:9091');
-  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
-
-  useEffect(() => {
-    const initApiConfig = async () => {
-      try {
-        const url = await fetchApiConfig();
-        setApiBaseUrl(url);
-        console.log('[API Config] Initialized with:', url);
-      } catch (error) {
-        console.error('[API Config] Failed to initialize:', error);
-      } finally {
-        setIsConfigLoaded(true);
-      }
-    };
-
-    initApiConfig();
-  }, []);
+  const [apiBaseUrl] = useState<string>(PROD_API_URL);
+  const [isConfigLoaded] = useState<boolean>(true);
 
   return (
     <ApiConfigContext.Provider value={{ apiBaseUrl, isConfigLoaded }}>
