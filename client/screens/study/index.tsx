@@ -26,7 +26,7 @@ export default function StudyScreen() {
         >
           <Image source={iconRock} style={styles.topImage} resizeMode="stretch" />
           {engravedText.length > 0 && (
-            <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3, flexDirection: 'row' }]}>
+            <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3 + 100, flexDirection: 'row' }]}>
               {engravedText.split('').map((char, charIndex) => (
                 <View key={charIndex} style={styles.engravedCharWrapper}>
                   <Text style={styles.engravedText}>{char}</Text>
