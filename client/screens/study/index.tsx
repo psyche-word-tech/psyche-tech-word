@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
@@ -66,7 +67,9 @@ export default function StudyScreen() {
           {/* 下一行：区域四、区域五 */}
           <View style={styles.gridRow}>
             <View style={styles.gridItem}>
-              <View style={styles.emptyCard} />
+              <View style={styles.emptyCard}>
+                <Ionicons name="settings-outline" size={32} color="#999999" />
+              </View>
             </View>
             <TouchableOpacity 
               style={styles.gridItem} 
@@ -154,6 +157,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   engravedTextContainer: {
     flexDirection: 'row',
