@@ -40,7 +40,7 @@ export default function StudyScreen() {
             </View>
           )}
           {engravedText.length === 0 && (
-            <View style={[styles.labelContainer, { marginTop: 400 }]}>
+            <View style={[styles.labelContainer, { position: 'absolute', top: HALF_HEIGHT - 20 }]}>
               <Text style={styles.topLabel}>刻字</Text>
             </View>
           )}
