@@ -4,11 +4,12 @@ import { Screen } from '@/components/Screen';
 import { API_BASE_URL } from '@/utils/apiConfig';
 import { useState } from 'react';
 
-// 词汇书ID到数据库表的映射（与 vocabulary 页面一致）
+// 词汇书ID到数据库表的映射
+// id 对应 vocabulary 页面的词汇书ID
 const BOOK_TABLE_MAP: Record<number, { sourceTable: string; name: string }> = {
   1: { sourceTable: 'words_a', name: '高中词汇' },
-  2: { sourceTable: 'words_c', name: '四级词汇' },
-  3: { sourceTable: 'words_d', name: '六级词汇' },
+  2: { sourceTable: 'words_a', name: '四级词汇' },
+  3: { sourceTable: 'words_a', name: '六级词汇' },
   4: { sourceTable: 'words_a', name: '考研词汇' },
 };
 
