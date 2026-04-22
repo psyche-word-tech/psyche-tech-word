@@ -44,7 +44,7 @@ export default function HomeScreen() {
             style={styles.settingsButton} 
             activeOpacity={0.7}
           >
-            <FontAwesome6 name="gear" size={20} color="#999999" />
+            <FontAwesome6 name="gear" size={22} color="#333333" />
           </TouchableOpacity>
           
           {/* Next Button - bottom right */}
@@ -103,15 +103,12 @@ const styles = StyleSheet.create({
   },
 
   bottomAction: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
   },
   settingsButton: {
     padding: 10,
