@@ -4,7 +4,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
 
-const iconRock = require('@/assets/rock.jpg');
+const iconRock = require('@/assets/image_page.png');
 
 export default function EngraveScreen() {
   const router = useSafeRouter();
