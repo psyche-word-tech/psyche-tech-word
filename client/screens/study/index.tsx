@@ -151,8 +151,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   dangImage: {
-    width: '70%',
-    height: '70%',
+    width: '100%',
+    height: '100%',
   },
   gridLabel: {
     fontSize: 14,
