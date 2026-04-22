@@ -110,10 +110,79 @@ router.post('/purchase', async (req, res) => {
     res.json({
       success: true,
       message: `Successfully copied ${insertedWords?.length || 0} words from ${sourceTable} to ${targetTable}`,
-      count: insertedWords?.length || 0
+      copiedCount: insertedWords?.length || 0
     });
   } catch (err) {
     console.error('Error purchasing wordbook:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/v1/wordbooks/copy
+ * 复制词汇书：将源数据库的单词复制到目标数据库，同时标记词汇书为已购买
+ * Body: { sourceTable: 'words_a', targetTable: 'words_b', bookId: 1 }
+ */
+router.post('/copy', async (req, res) => {
+  try {
+    const { sourceTable, targetTable, bookId } = req.body;
+
+    // 验证参数
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e'];
+    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+      res.status(400).json({ error: 'Invalid table name' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    // 从源表获取所有单词
+    const { data: sourceWords, error: fetchError } = await client
+      .from(sourceTable)
+      .select('*');
+
+    if (fetchError) {
+      res.status(500).json({ error: fetchError.message });
+      return;
+    }
+
+    if (!sourceWords || sourceWords.length === 0) {
+      res.status(404).json({ error: 'No words found in source table' });
+      return;
+    }
+
+    // 清空目标表
+    await client.from(targetTable).delete().neq('id', 0);
+
+    // 准备插入数据（移除 id 让数据库自动生成）
+    const wordsToInsert = sourceWords.map(({ id, ...rest }) => rest);
+
+    // 插入到目标表
+    const { data: insertedWords, error: insertError } = await client
+      .from(targetTable)
+      .insert(wordsToInsert)
+      .select();
+
+    if (insertError) {
+      res.status(500).json({ error: insertError.message });
+      return;
+    }
+
+    // 如果提供了 bookId，标记词汇书为已购买
+    if (bookId) {
+      await client
+        .from('wordbooks')
+        .update({ purchased: true })
+        .eq('id', bookId);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully copied ${insertedWords?.length || 0} words`,
+      copiedCount: insertedWords?.length || 0
+    });
+  } catch (err) {
+    console.error('Error copying wordbook:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
