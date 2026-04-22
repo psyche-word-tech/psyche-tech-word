@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,7 +97,6 @@ export default function WordDetailPage() {
 		} catch (error) {
 			console.error('Failed to play pronunciation:', error);
 			setIsPlaying(false);
-			Alert.alert('错误', '发音播放失败');
 		}
 	};
 
@@ -130,18 +129,12 @@ export default function WordDetailPage() {
 					const nextIndex = currentIndex < newList.length ? currentIndex : 0;
 					setCurrentIndex(nextIndex);
 					setWord(newList[nextIndex]);
-					Alert.alert('成功', `单词已移至"${label}"，显示下一个单词`);
 				} else {
-					Alert.alert('完成', `单词已移至"${label}"，该列表已无更多单词`, [
-						{ text: '确定', onPress: () => router.back() }
-					]);
+					router.back();
 				}
-			} else {
-				Alert.alert('失败', result.error || '移动失败');
 			}
 		} catch (error) {
 			console.error('Failed to move word:', error);
-			Alert.alert('错误', '移动失败，请重试');
 		}
 	};
 
