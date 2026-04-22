@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
@@ -38,6 +39,14 @@ export default function HomeScreen() {
 
         {/* Bottom Action Area */}
         <View style={styles.bottomAction}>
+          {/* Settings Button - bottom left */}
+          <TouchableOpacity 
+            style={styles.settingsButton} 
+            activeOpacity={0.7}
+          >
+            <FontAwesome6 name="gear" size={20} color="#999999" />
+          </TouchableOpacity>
+          
           {/* Next Button - bottom right */}
           <TouchableOpacity 
             style={styles.nextButton} 
@@ -98,14 +107,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingRight: 20,
+    paddingHorizontal: 20,
     paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-end',
+  },
+  settingsButton: {
+    padding: 10,
+    backgroundColor: '#FFFFFF',
   },
   nextButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-
     backgroundColor: '#FFFFFF',
   },
   nextText: {
