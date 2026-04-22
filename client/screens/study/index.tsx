@@ -67,9 +67,13 @@ export default function StudyScreen() {
           {/* 下一行：区域四、区域五 */}
           <View style={styles.gridRow}>
             <View style={styles.gridItem}>
-              <View style={styles.emptyCard}>
+              <TouchableOpacity 
+                style={styles.emptyCard}
+                activeOpacity={0.9}
+                onPress={() => router.push('/login')}
+              >
                 <Ionicons name="settings-outline" size={48} color="#666666" />
-              </View>
+              </TouchableOpacity>
             </View>
             <TouchableOpacity 
               style={styles.gridItem} 
