@@ -3,15 +3,12 @@ import { useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
 
 interface WordBook {
   id: number;
   name: string;
 }
-
-const STORAGE_KEY = 'bought_wordbooks';
 
 // 词汇书ID对应的数据库表
 const BOOK_TABLE_MAP: Record<number, { table: string | null; purchased: boolean }> = {
@@ -23,7 +20,6 @@ const BOOK_TABLE_MAP: Record<number, { table: string | null; purchased: boolean 
 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
-  const params = useSafeSearchParams<{ books?: string }>();
   const { apiBaseUrl, isConfigLoaded } = useApiConfig();
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
   const [alertVisible, setAlertVisible] = useState(false);
@@ -40,51 +36,31 @@ export default function MyVocabularyPage() {
         setErrorMsg('');
         
         try {
-          console.log('[MyVocabulary] 请求 API:', `${apiBaseUrl}/api/v1/wordbooks`);
-          
           const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
-          
-          console.log('[MyVocabulary] API 响应状态:', response.status);
           
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
           
           const allBooks = await response.json();
-          console.log('[MyVocabulary] API 返回数据:', JSON.stringify(allBooks).substring(0, 200));
           
           if (!Array.isArray(allBooks)) {
             throw new Error('API返回数据格式错误');
           }
           
-          // 只保留已购买的
+          // 只保留已购买的（根据 API 返回的 purchased 字段）
           const purchasedBooks = allBooks
-            .filter((book: any) => book.purchased)
+            .filter((book: any) => book.purchased === true)
             .map((book: any) => ({ id: book.id, name: book.name }));
           
-          console.log('[MyVocabulary] 已购买词汇书:', purchasedBooks);
-          setBoughtBooks(purchasedBooks);
-          
-          // 同时保存到本地
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(purchasedBooks));
+          setBoughtBooks(boughtBooks);
         } catch (error: any) {
           console.error('[MyVocabulary] 加载失败:', error);
           setErrorMsg(error.message || '加载失败');
-          
-          // 尝试从本地存储读取
-          try {
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
-            if (stored) {
-              const parsed = JSON.parse(stored);
-              console.log('[MyVocabulary] 从本地存储恢复:', parsed);
-              setBoughtBooks(parsed);
-            }
-          } catch (e) {
-            console.error('[MyVocabulary] 本地存储读取失败:', e);
-          }
+          setBoughtBooks([]); // 失败时清空
         } finally {
           setIsLoading(false);
         }
@@ -130,18 +106,17 @@ export default function MyVocabularyPage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Debug Info */}
-        <View style={styles.debugContainer}>
-          <Text style={styles.debugText}>API地址: {apiBaseUrl}</Text>
-          {errorMsg && <Text style={styles.errorText}>错误: {errorMsg}</Text>}
-        </View>
-
         {/* Word Books Grid */}
         <View style={styles.gridContainer}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#4CAF50" />
               <Text style={styles.loadingText}>加载中...</Text>
+            </View>
+          ) : errorMsg ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>加载失败</Text>
+              <Text style={styles.errorHint}>({errorMsg})</Text>
             </View>
           ) : boughtBooks.length > 0 ? (
             boughtBooks.map((book: WordBook, index: number) => (
@@ -168,7 +143,6 @@ export default function MyVocabularyPage() {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>暂无词汇书</Text>
               <Text style={styles.emptyHint}>请先购买词汇书</Text>
-              {errorMsg && <Text style={styles.errorHint}>({errorMsg})</Text>}
             </View>
           )}
         </View>
@@ -222,23 +196,6 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 50,
-  },
-  debugContainer: {
-    padding: 8,
-    backgroundColor: '#FFF3E0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFE0B2',
-  },
-  debugText: {
-    fontSize: 10,
-    color: '#E65100',
-    fontFamily: 'monospace',
-  },
-  errorText: {
-    fontSize: 10,
-    color: '#D32F2F',
-    fontFamily: 'monospace',
-    marginTop: 4,
   },
   gridContainer: {
     flex: 1,
