@@ -112,13 +112,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     width: '100%',
-    height: '100%',
+    height: '80%',
+    resizeMode: 'contain',
   },
   topLabel: {
     fontSize: 14,
