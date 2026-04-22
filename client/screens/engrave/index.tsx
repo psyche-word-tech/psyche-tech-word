@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
@@ -12,7 +12,7 @@ export default function EngraveScreen() {
 
   return (
     <Screen>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         {/* Top Image */}
         <Image source={iconRock} style={styles.topImage} resizeMode="cover" />
 
@@ -67,7 +67,7 @@ export default function EngraveScreen() {
             <Ionicons name="settings-outline" size={24} color="#333333" />
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </Screen>
   );
 }
@@ -83,9 +83,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
   },
   dialog: {
     width: '100%',
