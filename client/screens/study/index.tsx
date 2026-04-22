@@ -30,7 +30,7 @@ export default function StudyScreen() {
               {engravedText.split(' ').map((word, wordIndex) => (
                 <View key={wordIndex} style={{ flexDirection: 'row', marginVertical: 5 }}>
                   {word.split('').map((char, charIndex) => (
-                    <View key={charIndex} style={{ marginHorizontal: 15 }}>
+                    <View key={charIndex} style={{ marginHorizontal: 5 }}>
                       <Text style={styles.engravedText}>{char}</Text>
                       <Text style={styles.engravedTextHighlight}>{char}</Text>
                     </View>
