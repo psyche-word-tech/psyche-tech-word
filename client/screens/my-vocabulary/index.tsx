@@ -56,7 +56,7 @@ export default function MyVocabularyPage() {
             .filter((book: any) => book.purchased === true)
             .map((book: any) => ({ id: book.id, name: book.name }));
           
-          setBoughtBooks(boughtBooks);
+          setBoughtBooks(purchasedBooks);
         } catch (error: any) {
           console.error('[MyVocabulary] 加载失败:', error);
           setErrorMsg(error.message || '加载失败');
