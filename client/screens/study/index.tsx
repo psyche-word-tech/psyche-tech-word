@@ -60,9 +60,6 @@ export default function StudyScreen() {
                 <Text style={styles.gridLabel}>购买词汇书</Text>
               </View>
             </TouchableOpacity>
-            <View style={styles.gridItem}>
-              <View style={styles.emptyCard} />
-            </View>
           </View>
           {/* 下一行：区域四、区域五 */}
           <View style={styles.gridRow}>
