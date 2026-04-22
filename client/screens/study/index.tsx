@@ -68,7 +68,7 @@ export default function StudyScreen() {
           <View style={styles.gridRow}>
             <View style={styles.gridItem}>
               <View style={styles.emptyCard}>
-                <Ionicons name="settings-outline" size={32} color="#999999" />
+                <Ionicons name="settings-outline" size={48} color="#666666" />
               </View>
             </View>
             <TouchableOpacity 
