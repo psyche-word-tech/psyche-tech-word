@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   topLabel: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.75)',
     textShadowOffset: { width: 1, height: 1 },
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   gridLabel: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.75)',
     textShadowOffset: { width: 1, height: 1 },
