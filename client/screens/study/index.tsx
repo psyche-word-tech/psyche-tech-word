@@ -55,7 +55,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={iconDang} style={styles.dangImage} resizeMode="cover" />
+              <Image source={iconDang} style={styles.dangImage} resizeMode="contain" />
               <View style={styles.labelContainer}>
                 <Text style={styles.gridLabel}>购买词汇书</Text>
               </View>
