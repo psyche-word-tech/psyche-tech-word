@@ -4,6 +4,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
 const logo = require('@/assets/logo.png');
+const region4Img = require('@/assets/region4.png');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
@@ -33,6 +34,13 @@ export default function HomeScreen() {
 
           {/* Tagline */}
           <Text style={styles.tagline}>phantasia connects us</Text>
+
+          {/* Region 4 Image */}
+          <Image 
+            source={region4Img} 
+            style={styles.region4Image}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Bottom Action Area */}
@@ -99,6 +107,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 2,
     marginBottom: 20,
+  },
+  region4Image: {
+    width: 200,
+    height: 100,
+    marginTop: 20,
   },
 
   bottomAction: {
