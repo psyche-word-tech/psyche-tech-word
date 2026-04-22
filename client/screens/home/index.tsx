@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
@@ -14,7 +14,7 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         {/* Top Header Bar */}
         <View style={styles.headerBar}>
           <Text style={styles.headerText}>welcome to</Text>
@@ -33,8 +33,6 @@ export default function HomeScreen() {
 
           {/* Tagline */}
           <Text style={styles.tagline}>phantasia connects us</Text>
-
-
         </View>
 
         {/* Bottom Action Area */}
@@ -44,7 +42,7 @@ export default function HomeScreen() {
             style={styles.settingsButton} 
             activeOpacity={0.7}
           >
-            <FontAwesome6 name="gear" size={22} color="#333333" />
+            <FontAwesome6 name="gear" size={24} color="#333333" />
           </TouchableOpacity>
           
           {/* Next Button - bottom right */}
@@ -56,7 +54,7 @@ export default function HomeScreen() {
             <Text style={styles.nextText}>next</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </Screen>
   );
 }
@@ -79,6 +77,7 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   mainContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 40,
