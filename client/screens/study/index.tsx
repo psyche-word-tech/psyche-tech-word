@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   topImage: {
     width: '100%',
     height: '100%',
-    marginTop: 130,
+    marginTop: 50,
   },
   topLabel: {
     fontSize: 14,
