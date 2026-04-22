@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   topImage: {
     width: '100%',
-    height: '100%',
+    height: 180,
   },
   topLabel: {
     fontSize: 14,
