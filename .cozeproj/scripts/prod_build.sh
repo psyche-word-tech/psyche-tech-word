@@ -41,7 +41,9 @@ check_command "npm"
 info "==================== 安装 Node 依赖 ===================="
 if [ -f "$ROOT_DIR/package.json" ]; then
   info "正在执行：pnpm install"
-  (cd "$ROOT_DIR" && pnpm install --registry=https://registry.npmmirror.com) || error "Node 依赖安装失败"
+  # 清理可能存在的临时文件，避免 ENOTEMPTY 错误
+  rm -rf "$ROOT_DIR/node_modules/.pnpm/expo@54.0.33"*/node_modules/expo_tmp_* 2>/dev/null || true
+  (cd "$ROOT_DIR" && pnpm install --registry=https://registry.npmmirror.com --force) || error "Node 依赖安装失败"
 fi
 info "==================== 依赖安装完成！===================="
 
