@@ -135,15 +135,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+
     minWidth: 55,
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
+
     backgroundColor: '#FFFFFF',
     marginBottom: 16,
     justifyContent: 'center',
@@ -151,7 +149,7 @@ const styles = StyleSheet.create({
   },
   checkboxSelected: {
     backgroundColor: '#333333',
-    borderColor: '#333333',
+
   },
   checkmark: {
     color: '#FFFFFF',
@@ -183,8 +181,7 @@ const styles = StyleSheet.create({
   bottomContainer: {
     padding: 20,
     backgroundColor: '#F5F5F5',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+
   },
   selectedInfo: {
     marginBottom: 12,

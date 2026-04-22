@@ -122,7 +122,7 @@ export default function MyVocabularyPage() {
                   </View>
                 </TouchableOpacity>
                 
-                <View style={[styles.guideLine, index === 0 && styles.guideLineWithDot]} />
+
               </View>
             ))
           ) : (
@@ -225,16 +225,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'serif',
   },
-  guideLine: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#CCCCCC',
-    marginTop: 8,
-  },
-  guideLineWithDot: {
-    height: 0,
-    marginTop: 0,
-  },
+
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

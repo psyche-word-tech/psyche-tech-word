@@ -293,8 +293,7 @@ const styles = StyleSheet.create({
 	section: {
 		paddingHorizontal: 20,
 		paddingVertical: 16,
-		borderBottomWidth: 1,
-		borderBottomColor: '#EEEEEE',
+
 	},
 	sectionLabel: {
 		fontSize: 14,
@@ -362,8 +361,7 @@ const styles = StyleSheet.create({
 	sliderSection: {
 		paddingHorizontal: 20,
 		paddingVertical: 16,
-		borderTopWidth: 1,
-		borderTopColor: '#EEEEEE',
+
 	},
 	sliderLabel: {
 		fontSize: 14,
@@ -394,8 +392,7 @@ const styles = StyleSheet.create({
 	commentsSection: {
 		paddingHorizontal: 20,
 		paddingVertical: 16,
-		borderTopWidth: 1,
-		borderTopColor: '#EEEEEE',
+
 	},
 	commentsLabel: {
 		fontSize: 14,

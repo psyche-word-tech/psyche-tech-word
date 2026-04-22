@@ -207,13 +207,11 @@ const styles = StyleSheet.create({
   addForm: {
     padding: 16,
     backgroundColor: '#FAFAFA',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
+
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -238,8 +236,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#F5F5F5',
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
+
   },
   cancelButtonText: {
     fontSize: 14,
@@ -263,8 +260,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
+
   },
   wordHeader: {
     flexDirection: 'row',

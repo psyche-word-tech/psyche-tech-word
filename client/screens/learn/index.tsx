@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
 	},
 	wordCardUsed: {
 		backgroundColor: '#CCCCCC',
-		borderColor: '#AAAAAA',
+
 	},
 	wordCardText: {
 		fontSize: 14,

@@ -79,8 +79,7 @@ const styles = StyleSheet.create({
   dialog: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#000000',
+
     padding: 20,
   },
   dialogTitle: {
@@ -91,8 +90,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#000000',
+
     minHeight: 100,
     padding: 12,
     fontSize: 14,
@@ -118,8 +116,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#000000',
+
   },
   cancelText: {
     fontSize: 10,
@@ -129,8 +126,7 @@ const styles = StyleSheet.create({
   undoBtn: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#000000',
+
   },
   undoText: {
     fontSize: 10,

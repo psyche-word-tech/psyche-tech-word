@@ -33,8 +33,7 @@ export default function HomeScreen() {
           {/* Tagline */}
           <Text style={styles.tagline}>phantasia connects us</Text>
 
-          {/* Divider Line */}
-          <View style={styles.dividerLine} />
+
         </View>
 
         {/* Bottom Action Area */}
@@ -92,12 +91,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 20,
   },
-  dividerLine: {
-    width: 50,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginTop: 20,
-  },
+
   bottomAction: {
     position: 'absolute',
     bottom: 0,
@@ -110,8 +104,7 @@ const styles = StyleSheet.create({
   nextButton: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#000000',
+
     backgroundColor: '#FFFFFF',
   },
   nextText: {

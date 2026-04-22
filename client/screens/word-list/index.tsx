@@ -140,8 +140,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     padding: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+
   },
   searchInput: {
     backgroundColor: '#F5F5F5',
@@ -161,8 +160,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
+
   },
   wordText: {
     fontSize: 18,
