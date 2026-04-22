@@ -28,7 +28,7 @@ export default function StudyScreen() {
           {engravedText.length > 0 && (
             <View style={[styles.engravedTextContainer, { position: 'absolute', top: HALF_HEIGHT / 3 + 55, flexDirection: 'row' }]}>
               {engravedText.split('').map((char, charIndex) => (
-                <View key={charIndex} style={styles.engravedCharWrapper}>
+                <View key={charIndex} style={{ marginHorizontal: 15 }}>
                   <Text style={styles.engravedText}>{char}</Text>
                   <Text style={styles.engravedTextHighlight}>{char}</Text>
                 </View>
