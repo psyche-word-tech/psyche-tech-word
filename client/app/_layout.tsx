@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
-import Toast from 'react-native-toast-message';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 
