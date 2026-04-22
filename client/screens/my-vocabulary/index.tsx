@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
-import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
+import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
 
@@ -9,14 +9,6 @@ interface WordBook {
   id: number;
   name: string;
 }
-
-// 词汇书ID对应的数据库表
-const BOOK_TABLE_MAP: Record<number, { table: string | null; purchased: boolean }> = {
-  1: { table: 'words_a', purchased: true },
-  2: { table: 'words_b', purchased: true },
-  3: { table: null, purchased: false },
-  4: { table: null, purchased: false },
-};
 
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
@@ -60,7 +52,7 @@ export default function MyVocabularyPage() {
         } catch (error: any) {
           console.error('[MyVocabulary] 加载失败:', error);
           setErrorMsg(error.message || '加载失败');
-          setBoughtBooks([]); // 失败时清空
+          setBoughtBooks([]);
         } finally {
           setIsLoading(false);
         }
@@ -71,14 +63,8 @@ export default function MyVocabularyPage() {
   );
 
   const handleLearnPress = (book: WordBook) => {
-    const config = BOOK_TABLE_MAP[book.id];
-    
-    if (config && config.table && config.purchased) {
-      router.push('/learn', { table: config.table });
-    } else {
-      setAlertMessage(`${book.name}暂未开放，请先购买`);
-      setAlertVisible(true);
-    }
+    // 所有已购买的词汇书都使用 words_b 作为学习表
+    router.push('/learn', { table: 'words_b' });
   };
 
   if (!isConfigLoaded) {
