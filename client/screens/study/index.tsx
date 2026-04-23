@@ -80,7 +80,7 @@ export default function StudyScreen() {
               onPress={() => router.push('/my-vocabulary')}
             >
               <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
-              <View style={styles.labelContainer}>
+              <View style={[styles.labelContainer, { marginTop: -10 }]}>
                 <Text style={styles.gridLabel}>我的词汇书</Text>
               </View>
             </TouchableOpacity>
