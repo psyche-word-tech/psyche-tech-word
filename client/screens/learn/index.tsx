@@ -40,6 +40,7 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
 	const zIndex = useSharedValue(1);
+	const opacity = useSharedValue(1);
 	const hasDragged = useSharedValue(false);
 
 	// 拖动手势
@@ -55,6 +56,11 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			translateY.value = event.translationY;
 		})
 		.onEnd((event) => {
+			// 如果没有拖动过，直接返回
+			if (!hasDragged.value) {
+				return;
+			}
+
 			const dropY = event.absoluteY;
 			let targetCategory: number | null = null;
 			if (dropY > 150 && dropY < 700) {
@@ -69,13 +75,18 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			}
 
 			if (targetCategory !== null) {
-				runOnJS(onDrop)(targetCategory);
+				// 拖动到分类区域：先隐藏卡片，再调用onDrop
+				opacity.value = withSpring(0, {}, () => {
+					// 动画完成后调用onDrop
+					runOnJS(onDrop)(targetCategory);
+				});
+			} else {
+				// 没有拖动到有效区域：卡片回到原位
+				translateX.value = withSpring(0);
+				translateY.value = withSpring(0);
+				scale.value = withSpring(1);
+				zIndex.value = 1;
 			}
-
-			translateX.value = withSpring(0);
-			translateY.value = withSpring(0);
-			scale.value = withSpring(1);
-			zIndex.value = 1;
 			hasDragged.value = false;
 		});
 
@@ -97,6 +108,7 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			{ scale: scale.value },
 		],
 		zIndex: zIndex.value,
+		opacity: opacity.value,
 	}));
 
 	return (
