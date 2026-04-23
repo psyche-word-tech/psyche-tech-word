@@ -2,11 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'rea
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
-const logo = require('@/assets/logo.png');
 const backgroundImg = require('@/assets/home-bg.jpg');
 const bookStoreImg = require('@/assets/book-store.png');
-const booksStackImg = require('@/assets/books-stack.png');
-const settingsIcon = require('@/assets/settings-icon.webp');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
@@ -50,11 +47,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => router.push('/settings')}
           >
-            <Image 
-              source={settingsIcon}
-              style={styles.settingsIcon}
-              resizeMode="contain"
-            />
+            <Text style={styles.cardText}>设置</Text>
           </TouchableOpacity>
 
           {/* Right Card - My Vocabulary Books */}
@@ -63,12 +56,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => router.push('/study')}
           >
-            <Image 
-              source={booksStackImg}
-              style={styles.booksImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.myBooksText}>我的词汇书</Text>
+            <Text style={styles.cardTextLight}>我的词汇书</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -151,10 +139,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  settingsIcon: {
-    width: 40,
-    height: 40,
-  },
   rightCard: {
     flex: 1,
     height: 120,
@@ -167,17 +151,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    overflow: 'hidden',
   },
-  booksImage: {
-    width: '80%',
-    height: 70,
-  },
-  myBooksText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    marginTop: 8,
+  cardText: {
+    fontSize: 16,
+    color: '#333333',
     fontFamily: 'serif',
-    letterSpacing: 1,
+    fontWeight: '500',
+  },
+  cardTextLight: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontWeight: '500',
   },
 });
