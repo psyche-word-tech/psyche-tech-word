@@ -7,6 +7,7 @@ const iconRock = require('@/assets/iconRock.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 const region4Bg = require('@/assets/region4-bg.webp');
 const regionAImg = require('@/assets/region-a.webp');
+const regionBImg = require('@/assets/region-b.webp');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -58,13 +59,9 @@ export default function StudyScreen() {
             >
               <Image source={regionAImg} style={styles.regionAStyle} resizeMode="stretch" />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.gridItem} 
-              activeOpacity={0.9} 
-              onPress={() => router.push('/vocabulary')}
-            >
-              <Text style={styles.gridLabel}>区域b</Text>
-            </TouchableOpacity>
+            <View style={styles.gridItem}>
+              <Image source={regionBImg} style={styles.regionAStyle} resizeMode="stretch" />
+            </View>
           </View>
           {/* 下一行：区域四、区域五 */}
           <View style={styles.bottomRow}>
