@@ -36,8 +36,14 @@ export default function PurchasePage() {
   // 获取词汇书列表
   const books: Book[] = params.books ? JSON.parse(params.books) : DEFAULT_BOOKS;
   
-  // 选中的词汇书
-  const [selectedBooks, setSelectedBooks] = useState<Set<number>>(new Set());
+  // 选中的词汇书 - 初始化时选中所有传入的书籍
+  const [selectedBooks, setSelectedBooks] = useState<Set<number>>(() => {
+    if (params.books) {
+      const parsedBooks: Book[] = JSON.parse(params.books);
+      return new Set(parsedBooks.map(b => b.id));
+    }
+    return new Set();
+  });
   
   // 切换选择状态
   const toggleBook = (bookId: number) => {
