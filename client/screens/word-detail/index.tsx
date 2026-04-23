@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ interface Word {
 	meaning: string;
 	example?: string;
 	example_translation?: string;
+	example_image_url?: string;
 }
 
 interface Comment {
@@ -265,6 +266,15 @@ export default function WordDetailPage() {
 								{word.example_translation}
 							</Text>
 						)}
+						{word.example_image_url && (
+							<View style={styles.exampleImageContainer}>
+								<Image
+									source={{ uri: word.example_image_url }}
+									style={styles.exampleImage}
+									resizeMode="cover"
+								/>
+							</View>
+						)}
 					</View>
 
 					{/* Status Buttons */}
@@ -450,6 +460,16 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 		marginTop: 8,
 		paddingLeft: 4,
+	},
+	exampleImageContainer: {
+		marginTop: 12,
+		borderRadius: 12,
+		overflow: 'hidden',
+		backgroundColor: '#F5F5F5',
+	},
+	exampleImage: {
+		width: '100%',
+		height: 200,
 	},
 	statusSection: {
 		flexDirection: 'row',
