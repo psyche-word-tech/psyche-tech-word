@@ -14,6 +14,7 @@ interface Word {
 	phonetic: string;
 	meaning: string;
 	example?: string;
+	example_translation?: string;
 }
 
 interface Comment {
@@ -259,6 +260,11 @@ export default function WordDetailPage() {
 								{word.example || `The word "${word.word}" has a meaning.`}
 							</Text>
 						</View>
+						{word.example_translation && (
+							<Text style={styles.exampleTranslation}>
+								{word.example_translation}
+							</Text>
+						)}
 					</View>
 
 					{/* Status Buttons */}
@@ -437,6 +443,13 @@ const styles = StyleSheet.create({
 		fontFamily: 'Times New Roman',
 		fontStyle: 'italic',
 		flex: 1,
+	},
+	exampleTranslation: {
+		fontSize: 13,
+		color: '#666666',
+		fontFamily: 'serif',
+		marginTop: 8,
+		paddingLeft: 4,
 	},
 	statusSection: {
 		flexDirection: 'row',
