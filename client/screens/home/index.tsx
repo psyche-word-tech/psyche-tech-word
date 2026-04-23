@@ -1,73 +1,77 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
 const logo = require('@/assets/logo.png');
-const region4Img = require('@/assets/settings-icon.webp');
+const backgroundImg = require('@/assets/home-bg.jpg');
+const bookStoreImg = require('@/assets/book-store.png');
+const booksStackImg = require('@/assets/books-stack.png');
 const settingsIcon = require('@/assets/settings-icon.webp');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
 
-  const handleNext = () => {
-    router.replace('/study');
-  };
-
   return (
     <Screen>
-      <View style={styles.container}>
-        {/* Top Header Bar */}
-        <View style={styles.headerBar}>
-          <Text style={styles.headerText}>welcome to</Text>
+      <ScrollView style={styles.container} bounces={false}>
+        {/* Top Background Image Area */}
+        <View style={styles.topSection}>
+          <Image 
+            source={backgroundImg} 
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+          <View style={styles.imageOverlay}>
+            <Text style={styles.imageLabel}>刻字</Text>
+          </View>
         </View>
 
-        {/* Main Content Area */}
-        <View style={styles.mainContent}>
-          {/* Logo Image */}
-          <View style={styles.logoContainer}>
-            <Image 
-              source={logo} 
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-          </View>
-
-          {/* Tagline */}
-          <Text style={styles.tagline}>phantasia connects us</Text>
-
-          {/* Region 4 Image */}
+        {/* Book Store Section */}
+        <TouchableOpacity 
+          style={styles.bookStoreSection}
+          activeOpacity={0.9}
+          onPress={() => router.push('/purchase')}
+        >
           <Image 
-            source={region4Img} 
-            style={styles.region4Image}
+            source={bookStoreImg}
+            style={styles.bookStoreImage}
             resizeMode="contain"
           />
-        </View>
+          <View style={styles.bookStoreLabel}>
+            <Text style={styles.bookStoreText}>购买词汇书</Text>
+          </View>
+        </TouchableOpacity>
 
-        {/* Bottom Action Area */}
-        <View style={styles.bottomAction}>
-          {/* Settings Button - bottom left */}
+        {/* Bottom Section - Two Cards */}
+        <View style={styles.bottomSection}>
+          {/* Left Card - Settings */}
           <TouchableOpacity 
-            style={styles.settingsButton} 
-            activeOpacity={0.7}
+            style={styles.leftCard}
+            activeOpacity={0.8}
             onPress={() => router.push('/settings')}
           >
             <Image 
-              source={settingsIcon} 
+              source={settingsIcon}
               style={styles.settingsIcon}
               resizeMode="contain"
             />
           </TouchableOpacity>
-          
-          {/* Next Button - bottom right */}
+
+          {/* Right Card - My Vocabulary Books */}
           <TouchableOpacity 
-            style={styles.nextButton} 
-            onPress={handleNext}
-            activeOpacity={0.7}
+            style={styles.rightCard}
+            activeOpacity={0.8}
+            onPress={() => router.push('/study')}
           >
-            <Text style={styles.nextText}>next</Text>
+            <Image 
+              source={booksStackImg}
+              style={styles.booksImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.myBooksText}>我的词汇书</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
@@ -77,74 +81,103 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerBar: {
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 24,
+  topSection: {
+    height: 280,
+    position: 'relative',
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
     alignItems: 'center',
   },
-  headerText: {
+  imageLabel: {
     fontSize: 16,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontWeight: '300',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  bookStoreSection: {
+    marginTop: -30,
+    marginHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  bookStoreImage: {
+    width: '100%',
+    height: 160,
+  },
+  bookStoreLabel: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  bookStoreText: {
+    fontSize: 14,
     color: '#333333',
     fontFamily: 'serif',
-    fontStyle: 'italic',
-    letterSpacing: 3,
   },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  logoImage: {
-    width: 140,
-    height: 140,
-  },
-  tagline: {
-    fontSize: 11,
-    color: '#666666',
-    fontFamily: 'serif',
-    fontStyle: 'italic',
-    letterSpacing: 2,
-    marginBottom: 20,
-  },
-  region4Image: {
-    width: 200,
-    height: 100,
-    marginTop: 20,
-  },
-
-  bottomAction: {
+  bottomSection: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
     paddingHorizontal: 20,
     paddingVertical: 20,
-    backgroundColor: '#FFFFFF',
+    gap: 12,
   },
-  settingsButton: {
-    padding: 10,
+  leftCard: {
+    flex: 1,
+    height: 120,
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   settingsIcon: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
   },
-  nextButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
+  rightCard: {
+    flex: 1,
+    height: 120,
+    backgroundColor: '#1B4332',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
   },
-  nextText: {
-    fontSize: 11,
-    color: '#333333',
+  booksImage: {
+    width: '80%',
+    height: 70,
+  },
+  myBooksText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    marginTop: 8,
     fontFamily: 'serif',
-    fontStyle: 'italic',
-    letterSpacing: 2,
+    letterSpacing: 1,
   },
 });
