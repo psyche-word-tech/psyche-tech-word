@@ -258,10 +258,6 @@ export default function WordDetailPage() {
 							<Text style={styles.exampleText}>
 								{word.example || `The word "${word.word}" has a meaning.`}
 							</Text>
-							<View style={styles.exampleIcons}>
-								<Ionicons name="pencil" size={16} color="#999999" />
-								<Ionicons name="checkmark" size={16} color="#999999" />
-							</View>
 						</View>
 					</View>
 
@@ -441,11 +437,6 @@ const styles = StyleSheet.create({
 		fontFamily: 'Times New Roman',
 		fontStyle: 'italic',
 		flex: 1,
-	},
-	exampleIcons: {
-		flexDirection: 'row',
-		gap: 12,
-		marginLeft: 12,
 	},
 	statusSection: {
 		flexDirection: 'row',
