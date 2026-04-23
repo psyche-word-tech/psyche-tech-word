@@ -70,7 +70,7 @@ export default function StudyScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
-              style={styles.gridItem} 
+              style={[styles.gridItem, { borderWidth: 0 }]} 
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
