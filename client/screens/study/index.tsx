@@ -62,7 +62,7 @@ export default function StudyScreen() {
           <View style={styles.bottomRow}>
             <View style={styles.gridItem}>
               <TouchableOpacity 
-                style={styles.emptyCard}
+                style={styles.gridItem}
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
