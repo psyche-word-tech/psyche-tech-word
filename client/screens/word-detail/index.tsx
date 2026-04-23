@@ -134,9 +134,11 @@ export default function WordDetailPage() {
 	// 当单词变化时获取评论
 	useEffect(() => {
 		if (word.id) {
+			// eslint-disable-next-line react-hooks/rules-of-hooks
 			fetchComments(word.id);
 		}
-	}, [word.id, fetchComments]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [word.id]);
 
 	// 清理音频资源
 	useEffect(() => {

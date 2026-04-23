@@ -131,47 +131,47 @@ export default function LearnPage() {
 	};
 	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
-	// 页面返回时自动刷新数据
-	useFocusEffect(
-		useCallback(() => {
-			fetchData();
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-		}, [table, apiBaseUrl])
-	);
+		const fetchData = async () => {
+			try {
+				// 直接使用指定的表
+				const wordsTable = table;
 
-	const fetchData = async () => {
-		try {
-			// 直接使用指定的表
-			const wordsTable = table;
+				// 并行获取单词列表和分类数据
+				const [wordsRes, xRes, yRes, zRes] = await Promise.all([
+					fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`),
+					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
+					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
+					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
+				]);
 
-			// 并行获取单词列表和分类数据
-			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
-			]);
+				const wordsData = await wordsRes.json();
+				const xResult = await xRes.json();
+				const yResult = await yRes.json();
+				const zResult = await zRes.json();
 
-			const wordsData = await wordsRes.json();
-			const xResult = await xRes.json();
-			const yResult = await yRes.json();
-			const zResult = await zRes.json();
+				// 更新单词列表
+				const wordsResult = Array.isArray(wordsData) ? wordsData : [];
+				setWords(wordsResult);
+				setUsedWords(new Set());
+				
+				// 更新分类数量
+				setCategories([
+					{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
+					{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
+					{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
+				]);
+			} catch (error) {
+				console.error('Failed to fetch data:', error);
+			}
+		};
 
-			// 更新单词列表
-			const wordsResult = Array.isArray(wordsData) ? wordsData : [];
-			setWords(wordsResult);
-			setUsedWords(new Set());
-			
-			// 更新分类数量
-			setCategories([
-				{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
-				{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
-				{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
-			]);
-		} catch (error) {
-			console.error('Failed to fetch data:', error);
-		}
-	};
+		// 页面返回时自动刷新数据
+		useFocusEffect(
+			useCallback(() => {
+				fetchData();
+				// eslint-disable-next-line react-hooks/exhaustive-deps
+			}, [table, apiBaseUrl])
+		);
 
 	const handleDrop = async (wordId: number, categoryId: number) => {
 		// 分类ID对应的目标表

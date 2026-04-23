@@ -79,7 +79,7 @@ export default function LoginPage() {
 
           <TouchableOpacity 
             style={styles.nextButton}
-            onPress={() => router.replace('/study')}
+            onPress={() => router.push('/settings')}
           >
             <Text style={styles.nextText}>Next →</Text>
           </TouchableOpacity>

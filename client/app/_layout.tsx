@@ -36,6 +36,10 @@ export default function RootLayout() {
           <Stack.Screen name="known-words" options={{ title: "" }} />
           <Stack.Screen name="vague-words" options={{ title: "" }} />
           <Stack.Screen name="unknown-words" options={{ title: "" }} />
+          <Stack.Screen name="settings" options={{ title: "" }} />
+          <Stack.Screen name="login" options={{ title: "" }} />
+          <Stack.Screen name="register" options={{ title: "" }} />
+          <Stack.Screen name="sms-login" options={{ title: "" }} />
         </Stack>
       </Provider>
     </ApiConfigProvider>
