@@ -6,6 +6,7 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 const iconRock = require('@/assets/iconRock.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 const region4Bg = require('@/assets/region4-bg.webp');
+const regionAImg = require('@/assets/region-a.webp');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -55,7 +56,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Text style={styles.gridLabel}>区域a</Text>
+              <Image source={regionAImg} style={styles.regionAImage} resizeMode="contain" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.halfGridItem} 
@@ -145,6 +146,11 @@ const styles = StyleSheet.create({
     margin: 5,
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  regionAImage: {
+    width: '100%',
+    height: '100%',
   },
   gridImageFull: {
     position: 'absolute',
