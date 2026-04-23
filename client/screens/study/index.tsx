@@ -41,11 +41,6 @@ export default function StudyScreen() {
               ))}
             </View>
           )}
-          {engravedText.length === 0 && (
-            <View style={[styles.labelContainer, { position: 'absolute', top: HALF_HEIGHT }]}>
-              <Text style={styles.topLabel}>刻字</Text>
-            </View>
-          )}
         </TouchableOpacity>
 
         {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
