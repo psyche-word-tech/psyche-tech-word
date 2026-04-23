@@ -104,9 +104,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topImage: {
-    width: '90%',
-    height: '90%',
-    marginTop: 30,
+    width: '100%',
+    height: '100%',
+    marginTop: 50,
   },
   topLabel: {
     fontSize: 14,
