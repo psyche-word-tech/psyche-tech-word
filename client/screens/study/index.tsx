@@ -52,14 +52,14 @@ export default function StudyScreen() {
           {/* 上一行：区域二（左右分栏：区域a、区域b） */}
           <View style={styles.gridRow}>
             <TouchableOpacity 
-              style={styles.halfGridItem} 
+              style={styles.gridItem} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={regionAImg} style={styles.regionAImage} resizeMode="contain" />
+              <Image source={regionAImg} style={styles.region4Image} resizeMode="cover" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.halfGridItem} 
+              style={styles.gridItem} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
@@ -138,19 +138,6 @@ const styles = StyleSheet.create({
   gridItem: {
     flex: 1,
     padding: 10,
-  },
-  halfGridItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    margin: 5,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  regionAImage: {
-    width: '100%',
-    height: '100%',
   },
   gridImageFull: {
     position: 'absolute',
