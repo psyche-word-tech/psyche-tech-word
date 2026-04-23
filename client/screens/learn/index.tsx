@@ -75,11 +75,10 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			}
 
 			if (targetCategory !== null) {
-				// 拖动到分类区域：先隐藏卡片，再调用onDrop
-				opacity.value = withSpring(0, {}, () => {
-					// 动画完成后调用onDrop
-					runOnJS(onDrop)(targetCategory);
-				});
+				// 立即调用 onDrop 更新数据库
+				runOnJS(onDrop)(targetCategory);
+				// 隐藏卡片
+				opacity.value = withSpring(0);
 			} else {
 				// 没有拖动到有效区域：卡片回到原位
 				translateX.value = withSpring(0);
