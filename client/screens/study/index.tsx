@@ -67,7 +67,7 @@ export default function StudyScreen() {
             </TouchableOpacity>
           </View>
           {/* 下一行：区域四、区域五 */}
-          <View style={styles.gridRow}>
+          <View style={styles.bottomRow}>
             <View style={styles.gridItem}>
               <TouchableOpacity 
                 style={styles.emptyCard}
@@ -133,6 +133,10 @@ const styles = StyleSheet.create({
   },
   gridRow: {
     flex: 1,
+    flexDirection: 'row',
+  },
+  bottomRow: {
+    height: 177,
     flexDirection: 'row',
   },
   gridItem: {
