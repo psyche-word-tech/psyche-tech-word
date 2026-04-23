@@ -297,7 +297,7 @@ export default function WordDetailPage() {
 
 					{/* Comments Section */}
 					<View style={styles.commentsSection}>
-						<Text style={styles.commentsLabel}>写作笔记区 ({comments.length})</Text>
+						<Text style={styles.commentsLabel}>写作&笔记 ({comments.length})</Text>
 						
 						{/* 评论输入框 */}
 						<View style={styles.commentInputContainer}>
