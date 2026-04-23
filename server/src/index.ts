@@ -4,6 +4,7 @@ import wordsRouter from "./routes/words";
 import userWordsRouter from "./routes/user-words";
 import wordbooksRouter from "./routes/wordbooks";
 import authRouter from "./routes/auth";
+import commentsRouter from "./routes/comments";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -34,6 +35,7 @@ app.use('/api/v1/words', wordsRouter);
 app.use('/api/v1/user-words', userWordsRouter);
 app.use('/api/v1/wordbooks', wordbooksRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/comments', commentsRouter);
 
 
 app.listen(port, () => {

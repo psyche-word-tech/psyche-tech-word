@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,15 @@ interface Word {
 	example?: string;
 }
 
+interface Comment {
+	id: number;
+	word_id: number;
+	word_text: string;
+	user_name: string;
+	content: string;
+	created_at: string;
+}
+
 export default function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ word: string; table?: string }>();
@@ -30,6 +39,12 @@ export default function WordDetailPage() {
 	const [wordsList, setWordsList] = useState<Word[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50); // 0-100, 0=完全不熟悉, 100=非常熟悉
+
+	// 评论相关状态
+	const [comments, setComments] = useState<Comment[]>([]);
+	const [commentText, setCommentText] = useState('');
+	const [isLoadingComments, setIsLoadingComments] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
@@ -57,6 +72,71 @@ export default function WordDetailPage() {
 			fetchWordsList();
 		}, [sourceTable])
 	);
+
+	// 获取评论列表
+	const fetchComments = useCallback(async (wordId: number) => {
+		if (!wordId) return;
+		setIsLoadingComments(true);
+		try {
+			/**
+			 * 服务端文件：server/src/routes/comments.ts
+			 * 接口：GET /api/v1/comments/:wordId
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/comments/${wordId}`);
+			const data = await response.json();
+			setComments(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error('Failed to fetch comments:', error);
+			setComments([]);
+		} finally {
+			setIsLoadingComments(false);
+		}
+	}, []);
+
+	// 提交评论
+	const submitComment = useCallback(async () => {
+		if (!commentText.trim() || !word.id) {
+			Alert.alert('提示', '请输入评论内容');
+			return;
+		}
+		
+		setIsSubmitting(true);
+		try {
+			/**
+			 * 服务端文件：server/src/routes/comments.ts
+			 * 接口：POST /api/v1/comments
+			 * Body参数：wordId: number, wordText: string, userName: string, content: string
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/comments`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					wordId: word.id,
+					wordText: word.word,
+					userName: '用户',
+					content: commentText.trim()
+				})
+			});
+			
+			if (!response.ok) throw new Error('提交失败');
+			
+			setCommentText('');
+			fetchComments(word.id);
+			Alert.alert('成功', '评论已发布');
+		} catch (error) {
+			console.error('Failed to submit comment:', error);
+			Alert.alert('错误', '评论发布失败');
+		} finally {
+			setIsSubmitting(false);
+		}
+	}, [commentText, word.id, word.word, fetchComments]);
+
+	// 当单词变化时获取评论
+	useEffect(() => {
+		if (word.id) {
+			fetchComments(word.id);
+		}
+	}, [word.id, fetchComments]);
 
 	// 清理音频资源
 	useEffect(() => {
@@ -217,10 +297,52 @@ export default function WordDetailPage() {
 
 					{/* Comments Section */}
 					<View style={styles.commentsSection}>
-						<Text style={styles.commentsLabel}>评论区</Text>
+						<Text style={styles.commentsLabel}>评论区 ({comments.length})</Text>
+						
+						{/* 评论输入框 */}
 						<View style={styles.commentInputContainer}>
-							<Text style={styles.placeholderText}>添加评论...</Text>
+							<TextInput
+								style={styles.commentInput}
+								placeholder="写下你的评论..."
+								placeholderTextColor="#999"
+								value={commentText}
+								onChangeText={setCommentText}
+								multiline
+								maxLength={500}
+							/>
+							<TouchableOpacity 
+								style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+								onPress={submitComment}
+								disabled={isSubmitting}
+							>
+								{isSubmitting ? (
+									<ActivityIndicator size="small" color="#FFF" />
+								) : (
+									<Text style={styles.submitButtonText}>发布</Text>
+								)}
+							</TouchableOpacity>
 						</View>
+						
+						{/* 评论列表 */}
+						{isLoadingComments ? (
+							<ActivityIndicator size="small" color="#4F46E5" style={styles.commentsLoading} />
+						) : comments.length === 0 ? (
+							<Text style={styles.noComments}>暂无评论，来说点什么吧</Text>
+						) : (
+							<ScrollView style={styles.commentsList} showsVerticalScrollIndicator={false}>
+								{comments.map((comment) => (
+									<View key={comment.id} style={styles.commentItem}>
+										<View style={styles.commentHeader}>
+											<Text style={styles.commentUserName}>{comment.user_name}</Text>
+											<Text style={styles.commentDate}>
+												{new Date(comment.created_at).toLocaleDateString('zh-CN')}
+											</Text>
+										</View>
+										<Text style={styles.commentContent}>{comment.content}</Text>
+									</View>
+								))}
+							</ScrollView>
+						)}
 					</View>
 				</ScrollView>
 			</View>
@@ -385,7 +507,6 @@ const styles = StyleSheet.create({
 	commentsSection: {
 		paddingHorizontal: 20,
 		paddingVertical: 16,
-
 	},
 	commentsLabel: {
 		fontSize: 14,
@@ -398,12 +519,71 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F5F5F5',
 		borderRadius: 8,
 		padding: 12,
-		minHeight: 80,
-		justifyContent: 'flex-start',
+		marginBottom: 16,
 	},
-	placeholderText: {
+	commentInput: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
+		minHeight: 60,
+		textAlignVertical: 'top',
+	},
+	submitButton: {
+		backgroundColor: '#4F46E5',
+		borderRadius: 6,
+		paddingVertical: 10,
+		paddingHorizontal: 20,
+		alignSelf: 'flex-end',
+		marginTop: 10,
+	},
+	submitButtonDisabled: {
+		backgroundColor: '#A5A5A5',
+	},
+	submitButtonText: {
+		color: '#FFF',
+		fontSize: 14,
+		fontWeight: '600',
+	},
+	commentsList: {
+		maxHeight: 200,
+	},
+	commentsLoading: {
+		marginVertical: 20,
+	},
+	noComments: {
 		fontSize: 14,
 		color: '#999999',
 		fontFamily: 'serif',
+		textAlign: 'center',
+		paddingVertical: 20,
+	},
+	commentItem: {
+		backgroundColor: '#F9F9F9',
+		borderRadius: 8,
+		padding: 12,
+		marginBottom: 10,
+	},
+	commentHeader: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: 6,
+	},
+	commentUserName: {
+		fontSize: 13,
+		fontWeight: '600',
+		color: '#4F46E5',
+		fontFamily: 'serif',
+	},
+	commentDate: {
+		fontSize: 11,
+		color: '#999999',
+		fontFamily: 'serif',
+	},
+	commentContent: {
+		fontSize: 14,
+		color: '#333333',
+		fontFamily: 'serif',
+		lineHeight: 20,
 	},
 });
