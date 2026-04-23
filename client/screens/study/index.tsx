@@ -48,16 +48,21 @@ export default function StudyScreen() {
 
         {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
         <View style={styles.bottomSection}>
-          {/* 上一行：区域二、区域三 */}
+          {/* 上一行：区域二（左右分栏：区域a、区域b） */}
           <View style={styles.gridRow}>
             <TouchableOpacity 
-              style={styles.gridItem} 
+              style={styles.halfGridItem} 
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <View style={[styles.labelContainer, { position: 'relative', marginTop: 60 }]}>
-                <Text style={styles.gridLabel}>购买词汇书</Text>
-              </View>
+              <Text style={styles.gridLabel}>区域a</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.halfGridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/vocabulary')}
+            >
+              <Text style={styles.gridLabel}>区域b</Text>
             </TouchableOpacity>
           </View>
           {/* 下一行：区域四、区域五 */}
@@ -133,6 +138,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
   },
+  halfGridItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 5,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+  },
   gridImageFull: {
     position: 'absolute',
     top: 0,
@@ -158,12 +171,9 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   gridLabel: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 16,
+    color: '#333333',
     fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   emptyCard: {
     width: '100%',
