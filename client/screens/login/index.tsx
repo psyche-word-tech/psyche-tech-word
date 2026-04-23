@@ -77,6 +77,13 @@ export default function LoginPage() {
             <Text style={styles.loginText}>登录</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.nextButton}
+            onPress={() => router.replace('/study')}
+          >
+            <Text style={styles.nextText}>Next →</Text>
+          </TouchableOpacity>
+
           {/* SMS Login Link */}
           <TouchableOpacity 
             style={styles.switchButton}
@@ -191,5 +198,17 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontWeight: '600',
     marginLeft: 4,
+  },
+  nextButton: {
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  nextText: {
+    fontSize: 14,
+    color: '#4F46E5',
+    fontFamily: 'serif',
+    fontWeight: '600',
   },
 });
