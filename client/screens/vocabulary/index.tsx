@@ -58,11 +58,6 @@ export default function VocabularyPage() {
               style={styles.card}
               onPress={() => toggleSelect(book.id)}
             >
-              {/* Checkbox */}
-              <View style={[styles.checkbox, book.selected && styles.checkboxSelected]}>
-                {book.selected && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              
               {/* Book Name - Vertical */}
               <View style={styles.nameContainer}>
                 {book.name.split('').map((char, i) => (
@@ -137,23 +132,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
 
     minWidth: 55,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-
-    backgroundColor: '#FFFFFF',
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: '#333333',
-
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
   },
   nameContainer: {
     alignItems: 'center',
