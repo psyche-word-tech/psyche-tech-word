@@ -66,7 +66,7 @@ export default function StudyScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
-                <Image source={region4Bg} style={styles.region4Image} resizeMode="cover" />
+                <Image source={region4Bg} style={styles.region4Image} resizeMode="stretch" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
