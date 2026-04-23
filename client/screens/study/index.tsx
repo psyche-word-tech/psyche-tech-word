@@ -6,7 +6,6 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 const iconRock = require('@/assets/iconRock.png');
 const iconDang = require('@/assets/iconDang.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
-const iconRegion5 = require('@/assets/region5-icon.webp');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -70,7 +69,7 @@ export default function StudyScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
-                <Image source={iconRegion5} style={styles.dangImage} resizeMode="contain" />
+                <Ionicons name="settings-outline" size={48} color="#666666" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
