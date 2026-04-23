@@ -14,6 +14,7 @@ interface Word {
   meaning: string;
   phonetic?: string;
   example?: string;
+  example_translation?: string;
 }
 
 export default function WordListPage() {
@@ -53,7 +54,8 @@ export default function WordListPage() {
         word: word.word,
         phonetic: word.phonetic || '',
         meaning: word.meaning,
-        example: word.example || ''
+        example: word.example || '',
+        example_translation: word.example_translation || ''
       }),
       table: table
     });
