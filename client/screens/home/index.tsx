@@ -3,7 +3,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
 const logo = require('@/assets/logo.png');
-const region4Img = require('@/assets/region4.png');
+const region4Img = require('@/assets/settings-icon.webp');
 const settingsIcon = require('@/assets/settings-icon.webp');
 
 export default function HomeScreen() {
