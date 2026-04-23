@@ -6,7 +6,6 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 const iconRock = require('@/assets/iconRock.png');
 const purchaseBooks = require('@/assets/purchase-books.webp');
 const iconMyVocab = require('@/assets/my-vocab.png');
-const myVocabHeader = require('@/assets/my-vocab-header.webp');
 const region4Bg = require('@/assets/region4-bg.webp');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -79,12 +78,9 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
-              <View style={styles.myVocabContainer}>
-                <Image source={myVocabHeader} style={styles.myVocabHeaderImage} resizeMode="cover" />
-                <Image source={iconMyVocab} style={styles.myVocabIcon} resizeMode="contain" />
-                <View style={styles.labelContainer}>
-                  <Text style={styles.gridLabel}>我的词汇书</Text>
-                </View>
+              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
+              <View style={styles.labelContainer}>
+                <Text style={styles.gridLabel}>我的词汇书</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -156,23 +152,6 @@ const styles = StyleSheet.create({
     bottom: -10,
     width: 'calc(100% + 20px)',
     height: 'calc(100% + 20px)',
-  },
-  myVocabContainer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
-  },
-  myVocabHeaderImage: {
-    width: '100%',
-    height: 60,
-  },
-  myVocabIcon: {
-    width: 60,
-    height: 60,
-    marginTop: 8,
   },
   dangImage: {
     width: 160,
