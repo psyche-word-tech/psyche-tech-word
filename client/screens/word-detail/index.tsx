@@ -139,7 +139,7 @@ export default function WordDetailPage() {
 			// eslint-disable-next-line react-hooks/rules-of-hooks
 			fetchComments(word.id);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 	}, [word.id]);
 
 	// 清理音频资源

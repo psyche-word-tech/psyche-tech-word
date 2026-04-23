@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 
 const logo = require('@/assets/logo.png');
 const region4Img = require('@/assets/region4.png');
+const settingsIcon = require('@/assets/settings-icon.webp');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
@@ -51,7 +51,11 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             onPress={() => router.push('/settings')}
           >
-            <Ionicons name="settings-outline" size={24} color="#333333" />
+            <Image 
+              source={settingsIcon} 
+              style={styles.settingsIcon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
           
           {/* Next Button - bottom right */}
@@ -126,6 +130,10 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 10,
     backgroundColor: '#FFFFFF',
+  },
+  settingsIcon: {
+    width: 32,
+    height: 32,
   },
   nextButton: {
     paddingHorizontal: 20,
