@@ -17,6 +17,7 @@ interface Word {
 	meaning: string;
 	phonetic?: string;
 	example?: string;
+	example_translation?: string;
 }
 
 interface Category {
@@ -236,7 +237,8 @@ export default function LearnPage() {
 				word: word.word,
 				phonetic: word.phonetic || '',
 				meaning: word.meaning,
-				example: word.example || ''
+				example: word.example || '',
+				example_translation: word.example_translation || ''
 			}),
 			table: table
 		});
