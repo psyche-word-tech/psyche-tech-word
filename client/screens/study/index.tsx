@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     flex: 1,
-    padding: 10,
   },
   regionAStyle: {
     position: 'absolute',
