@@ -4,7 +4,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const iconRock = require('@/assets/iconRock.png');
-const purchaseBooks = require('@/assets/purchase-books.webp');
+const purchaseIcon = require('@/assets/purchase-icon.webp');
 const iconMyVocab = require('@/assets/my-vocab.png');
 const region4Bg = require('@/assets/region4-bg.webp');
 
@@ -56,7 +56,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={purchaseBooks} style={styles.dangImage} resizeMode="contain" />
+              <Image source={purchaseIcon} style={styles.dangImage} resizeMode="contain" />
               <View style={[styles.labelContainer, { marginLeft: -150 }]}>
                 <Text style={styles.gridLabel}>购买词汇书</Text>
               </View>
