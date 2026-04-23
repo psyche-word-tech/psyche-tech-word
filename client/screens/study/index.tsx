@@ -84,6 +84,12 @@ export default function StudyScreen() {
               </View>
             </TouchableOpacity>
           </View>
+          {/* 区域四下方 */}
+          <View style={styles.gridRow}>
+            <View style={styles.gridItemFull}>
+              <Image source={region4Bg} style={styles.fullWidthImage} resizeMode="cover" />
+            </View>
+          </View>
         </View>
       </View>
     </Screen>
@@ -177,6 +183,21 @@ const styles = StyleSheet.create({
   gridIcon: {
     width: 48,
     height: 48,
+  },
+  gridItemFull: {
+    width: '100%',
+    height: 80,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  fullWidthImage: {
+    width: '100%',
+    height: '100%',
   },
   engravedTextContainer: {
     flexDirection: 'row',
