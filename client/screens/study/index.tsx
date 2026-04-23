@@ -155,12 +155,12 @@ const styles = StyleSheet.create({
   },
   region4Image: {
     position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    width: 'calc(100% + 20px)',
-    height: 'calc(100% + 20px)',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   dangImage: {
     width: 160,
