@@ -50,7 +50,7 @@ export default function StudyScreen() {
         {/* 下半部分：2x2 田字格（区域二、三、四、五） */}
         <View style={styles.bottomSection}>
           {/* 上一行：区域二（左右分栏：区域a、区域b） */}
-          <View style={styles.gridRow}>
+          <View style={styles.bottomRow}>
             <TouchableOpacity 
               style={styles.gridItem} 
               activeOpacity={0.9} 
