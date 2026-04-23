@@ -297,7 +297,7 @@ export default function WordDetailPage() {
 
 					{/* Comments Section */}
 					<View style={styles.commentsSection}>
-						<Text style={styles.commentsLabel}>评论区 ({comments.length})</Text>
+						<Text style={styles.commentsLabel}>写作笔记区 ({comments.length})</Text>
 						
 						{/* 评论输入框 */}
 						<View style={styles.commentInputContainer}>
@@ -327,7 +327,7 @@ export default function WordDetailPage() {
 						{isLoadingComments ? (
 							<ActivityIndicator size="small" color="#4F46E5" style={styles.commentsLoading} />
 						) : comments.length === 0 ? (
-							<Text style={styles.noComments}>暂无评论，来说点什么吧</Text>
+							<Text style={styles.noComments}>暂无笔记，来写点什么吧</Text>
 						) : (
 							<ScrollView style={styles.commentsList} showsVerticalScrollIndicator={false}>
 								{comments.map((comment) => (
