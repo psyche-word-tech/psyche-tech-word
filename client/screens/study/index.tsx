@@ -6,7 +6,7 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 const iconRock = require('@/assets/iconRock.png');
 const purchaseIcon = require('@/assets/purchase-icon.webp');
 const iconMyVocab = require('@/assets/my-vocab.png');
-const region4Bg = require('@/assets/region4-bg.webp');
+const region4New = require('@/assets/region4-new.webp');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HALF_HEIGHT = SCREEN_HEIGHT / 2; // 一半高度
@@ -70,7 +70,7 @@ export default function StudyScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
-                <Image source={region4Bg} style={styles.region4Image} resizeMode="cover" />
+                <Image source={region4New} style={styles.region4Image} resizeMode="cover" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
