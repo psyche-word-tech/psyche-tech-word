@@ -70,7 +70,7 @@ export default function StudyScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
-                <Image source={region4Bg} style={styles.gridImageFull} resizeMode="cover" />
+                <Image source={region4Bg} style={styles.region4Image} resizeMode="cover" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
@@ -143,6 +143,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+  },
+  region4Image: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    width: 'calc(100% + 20px)',
+    height: 'calc(100% + 20px)',
   },
   dangImage: {
     width: 160,
