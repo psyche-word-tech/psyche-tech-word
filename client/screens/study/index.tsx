@@ -57,7 +57,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={regionAImg} style={styles.regionAStyle} resizeMode="stretch" />
+              <Image source={regionAImg} style={[styles.regionAStyle, { marginTop: 1 }]} resizeMode="stretch" />
             </TouchableOpacity>
             <View style={styles.gridItem}>
               <Image source={regionBImg} style={styles.regionAStyle} resizeMode="stretch" />
