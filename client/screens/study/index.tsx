@@ -52,7 +52,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={regionAImg} style={styles.regionAStyle} resizeMode="stretch" />
+              <Image source={regionAImg} style={[styles.regionAStyle, { marginLeft: 1 }]} resizeMode="stretch" />
             </TouchableOpacity>
             <View style={styles.gridItem}>
               <Image source={regionBImg} style={styles.regionAStyle} resizeMode="stretch" />
@@ -66,7 +66,7 @@ export default function StudyScreen() {
                 activeOpacity={0.9}
                 onPress={() => router.push('/login')}
               >
-                <Image source={region4Bg} style={styles.regionAStyle} resizeMode="stretch" />
+                <Image source={region4Bg} style={styles.region4Image} resizeMode="cover" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
@@ -74,7 +74,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/my-vocabulary')}
             >
-              <Image source={iconMyVocab} style={styles.regionAStyle} resizeMode="stretch" />
+              <Image source={iconMyVocab} style={styles.gridImageFull} resizeMode="stretch" />
               <View style={[styles.labelContainer, { marginTop: -10 }]}>
                 <Text style={styles.gridLabel}>我的词汇书</Text>
               </View>
@@ -136,6 +136,24 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   regionAStyle: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  gridImageFull: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  region4Image: {
     position: 'absolute',
     top: 0,
     left: 0,
