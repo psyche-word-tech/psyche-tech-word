@@ -60,15 +60,13 @@ export default function StudyScreen() {
           </View>
           {/* 下一行：区域四、区域五 */}
           <View style={styles.bottomRow}>
-            <View style={styles.gridItem}>
-              <TouchableOpacity 
-                style={styles.gridItem}
-                activeOpacity={0.9}
-                onPress={() => router.push('/login')}
-              >
-                <Image source={region4Bg} style={styles.region4Image} resizeMode="cover" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.gridItem}
+              activeOpacity={0.9}
+              onPress={() => router.push('/login')}
+            >
+              <Image source={region4Bg} style={styles.gridImageFull} resizeMode="cover" />
+            </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.gridItem, { borderWidth: 0 }]} 
               activeOpacity={0.9} 
