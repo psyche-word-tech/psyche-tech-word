@@ -56,7 +56,7 @@ export default function StudyScreen() {
               activeOpacity={0.9} 
               onPress={() => router.push('/vocabulary')}
             >
-              <Image source={regionAImg} style={styles.region4Image} resizeMode="cover" />
+              <Image source={regionAImg} style={styles.regionAStyle} resizeMode="contain" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.gridItem} 
@@ -138,6 +138,10 @@ const styles = StyleSheet.create({
   gridItem: {
     flex: 1,
     padding: 10,
+  },
+  regionAStyle: {
+    width: '100%',
+    height: '100%',
   },
   gridImageFull: {
     position: 'absolute',
