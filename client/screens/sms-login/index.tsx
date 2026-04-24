@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } fro
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const logo = require('@/assets/logo.png');
 
@@ -48,6 +49,7 @@ export default function SmsLoginPage() {
     setLoading(false);
   };
 
+  const { login } = useAuth();
   const [loginLoading, setLoginLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -65,6 +67,12 @@ export default function SmsLoginPage() {
       const data = await response.json();
 
       if (data.success) {
+        await login({
+          id: data.user.id,
+          username: data.user.username || phone,
+          phone: phone,
+          token: data.token,
+        });
         router.replace('/profile');
       } else {
         Alert.alert('登录失败', data.error || '验证码错误');

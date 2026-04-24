@@ -1,55 +1,90 @@
-// @ts-nocheck
-/**
- * 通用认证上下文
- *
- * 基于固定的 API 接口实现，可复用到其他项目
- * 其他项目使用时，只需修改 @api 的导入路径指向项目的 api 模块
- *
- * 注意：
- * - 如果需要登录/鉴权场景，请扩展本文件，完善 login/logout、token 管理、用户信息获取与刷新等逻辑
- * - 将示例中的占位实现替换为项目实际的接口调用与状态管理
- */
-import React, { createContext, useContext, ReactNode } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-interface UserOut {
-
+interface User {
+  id: number;
+  username: string;
+  phone: string;
+  token: string;
 }
 
 interface AuthContextType {
-  user: UserOut | null;
-  token: string | null;
-  isAuthenticated: boolean;
+  user: User | null;
   isLoading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
-  updateUser: (userData: Partial<UserOut>) => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const value: AuthContextType = {
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: false,
+const USER_STORAGE_KEY = '@auth_user';
 
-    // 登录逻辑，根据项目实际情况实现
-    login: async (token: string) => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    // 登出逻辑，根据项目实际情况实现
-    logout: async () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
-
-    // 更新用户信息，根据项目实际情况实现
-    updateUser: () => {}, // eslint-disable-line @typescript-eslint/no-empty-function
+  const loadUser = async () => {
+    try {
+      const userData = await AsyncStorage.getItem(USER_STORAGE_KEY);
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error('加载用户信息失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
 
-export const useAuth = (): AuthContextType => {
+  // 初始化时从本地存储加载用户信息
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadUser();
+  }, []);
+
+  const login = async (userData: User) => {
+    try {
+      await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+    } catch (error) {
+      console.error('保存用户信息失败:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem(USER_STORAGE_KEY);
+      setUser(null);
+    } catch (error) {
+      console.error('清除用户信息失败:', error);
+      throw error;
+    }
+  };
+
+  const updateUser = (userData: Partial<User>) => {
+    setUser((prev) => {
+      if (prev) {
+        const updated = { ...prev, ...userData };
+        AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

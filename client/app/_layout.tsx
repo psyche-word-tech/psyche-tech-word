@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 import '../global.css';
 
@@ -13,9 +14,10 @@ LogBox.ignoreLogs([
 export default function RootLayout() {
   return (
     <ApiConfigProvider>
-      <Provider>
-        <StatusBar style="dark" />
-        <Stack
+      <AuthProvider>
+        <Provider>
+          <StatusBar style="dark" />
+          <Stack
           screenOptions={{
             animation: 'slide_from_right',
             gestureEnabled: true,
@@ -43,6 +45,7 @@ export default function RootLayout() {
           <Stack.Screen name="sms-login" options={{ title: "" }} />
         </Stack>
       </Provider>
+      </AuthProvider>
     </ApiConfigProvider>
   );
 }

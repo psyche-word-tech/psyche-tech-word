@@ -1,21 +1,45 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const router = useSafeRouter();
+  const { user, logout } = useAuth();
 
   // 用户数据（实际应从API获取）
   const userData = {
-    username: '学习达人',
-    phone: '138****8000',
+    username: user?.username || '学习达人',
+    phone: user?.phone ? user.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '未登录',
     avatar: null,
     stats: {
       learningDays: 128,
       totalWords: 2560,
       masteredWords: 890,
     },
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      '退出登录',
+      '确定要退出登录吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确定',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login');
+            } catch (error) {
+              Alert.alert('错误', '退出登录失败，请重试');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const menuItems = [
@@ -158,7 +182,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>退出登录</Text>
       </TouchableOpacity>
     </Screen>

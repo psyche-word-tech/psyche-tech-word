@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } fro
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const logo = require('@/assets/logo.png');
 
@@ -12,6 +13,7 @@ const logo = require('@/assets/logo.png');
  */
 export default function LoginPage() {
   const router = useSafeRouter();
+  const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,13 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        // 保存 token 和用户信息
+        // 保存用户信息到本地
+        await login({
+          id: data.user.id,
+          username: data.user.username || username,
+          phone: data.user.phone || '',
+          token: data.token,
+        });
         router.replace('/profile');
       } else {
         Alert.alert('登录失败', data.error || '用户名或密码错误');
