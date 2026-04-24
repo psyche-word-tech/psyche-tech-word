@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd server && pnpm install && pnpm build",
+  "startCommand": "cd server && pnpm start",
+  "healthcheckPath": "/api/v1/health",
+  "healthcheckTimeout": 10,
+  "restartPolicyType": "ON_FAILURE",
+  "restartPolicyMaxRetries": 10
+}

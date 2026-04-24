@@ -1,15 +1,48 @@
+# 依赖
 node_modules/
+.pnpm-store/
+
+# 构建输出
 dist/
 build/
-.expo/
-.expo-shared/
-.eslintcache
-expo/expo-env.d.ts
-expo-env.d.ts
-.DS_Store
-logs/
-*.tsbuildinfo
-node-compile-cache/
+
+# 环境变量 (不要提交真实密钥)
 .env
 .env.local
-.env.*.local
+.env.production
+
+# 日志
+logs/
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 测试
+coverage/
+
+# Android
+android/app/build/
+android/.gradle/
+*.apk
+*.aab
+
+# iOS
+ios/build/
+*.xcworkspace
+
+# Expo
+.expo/
+web-build/
+
+# 临时文件
+tmp/
+temp/
