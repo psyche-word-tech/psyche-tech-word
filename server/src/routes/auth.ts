@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
+import { sendSmsCode } from '@/utils/sms';
 
 const router = Router();
 
@@ -26,7 +27,7 @@ router.post('/send-code', async (req, res) => {
     // 删除该手机号之前的验证码
     await client.from('verification_codes').delete().eq('phone', phone);
     
-    // 存储新验证码
+    // 存储新验证码到数据库
     const { error } = await client.from('verification_codes').insert({
       phone,
       code,
@@ -38,17 +39,25 @@ router.post('/send-code', async (req, res) => {
       return res.json({ success: false, error: '发送失败' });
     }
     
-    // 开发环境直接返回验证码，方便测试
-    // 实际项目中这里需要调用短信服务发送验证码
-    console.log(`验证码: ${code}`);
+    // 判断是否为生产环境
+    const isProduction = process.env.NODE_ENV === 'production';
     
-    // 判断是否为开发环境，是则返回验证码
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.json({ 
-      success: true, 
-      message: isDev ? `开发模式：验证码为 ${code}` : '验证码已发送',
-      code: isDev ? code : undefined  // 仅开发环境返回
-    });
+    if (isProduction) {
+      // 生产环境：调用真实短信接口
+      const smsSent = await sendSmsCode(phone, code);
+      if (!smsSent) {
+        return res.json({ success: false, error: '短信发送失败，请稍后重试' });
+      }
+      res.json({ success: true, message: '验证码已发送' });
+    } else {
+      // 开发环境：直接返回验证码
+      console.log(`验证码: ${code}`);
+      res.json({ 
+        success: true, 
+        message: '开发模式：验证码为 ' + code, 
+        code: code 
+      });
+    }
   } catch (error) {
     console.error('发送验证码失败:', error);
     res.json({ success: false, error: '发送失败' });
