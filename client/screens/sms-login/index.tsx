@@ -65,7 +65,7 @@ export default function SmsLoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        router.replace('/study');
+        router.replace('/profile');
       } else {
         Alert.alert('登录失败', data.error || '验证码错误');
       }

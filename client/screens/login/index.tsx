@@ -37,8 +37,7 @@ export default function LoginPage() {
 
       if (data.success) {
         // 保存 token 和用户信息
-        // 注意：实际生产中应使用更安全的方式存储 token
-        router.replace('/study');
+        router.replace('/profile');
       } else {
         Alert.alert('登录失败', data.error || '用户名或密码错误');
       }
