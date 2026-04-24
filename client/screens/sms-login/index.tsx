@@ -15,15 +15,10 @@ export default function SmsLoginPage() {
 
   const handleSendCode = async () => {
     if (!phone || phone.length !== 11) {
+      Alert.alert('提示', '请输入正确的11位手机号');
       return;
     }
     setLoading(true);
-    // 发送验证码 API
-    /**
-     * 服务端文件：server/src/routes/auth.ts
-     * 接口：POST /api/v1/auth/send-code
-     * Body 参数：phone: string
-     */
     try {
       const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/send-code`, {
         method: 'POST',
@@ -32,6 +27,10 @@ export default function SmsLoginPage() {
       });
       const result = await response.json();
       if (result.success) {
+        // 开发环境下显示返回的验证码
+        if (result.code) {
+          Alert.alert('开发模式', `验证码: ${result.code}`);
+        }
         setCountdown(60);
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -42,9 +41,12 @@ export default function SmsLoginPage() {
             return prev - 1;
           });
         }, 1000);
+      } else {
+        Alert.alert('发送失败', result.error || '请稍后重试');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
+      Alert.alert('错误', '网络连接失败，请稍后重试');
     }
     setLoading(false);
   };

@@ -38,11 +38,17 @@ router.post('/send-code', async (req, res) => {
       return res.json({ success: false, error: '发送失败' });
     }
     
+    // 开发环境直接返回验证码，方便测试
     // 实际项目中这里需要调用短信服务发送验证码
-    // 现在直接返回验证码用于测试
     console.log(`验证码: ${code}`);
     
-    res.json({ success: true, message: '验证码已发送' });
+    // 判断是否为开发环境，是则返回验证码
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.json({ 
+      success: true, 
+      message: isDev ? `开发模式：验证码为 ${code}` : '验证码已发送',
+      code: isDev ? code : undefined  // 仅开发环境返回
+    });
   } catch (error) {
     console.error('发送验证码失败:', error);
     res.json({ success: false, error: '发送失败' });
