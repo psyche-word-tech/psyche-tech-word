@@ -1,18 +1,52 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
 
 const logo = require('@/assets/logo.png');
 
+/**
+ * 服务端文件：server/src/routes/auth.ts
+ * 接口：POST /api/v1/auth/login
+ * Body 参数：username: string, password: string
+ */
 export default function LoginPage() {
   const router = useSafeRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (username.trim() && password.trim()) {
-      router.replace('/study');
+  const handleLogin = async () => {
+    if (!username.trim()) {
+      Alert.alert('提示', '请输入用户名或手机号');
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert('提示', '请输入密码');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // 保存 token 和用户信息
+        // 注意：实际生产中应使用更安全的方式存储 token
+        router.replace('/study');
+      } else {
+        Alert.alert('登录失败', data.error || '用户名或密码错误');
+      }
+    } catch (error) {
+      console.error('登录错误:', error);
+      Alert.alert('错误', '网络连接失败，请稍后重试');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,10 +105,11 @@ export default function LoginPage() {
           
           {/* Login Button */}
           <TouchableOpacity 
-            style={styles.loginButton}
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginText}>登录</Text>
+            <Text style={styles.loginText}>{loading ? '登录中...' : '登录'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -164,6 +199,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#999999',
   },
   loginText: {
     fontSize: 15,

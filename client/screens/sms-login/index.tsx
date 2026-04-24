@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
@@ -48,17 +48,33 @@ export default function SmsLoginPage() {
     setLoading(false);
   };
 
-  const handleLogin = () => {
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleLogin = async () => {
     if (!phone || !code) {
+      Alert.alert('提示', '请输入手机号和验证码');
       return;
     }
-    // 验证码登录 API
-    /**
-     * 服务端文件：server/src/routes/auth.ts
-     * 接口：POST /api/v1/auth/sms-login
-     * Body 参数：phone: string, code: string
-     */
-    router.replace('/study');
+    setLoginLoading(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/sms-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        router.replace('/study');
+      } else {
+        Alert.alert('登录失败', data.error || '验证码错误');
+      }
+    } catch (error) {
+      console.error('登录错误:', error);
+      Alert.alert('错误', '网络连接失败，请稍后重试');
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handlePasswordLogin = () => {
@@ -126,10 +142,11 @@ export default function SmsLoginPage() {
           
           {/* Login Button */}
           <TouchableOpacity 
-            style={styles.loginButton}
+            style={[styles.loginButton, loginLoading && styles.loginButtonDisabled]}
             onPress={handleLogin}
+            disabled={loginLoading}
           >
-            <Text style={styles.loginText}>登录</Text>
+            <Text style={styles.loginText}>{loginLoading ? '登录中...' : '登录'}</Text>
           </TouchableOpacity>
 
           {/* Password Login Link */}
@@ -242,6 +259,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#999999',
   },
   loginText: {
     fontSize: 15,
