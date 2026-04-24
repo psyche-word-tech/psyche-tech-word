@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
-const iconRock = require('@/assets/iconRock.jpg');
+const iconRock = require('@/assets/iconRock.png');
 const iconMyVocab = require('@/assets/my-vocab.png');
 const region4Bg = require('@/assets/region4-bg.webp');
 const regionAImg = require('@/assets/region-a.webp');
