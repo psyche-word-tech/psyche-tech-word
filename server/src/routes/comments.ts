@@ -54,4 +54,23 @@ router.post('/', async (req, res) => {
   }
 });
 
+// 删除评论
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    res.json({ success: true, message: '评论已删除' });
+  } catch (error) {
+    console.error('Failed to delete comment:', error);
+    res.status(500).json({ error: 'Failed to delete comment' });
+  }
+});
+
 export default router;

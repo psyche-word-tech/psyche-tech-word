@@ -183,6 +183,41 @@ export default function WordDetailPage() {
 		}
 	}, [commentText]);
 
+	// 删除评论
+	const deleteComment = useCallback(async (commentId: number) => {
+		Alert.alert(
+			'确认删除',
+			'确定要删除这条笔记吗？',
+			[
+				{ text: '取消', style: 'cancel' },
+				{
+					text: '删除',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							/**
+							 * 服务端文件：server/src/routes/comments.ts
+							 * 接口：DELETE /api/v1/comments/:id
+							 */
+							const response = await fetch(`${API_BASE_URL}/api/v1/comments/${commentId}`, {
+								method: 'DELETE'
+							});
+
+							if (!response.ok) throw new Error('删除失败');
+
+							// 刷新评论列表
+							fetchComments(word.id);
+							Alert.alert('成功', '笔记已删除');
+						} catch (error) {
+							console.error('Failed to delete comment:', error);
+							Alert.alert('错误', '删除失败');
+						}
+					}
+				}
+			]
+		);
+	}, [word.id, fetchComments]);
+
 	// 发布评论
 	const submitComment = useCallback(async () => {
 		if (!commentText.trim() || !word.id) {
@@ -461,9 +496,17 @@ export default function WordDetailPage() {
 									<View key={comment.id} style={styles.commentItem}>
 										<View style={styles.commentHeader}>
 											<Text style={styles.commentUserName}>{comment.user_name}</Text>
-											<Text style={styles.commentDate}>
-												{new Date(comment.created_at).toLocaleDateString('zh-CN')}
-											</Text>
+											<View style={styles.commentHeaderRight}>
+												<Text style={styles.commentDate}>
+													{new Date(comment.created_at).toLocaleDateString('zh-CN')}
+												</Text>
+												<TouchableOpacity
+													style={styles.deleteButton}
+													onPress={() => deleteComment(comment.id)}
+												>
+													<Ionicons name="trash-outline" size={16} color="#F44336" />
+												</TouchableOpacity>
+											</View>
 										</View>
 										<Text style={styles.commentContent}>{comment.content}</Text>
 									</View>
@@ -828,6 +871,11 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		marginBottom: 6,
 	},
+	commentHeaderRight: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+	},
 	commentUserName: {
 		fontSize: 13,
 		fontWeight: '600',
@@ -838,6 +886,9 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: '#999',
 		fontFamily: 'serif',
+	},
+	deleteButton: {
+		padding: 4,
 	},
 	commentContent: {
 		fontSize: 14,
