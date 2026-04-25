@@ -317,7 +317,7 @@ export default function WordDetailPage() {
 						<View style={styles.commentInputContainer}>
 							<TextInput
 								style={styles.commentInput}
-								placeholder="写下你的评论..."
+								placeholder="写下你的句子..."
 								placeholderTextColor="#999"
 								value={commentText}
 								onChangeText={setCommentText}
