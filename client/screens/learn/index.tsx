@@ -53,12 +53,12 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				setIsDragging(false);
 				pan.flattenOffset();
 
-				// 检测放置位置
-				const absoluteY = gestureState.moveY;
+				// 检测放置位置 - 使用相对Y位置判断是否在分类区域
+				const dy = gestureState.dy;
 				const absoluteX = gestureState.moveX;
 
-				if (absoluteY > SCREEN_HEIGHT * 0.5) {
-					// 在下半部分释放
+				// 当卡片向下拖动超过100时，视为放入分类区域
+				if (dy > 100) {
 					let targetCategory = 3;
 					if (absoluteX < SCREEN_WIDTH / 3) {
 						targetCategory = 1;
@@ -244,8 +244,8 @@ export default function LearnPage() {
 					)}
 				</View>
 
-				{/* Category Drop Zones */}
-				<View style={styles.categoryContainer}>
+				{/* Category Drop Zones - Normal layout for proper gesture handling */}
+				<View style={styles.categorySection}>
 					<View style={styles.categoryRow}>
 						{categories.map((cat) => (
 							<View key={cat.id} style={styles.categoryItem}>
@@ -256,13 +256,8 @@ export default function LearnPage() {
 							</View>
 						))}
 					</View>
+					<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
 				</View>
-
-				{/* Instruction */}
-				<View style={styles.instructionContainer}>
-					<Text style={styles.instructionText}>拖动单词到下方分类区域</Text>
-				</View>
-			</View>
 		</Screen>
 	);
 }
@@ -271,6 +266,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#FFFFFF',
+		justifyContent: 'space-between',
 	},
 	header: {
 		flexDirection: 'row',
@@ -331,12 +327,10 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 		fontWeight: '600',
 	},
-	categoryContainer: {
-		position: 'absolute',
-		bottom: 60,
-		left: 0,
-		right: 0,
+	categorySection: {
 		paddingHorizontal: 20,
+		paddingVertical: 20,
+		backgroundColor: '#FFFFFF',
 	},
 	categoryRow: {
 		flexDirection: 'row',
@@ -362,16 +356,11 @@ const styles = StyleSheet.create({
 		color: 'rgba(255,255,255,0.8)',
 		marginTop: 4,
 	},
-	instructionContainer: {
-		position: 'absolute',
-		bottom: 20,
-		left: 0,
-		right: 0,
-		alignItems: 'center',
-	},
 	instructionText: {
 		fontSize: 12,
 		color: '#999999',
+		textAlign: 'center',
+		marginTop: 12,
 	},
 	emptyContainer: {
 		padding: 48,
