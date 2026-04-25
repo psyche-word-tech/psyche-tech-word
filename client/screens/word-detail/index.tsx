@@ -336,21 +336,10 @@ export default function WordDetailPage() {
 				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
 
-			Alert.alert('成功', `单词已移动到"${status}"分类`);
+			Alert.alert('成功', `单词已移动到"${status}"分类，页面切换到 ${status} 列表`);
 			// 更新分类数量
 			fetchCategoryCounts();
-			// 重新加载单词列表（从 words_b）
-			const refreshRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/words_b`);
-			const refreshData = await refreshRes.json();
-			if (Array.isArray(refreshData) && refreshData.length > 0) {
-				setWordsList(refreshData);
-				setCurrentIndex(0);
-				setWord(refreshData[0]);
-				setCommentText('');
-			} else {
-				setWordsList([]);
-				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
-			}
+			// 页面已切换到目标分类列表（上面已加载）
 		} catch (error) {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '操作失败');
