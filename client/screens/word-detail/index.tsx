@@ -133,7 +133,8 @@ export default function WordDetailPage() {
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => true,
 			onMoveShouldSetPanResponder: () => true,
-			onPanResponderGrant: () => {
+			onPanResponderGrant: (evt, gestureState) => {
+				console.log('PanResponder grant, touches:', evt.nativeEvent.touches);
 				setIsDragging(true);
 				dragPosition.setOffset({
 					x: 0,
@@ -141,31 +142,41 @@ export default function WordDetailPage() {
 				});
 				dragPosition.setValue({ x: 0, y: 0 });
 			},
-			onPanResponderMove: Animated.event(
-				[null, { dx: dragPosition.x, dy: dragPosition.y }],
-				{ useNativeDriver: false }
-			),
-			onPanResponderRelease: (evt, gesture) => {
-				console.log('Drag released at:', evt.nativeEvent.pageX, evt.nativeEvent.pageY);
+			onPanResponderMove: (evt, gestureState) => {
+				console.log('PanResponder move, dy:', gestureState.dy);
+				dragPosition.setValue({ x: gestureState.dx, y: gestureState.dy });
+			},
+			onPanResponderRelease: (evt, gestureState) => {
+				console.log('PanResponder release, dy:', gestureState.dy);
 				setIsDragging(false);
 				Animated.spring(dragPosition, {
 					toValue: { x: 0, y: 0 },
 					useNativeDriver: true,
 				}).start();
 
-				const touchX = evt.nativeEvent.pageX;
-				console.log('Touch X:', touchX);
-				const buttonWidth = screenWidth / 3;
-				console.log('Button width:', buttonWidth);
-				if (touchX < buttonWidth) {
-					console.log('Calling handleDrop for words_x');
-					handleDrop('words_x', '已会');
-				} else if (touchX < buttonWidth * 2) {
-					console.log('Calling handleDrop for words_y');
-					handleDrop('words_y', '模糊');
+				// 根据水平滑动距离判断分类
+				const dx = gestureState.dx;
+				const screenW = Dimensions.get('window').width;
+				
+				// 如果水平滑动超过屏幕宽度的 1/3
+				if (Math.abs(dx) > screenW / 4) {
+					if (dx > 0) {
+						// 向右滑 -> 已会
+						console.log('Swipe right -> words_x');
+						handleDrop('words_x', '已会');
+					} else {
+						// 向左滑 -> 不会
+						console.log('Swipe left -> words_z');
+						handleDrop('words_z', '不会');
+					}
 				} else {
-					console.log('Calling handleDrop for words_z');
-					handleDrop('words_z', '不会');
+					// 垂直滑动判断
+					const dy = gestureState.dy;
+					if (dy > 50) {
+						// 向下滑 -> 模糊
+						console.log('Swipe down -> words_y');
+						handleDrop('words_y', '模糊');
+					}
 				}
 			},
 		})
