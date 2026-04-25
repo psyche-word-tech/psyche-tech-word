@@ -323,15 +323,31 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 切换分类并加载单词
+	// 移动单词到分类并切换
 	const handleStatusChange = useCallback(async (table: string, status: string) => {
 		try {
+			// 先移动单词到目标分类
+			const moveResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					wordId: word.id,
+					targetTable: table
+				})
+			});
+
+			const moveResult = await moveResponse.json();
+
+			if (!moveResponse.ok) {
+				throw new Error(moveResult.error || '移动失败');
+			}
+
 			setCurrentCategory(table);
 			
-			// 从对应分类加载单词
+			// 从目标分类加载单词
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
 			const data = await response.json();
-			
+				
 			if (Array.isArray(data) && data.length > 0) {
 				setWordsList(data);
 				setCurrentIndex(0);
@@ -341,14 +357,13 @@ export default function WordDetailPage() {
 				setWordsList([]);
 				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
-		} catch (error) {
-			console.error('Failed to switch category:', error);
-			Alert.alert('错误', '加载失败');
-		}
-	}, []);
 
-	return (
-		<Screen>
+			Alert.alert('成功', `单词已移动到"${status}"分类`);
+		} catch (error) {
+			console.error('Failed to move word:', error);
+			Alert.alert('错误', '移动失败');
+		}
+	}, [word.id]);
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
