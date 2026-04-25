@@ -364,6 +364,9 @@ export default function WordDetailPage() {
 			Alert.alert('错误', '移动失败');
 		}
 	}, [word.id]);
+
+	return (
+		<Screen>
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
@@ -670,6 +673,7 @@ export default function WordDetailPage() {
 				</Modal>
 
 				{/* 删除确认弹窗 */}
+				<View>
 				<Modal
 					visible={showDeleteConfirm}
 					transparent
@@ -697,6 +701,7 @@ export default function WordDetailPage() {
 						</View>
 					</View>
 				</Modal>
+				</View>
 			</View>
 		</Screen>
 	);

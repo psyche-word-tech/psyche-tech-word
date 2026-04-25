@@ -20,6 +20,9 @@ interface CategoryCount {
 	words_z: number;
 }
 
+// 使用前端代理地址
+const BACKEND_URL = 'http://localhost:9091';
+
 export default function WordPreviewPage() {
 	const router = useSafeRouter();
 	const [words, setWords] = useState<Word[]>([]);
@@ -34,7 +37,7 @@ export default function WordPreviewPage() {
 	const fetchWords = useCallback(async () => {
 		setIsLoading(true);
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/words_b`);
+			const response = await fetch(`${BACKEND_URL}/api/v1/wordbooks/words_b`);
 			const data = await response.json();
 			if (Array.isArray(data)) {
 				setWords(data);
@@ -50,9 +53,9 @@ export default function WordPreviewPage() {
 	const fetchCategoryCounts = useCallback(async () => {
 		try {
 			const [xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_x/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
+				fetch(`${BACKEND_URL}/api/v1/user-words/category/words_x/count`),
+				fetch(`${BACKEND_URL}/api/v1/user-words/category/words_y/count`),
+				fetch(`${BACKEND_URL}/api/v1/user-words/category/words_z/count`),
 			]);
 			const [xData, yData, zData] = await Promise.all([
 				xRes.json(),
