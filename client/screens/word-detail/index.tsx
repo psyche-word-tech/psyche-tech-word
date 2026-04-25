@@ -357,26 +357,6 @@ export default function WordDetailPage() {
 						<Text style={styles.phoneticText}>{word.phonetic}</Text>
 					</View>
 
-					{/* Navigation */}
-					<View style={styles.navSection}>
-						<TouchableOpacity 
-							style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
-							onPress={() => switchWord('prev')}
-							disabled={currentIndex === 0}
-						>
-							<Ionicons name="chevron-back" size={20} color={currentIndex === 0 ? '#CCC' : '#4F46E5'} />
-							<Text style={[styles.navText, currentIndex === 0 && styles.navTextDisabled]}>上一个</Text>
-						</TouchableOpacity>
-						<Text style={styles.navIndex}>{currentIndex + 1} / {wordsList.length}</Text>
-						<TouchableOpacity 
-							style={[styles.navButton, currentIndex === wordsList.length - 1 && styles.navButtonDisabled]}
-							onPress={() => switchWord('next')}
-							disabled={currentIndex === wordsList.length - 1}
-						>
-							<Text style={[styles.navText, currentIndex === wordsList.length - 1 && styles.navTextDisabled]}>下一个</Text>
-							<Ionicons name="chevron-forward" size={20} color={currentIndex === wordsList.length - 1 ? '#CCC' : '#4F46E5'} />
-						</TouchableOpacity>
-					</View>
 
 					{/* Meaning */}
 					<View style={styles.section}>
