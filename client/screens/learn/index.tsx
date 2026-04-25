@@ -116,10 +116,10 @@ export default function LearnPage() {
 	const fetchData = useCallback(async () => {
 		try {
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/v1/wordbooks/${table}`),
-				fetch(`${API_BASE_URL}/v1/wordbooks/words_x`),
-				fetch(`${API_BASE_URL}/v1/wordbooks/words_y`),
-				fetch(`${API_BASE_URL}/v1/wordbooks/words_z`)
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
 			]);
 
 			const wordsData = await wordsRes.json();
@@ -153,7 +153,7 @@ export default function LearnPage() {
 		const targetTable = targetTableMap[categoryId];
 
 		try {
-			await fetch(`${API_BASE_URL}/v1/wordbooks/move`, {
+			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
