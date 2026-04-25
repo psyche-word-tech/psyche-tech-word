@@ -14,6 +14,7 @@
     "@alicloud/openapi-client": "^0.4.15",
     "@alicloud/tea-util": "^1.4.11",
     "@supabase/supabase-js": "2.95.3",
+    "axios": "^1.13.6",
     "cors": "^2.8.5",
     "coze-coding-dev-sdk": "^0.7.20",
     "dayjs": "^1.11.19",

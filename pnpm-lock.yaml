@@ -266,6 +266,9 @@ importers:
       '@supabase/supabase-js':
         specifier: 2.95.3
         version: 2.95.3
+      axios:
+        specifier: ^1.13.6
+        version: 1.15.2
       cors:
         specifier: ^2.8.5
         version: 2.8.6
