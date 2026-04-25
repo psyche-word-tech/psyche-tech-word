@@ -931,9 +931,14 @@ const styles = StyleSheet.create({
 	},
 	issueMessage: {
 		fontSize: 14,
-		color: '#333',
+		color: '#FFFFFF',
 		fontFamily: 'serif',
 		lineHeight: 20,
+		backgroundColor: '#DC2626',
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 6,
+		overflow: 'hidden',
 	},
 	issueShortMessage: {
 		fontSize: 13,
