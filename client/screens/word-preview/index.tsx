@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -13,18 +12,18 @@ interface Word {
 	meaning: string;
 }
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 export default function WordPreviewPage() {
-	const router = useSafeRouter();
 	const [words, setWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
-	const [refreshKey, setRefreshKey] = useState(0);
+	const [draggingWord, setDraggingWord] = useState<Word | null>(null);
 
 	// 获取词汇列表
 	const fetchWords = useCallback(async () => {
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await response.json();
-			console.log('Fetched words:', Array.isArray(data) ? data.length : 0);
 			if (Array.isArray(data)) {
 				setWords(data);
 			}
@@ -52,23 +51,17 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面加载时获取数据（每次进入页面都重新获取）
+	// 页面加载时获取数据
 	useFocusEffect(
 		useCallback(() => {
-			console.log('Page focused, refreshing data...');
 			fetchWords();
 			fetchCategoryCounts();
-		}, [fetchWords, fetchCategoryCounts, refreshKey])
+		}, [fetchWords, fetchCategoryCounts])
 	);
 
 	// 移动单词到分类
 	const moveWord = useCallback(async (word: Word, targetTable: string, status: string) => {
 		try {
-			/**
-			 * 服务端文件：server/src/routes/user-words.ts
-			 * 接口：POST /api/v1/user-words/move
-			 * Body参数：wordId: number, targetTable: string
-			 */
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -86,80 +79,104 @@ export default function WordPreviewPage() {
 
 			// 从列表中移除
 			setWords(prev => prev.filter(w => w.id !== word.id));
+			setDraggingWord(null);
 			
 			// 更新分类数量
 			fetchCategoryCounts();
 
-			// 强制刷新列表
-			setRefreshKey(prev => prev + 1);
-
 		} catch (error) {
 			console.error('Failed to move word:', error);
+			setDraggingWord(null);
 			Alert.alert('错误', '移动失败，请重试');
 		}
 	}, [fetchCategoryCounts]);
 
-	// 显示分类确认
-	const showCategoryOptions = (word: Word) => {
-		Alert.alert(
-			`分类: ${word.word}`,
-			'选择将这个单词分类到哪个组',
-			[
-				{
-					text: '已会',
-					onPress: () => moveWord(word, 'words_x', '已会'),
-					style: 'default'
-				},
-				{
-					text: '模糊',
-					onPress: () => moveWord(word, 'words_y', '模糊'),
-					style: 'default'
-				},
-				{
-					text: '不会',
-					onPress: () => moveWord(word, 'words_z', '不会'),
-					style: 'default'
-				},
-				{
-					text: '取消',
-					style: 'cancel'
-				},
-			]
-		);
+	// 检测放置位置
+	const getDropZone = (y: number): { table: string; status: string } | null => {
+		const dropZoneTop = screenHeight - 150;
+		if (y > dropZoneTop) {
+			const zoneWidth = screenWidth / 3;
+			const x = draggingWord?.position?.x || screenWidth / 2;
+			if (x < zoneWidth) {
+				return { table: 'words_x', status: '已会' };
+			} else if (x < zoneWidth * 2) {
+				return { table: 'words_y', status: '模糊' };
+			} else {
+				return { table: 'words_z', status: '不会' };
+			}
+		}
+		return null;
 	};
 
-	// 渲染单词项
-	const renderItem = ({ item }: { item: Word }) => (
-		<View style={styles.wordItem}>
-			<View style={styles.wordInfo}>
-				<Text style={styles.wordText}>{item.word}</Text>
-				<Text style={styles.phoneticText}>{item.phonetic}</Text>
-			</View>
-			<Text style={styles.meaningText} numberOfLines={2}>{item.meaning}</Text>
-			
-			{/* 分类按钮组 */}
-			<View style={styles.categoryButtons}>
-				<TouchableOpacity 
-					style={[styles.categoryBtn, styles.knownBtn]}
-					onPress={() => moveWord(item, 'words_x', '已会')}
-				>
-					<Text style={styles.categoryBtnText}>已会</Text>
-				</TouchableOpacity>
-				<TouchableOpacity 
-					style={[styles.categoryBtn, styles.vagueBtn]}
-					onPress={() => moveWord(item, 'words_y', '模糊')}
-				>
-					<Text style={styles.categoryBtnText}>模糊</Text>
-				</TouchableOpacity>
-				<TouchableOpacity 
-					style={[styles.categoryBtn, styles.unknownBtn]}
-					onPress={() => moveWord(item, 'words_z', '不会')}
-				>
-					<Text style={styles.categoryBtnText}>不会</Text>
-				</TouchableOpacity>
-			</View>
-		</View>
-	);
+	// 创建可拖动的单词卡片
+	const DraggableWordCard = ({ word, index }: { word: Word; index: number }) => {
+		const pan = useRef(new Animated.ValueXY()).current;
+		const isActive = useRef(false);
+
+		const panResponder = useRef(
+			PanResponder.create({
+				onStartShouldSetPanResponder: () => true,
+				onMoveShouldSetPanResponder: () => true,
+				onPanResponderGrant: () => {
+					isActive.current = true;
+					pan.setOffset({
+						x: (pan.x as any)._value || 0,
+						y: (pan.y as any)._value || 0,
+					});
+					pan.setValue({ x: 0, y: 0 });
+					setDraggingWord({ ...word, position: { x: 0, y: 0 } });
+				},
+				onPanResponderMove: Animated.event(
+					[null, { dx: pan.x, dy: pan.y }],
+					{ useNativeDriver: false }
+				),
+				onPanResponderRelease: (evt, gestureState) => {
+					isActive.current = false;
+					pan.flattenOffset();
+
+					const newX = (pan.x as any)._value + gestureState.dx;
+					const newY = (pan.y as any)._value + gestureState.dy;
+
+					setDraggingWord(prev => prev ? { ...prev, position: { x: newX, y: newY } } : null);
+
+					// 检测放置位置
+					const dropZone = getDropZone(newY + 100); // 100 是初始偏移
+					if (dropZone) {
+						moveWord(word, dropZone.table, dropZone.status);
+					}
+
+					// 回到原位
+					Animated.spring(pan, {
+						toValue: { x: 0, y: 0 },
+						useNativeDriver: false,
+					}).start();
+				},
+			})
+		).current;
+
+		return (
+			<Animated.View
+				{...panResponder.panHandlers}
+				style={[
+					styles.wordCard,
+					{
+						transform: [
+							{ translateX: pan.x },
+							{ translateY: pan.y },
+						],
+					},
+				]}
+			>
+				<Text style={styles.wordText}>{word.word}</Text>
+				<Text style={styles.phoneticText}>{word.phonetic}</Text>
+				<Text style={styles.meaningText} numberOfLines={2}>{word.meaning}</Text>
+				<View style={styles.dragHint}>
+					<Ionicons name="move-outline" size={14} color="#999" />
+					<Text style={styles.dragHintText}>拖动分类</Text>
+				</View>
+			</Animated.View>
+		);
+	};
 
 	return (
 		<Screen>
@@ -170,33 +187,34 @@ export default function WordPreviewPage() {
 					<Text style={styles.headerCount}>{words.length} 个单词待分类</Text>
 				</View>
 
-				{/* Word List */}
-				<FlatList
-					data={words}
-					renderItem={renderItem}
-					keyExtractor={(item) => item.id.toString()}
-					contentContainerStyle={styles.listContent}
-					showsVerticalScrollIndicator={false}
-					ListEmptyComponent={
+				{/* Word Cards */}
+				<View style={styles.cardsContainer}>
+					{words.map((word, index) => (
+						<DraggableWordCard key={word.id} word={word} index={index} />
+					))}
+					{words.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
 						</View>
-					}
-				/>
+					)}
+				</View>
 
-				{/* Category Summary */}
-				<View style={styles.categorySummary}>
-					<View style={[styles.categoryItem, styles.knownItem]}>
-						<Text style={styles.categoryLabel}>已会</Text>
-						<Text style={styles.categoryCount}>{categoryCounts.x}</Text>
-					</View>
-					<View style={[styles.categoryItem, styles.vagueItem]}>
-						<Text style={styles.categoryLabel}>模糊</Text>
-						<Text style={styles.categoryCount}>{categoryCounts.y}</Text>
-					</View>
-					<View style={[styles.categoryItem, styles.unknownItem]}>
-						<Text style={styles.categoryLabel}>不会</Text>
-						<Text style={styles.categoryCount}>{categoryCounts.z}</Text>
+				{/* Drop Zones */}
+				<View style={styles.categorySection}>
+					<Text style={styles.dropHint}>拖动单词到下方区域进行分类</Text>
+					<View style={styles.categoryRow}>
+						<View style={[styles.categoryItem, styles.knownItem]}>
+							<Text style={styles.categoryLabel}>已会</Text>
+							<Text style={styles.categoryCount}>{categoryCounts.x}</Text>
+						</View>
+						<View style={[styles.categoryItem, styles.vagueItem]}>
+							<Text style={styles.categoryLabel}>模糊</Text>
+							<Text style={styles.categoryCount}>{categoryCounts.y}</Text>
+						</View>
+						<View style={[styles.categoryItem, styles.unknownItem]}>
+							<Text style={styles.categoryLabel}>不会</Text>
+							<Text style={styles.categoryCount}>{categoryCounts.z}</Text>
+						</View>
 					</View>
 				</View>
 			</View>
@@ -228,23 +246,21 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 		fontFamily: 'serif',
 	},
-	listContent: {
+	cardsContainer: {
+		flex: 1,
 		padding: 16,
-		paddingBottom: 100,
+		paddingBottom: 160,
 	},
-	wordItem: {
+	wordCard: {
 		backgroundColor: '#FFFFFF',
-		borderRadius: 12,
+		borderRadius: 16,
 		padding: 16,
 		marginBottom: 12,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 4,
-		elevation: 2,
-	},
-	wordInfo: {
-		marginBottom: 8,
+		shadowOpacity: 0.1,
+		shadowRadius: 8,
+		elevation: 4,
 	},
 	wordText: {
 		fontSize: 20,
@@ -255,39 +271,28 @@ const styles = StyleSheet.create({
 	phoneticText: {
 		fontSize: 14,
 		color: '#999999',
-		marginTop: 2,
+		marginTop: 4,
 		fontFamily: 'serif',
 	},
 	meaningText: {
 		fontSize: 14,
 		color: '#666666',
-		marginBottom: 12,
+		marginTop: 8,
 		fontFamily: 'serif',
 	},
-	categoryButtons: {
+	dragHint: {
 		flexDirection: 'row',
-		gap: 8,
-	},
-	categoryBtn: {
-		flex: 1,
-		paddingVertical: 8,
-		borderRadius: 8,
 		alignItems: 'center',
+		justifyContent: 'center',
+		marginTop: 12,
+		paddingTop: 10,
+		borderTopWidth: 1,
+		borderTopColor: '#F0F0F0',
+		gap: 4,
 	},
-	knownBtn: {
-		backgroundColor: '#4CAF50',
-	},
-	vagueBtn: {
-		backgroundColor: '#FF9800',
-	},
-	unknownBtn: {
-		backgroundColor: '#F44336',
-	},
-	categoryBtnText: {
+	dragHintText: {
 		fontSize: 12,
-		fontWeight: '600',
-		color: '#FFFFFF',
-		fontFamily: 'serif',
+		color: '#999',
 	},
 	emptyContainer: {
 		padding: 48,
@@ -297,45 +302,59 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: '#999999',
 	},
-	categorySummary: {
+	categorySection: {
 		position: 'absolute',
 		bottom: 0,
 		left: 0,
 		right: 0,
-		flexDirection: 'row',
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingTop: 16,
 		paddingBottom: 32,
-		borderTopWidth: 1,
-		borderTopColor: '#E5E5E5',
+		borderTopLeftRadius: 24,
+		borderTopRightRadius: 24,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: -4 },
+		shadowOpacity: 0.1,
+		shadowRadius: 12,
+		elevation: 10,
+	},
+	dropHint: {
+		fontSize: 12,
+		color: '#999',
+		textAlign: 'center',
+		marginBottom: 12,
+	},
+	categoryRow: {
+		flexDirection: 'row',
 		gap: 8,
 	},
 	categoryItem: {
 		flex: 1,
 		alignItems: 'center',
-		paddingVertical: 10,
-		borderRadius: 10,
+		paddingVertical: 16,
+		borderRadius: 16,
 	},
 	knownItem: {
-		backgroundColor: '#E8F5E9',
+		backgroundColor: '#4CAF50',
 	},
 	vagueItem: {
-		backgroundColor: '#FFF3E0',
+		backgroundColor: '#FF9800',
 	},
 	unknownItem: {
-		backgroundColor: '#FFEBEE',
+		backgroundColor: '#F44336',
 	},
 	categoryLabel: {
-		fontSize: 12,
-		color: '#666666',
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#FFFFFF',
 		fontFamily: 'serif',
 	},
 	categoryCount: {
-		fontSize: 20,
+		fontSize: 24,
 		fontWeight: '700',
-		color: '#333333',
-		marginTop: 2,
+		color: '#FFFFFF',
+		marginTop: 4,
 		fontFamily: 'serif',
 	},
 });
