@@ -59,7 +59,7 @@ export default function WordDetailPage() {
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragPosition] = useState(new Animated.ValueXY());
 	const { width: screenWidth } = Dimensions.get('window');
-	const dropZoneY = useRef(0);
+	const fetchCategoryCountsRef = useRef<() => void>(() => {});
 
 	// 评论相关状态
 	const [comments, setComments] = useState<Comment[]>([]);
@@ -120,7 +120,7 @@ export default function WordDetailPage() {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '操作失败');
 		}
-	}, [word.id, word.word, sourceTable, fetchCategoryCounts]);
+	}, [word.id, word.word, sourceTable]);
 
 	// 创建拖拽动画的 PanResponder
 	const panResponder = useRef(
@@ -146,22 +146,15 @@ export default function WordDetailPage() {
 					useNativeDriver: true,
 				}).start();
 
-				// 检测释放位置是否在按钮区域内
-				const touchY = evt.nativeEvent.pageY;
-				// 按钮区域大约在屏幕下方 100-200px
-				const buttonAreaTop = Dimensions.get('window').height - 180;
-				
-				if (touchY > buttonAreaTop) {
-					// 根据 x 位置判断是哪个按钮
-					const touchX = evt.nativeEvent.pageX;
-					const buttonWidth = screenWidth / 3;
-					if (touchX < buttonWidth) {
-						handleDrop('words_x', '已会');
-					} else if (touchX < buttonWidth * 2) {
-						handleDrop('words_y', '模糊');
-					} else {
-						handleDrop('words_z', '不会');
-					}
+				// 根据 x 位置判断是哪个按钮（滑动后释放）
+				const touchX = evt.nativeEvent.pageX;
+				const buttonWidth = screenWidth / 3;
+				if (touchX < buttonWidth) {
+					handleDrop('words_x', '已会');
+				} else if (touchX < buttonWidth * 2) {
+					handleDrop('words_y', '模糊');
+				} else {
+					handleDrop('words_z', '不会');
 				}
 			},
 		})
@@ -185,6 +178,9 @@ export default function WordDetailPage() {
 			console.error('Failed to fetch category counts:', error);
 		}
 	}, []);
+
+	// 将 fetchCategoryCounts 赋值给 ref
+	fetchCategoryCountsRef.current = fetchCategoryCounts;
 
 	// 页面加载时获取单词列表
 	useFocusEffect(
@@ -415,8 +411,6 @@ export default function WordDetailPage() {
 				throw new Error(result.error || '移动失败');
 			}
 
-			setCurrentCategory(table);
-				
 			// 从目标分类加载单词
 			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
 			const data = await listResponse.json();
