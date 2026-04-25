@@ -67,6 +67,10 @@ export default function WordDetailPage() {
 	const [grammarResult, setGrammarResult] = useState<GrammarResult | null>(null);
 	const [showResultModal, setShowResultModal] = useState(false);
 
+	// 删除确认相关状态
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
@@ -185,38 +189,40 @@ export default function WordDetailPage() {
 
 	// 删除评论
 	const deleteComment = useCallback(async (commentId: number) => {
-		Alert.alert(
-			'确认删除',
-			'确定要删除这条笔记吗？',
-			[
-				{ text: '取消', style: 'cancel' },
-				{
-					text: '删除',
-					style: 'destructive',
-					onPress: async () => {
-						try {
-							/**
-							 * 服务端文件：server/src/routes/comments.ts
-							 * 接口：DELETE /api/v1/comments/:id
-							 */
-							const response = await fetch(`${API_BASE_URL}/api/v1/comments/${commentId}`, {
-								method: 'DELETE'
-							});
+		setDeleteTargetId(commentId);
+		setShowDeleteConfirm(true);
+	}, []);
 
-							if (!response.ok) throw new Error('删除失败');
+	// 确认删除
+	const confirmDelete = useCallback(async () => {
+		if (!deleteTargetId) return;
+		
+		try {
+			/**
+			 * 服务端文件：server/src/routes/comments.ts
+			 * 接口：DELETE /api/v1/comments/:id
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/comments/${deleteTargetId}`, {
+				method: 'DELETE'
+			});
 
-							// 刷新评论列表
-							fetchComments(word.id);
-							Alert.alert('成功', '笔记已删除');
-						} catch (error) {
-							console.error('Failed to delete comment:', error);
-							Alert.alert('错误', '删除失败');
-						}
-					}
-				}
-			]
-		);
-	}, [word.id, fetchComments]);
+			if (!response.ok) throw new Error('删除失败');
+
+			// 刷新评论列表
+			fetchComments(word.id);
+		} catch (error) {
+			console.error('Failed to delete comment:', error);
+		} finally {
+			setShowDeleteConfirm(false);
+			setDeleteTargetId(null);
+		}
+	}, [deleteTargetId, word.id, fetchComments]);
+
+	// 取消删除
+	const cancelDelete = useCallback(() => {
+		setShowDeleteConfirm(false);
+		setDeleteTargetId(null);
+	}, []);
 
 	// 发布评论
 	const submitComment = useCallback(async () => {
@@ -261,7 +267,7 @@ export default function WordDetailPage() {
 	const cancelPublish = useCallback(() => {
 		setShowResultModal(false);
 		setGrammarResult(null);
-	});
+	}, []);
 
 	// 当单词变化时获取评论
 	useEffect(() => {
@@ -602,6 +608,35 @@ export default function WordDetailPage() {
 									) : (
 										<Text style={styles.publishButtonText}>发布</Text>
 									)}
+								</TouchableOpacity>
+							</View>
+						</View>
+					</View>
+				</Modal>
+
+				{/* 删除确认弹窗 */}
+				<Modal
+					visible={showDeleteConfirm}
+					transparent
+					animationType="fade"
+					onRequestClose={cancelDelete}
+				>
+					<View style={styles.deleteModalOverlay}>
+						<View style={styles.deleteModalContent}>
+							<Text style={styles.deleteModalTitle}>确认删除</Text>
+							<Text style={styles.deleteModalText}>确定要删除这条笔记吗？</Text>
+							<View style={styles.deleteModalButtons}>
+								<TouchableOpacity
+									style={[styles.deleteModalButton, styles.deleteCancelButton]}
+									onPress={cancelDelete}
+								>
+									<Text style={styles.deleteCancelText}>取消</Text>
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={[styles.deleteModalButton, styles.deleteConfirmButton]}
+									onPress={confirmDelete}
+								>
+									<Text style={styles.deleteConfirmText}>删除</Text>
 								</TouchableOpacity>
 							</View>
 						</View>
@@ -1053,5 +1088,57 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#FFF',
 		fontFamily: 'serif',
+	},
+	// 删除确认弹窗样式
+	deleteModalOverlay: {
+		flex: 1,
+		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	deleteModalContent: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 24,
+		width: 280,
+		alignItems: 'center',
+	},
+	deleteModalTitle: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: '#333',
+		marginBottom: 12,
+	},
+	deleteModalText: {
+		fontSize: 14,
+		color: '#666',
+		marginBottom: 20,
+		textAlign: 'center',
+	},
+	deleteModalButtons: {
+		flexDirection: 'row',
+		gap: 12,
+	},
+	deleteModalButton: {
+		flex: 1,
+		paddingVertical: 12,
+		borderRadius: 8,
+		alignItems: 'center',
+	},
+	deleteCancelButton: {
+		backgroundColor: '#F5F5F5',
+	},
+	deleteCancelText: {
+		fontSize: 14,
+		color: '#666',
+		fontWeight: '500',
+	},
+	deleteConfirmButton: {
+		backgroundColor: '#F44336',
+	},
+	deleteConfirmText: {
+		fontSize: 14,
+		color: '#FFF',
+		fontWeight: '500',
 	},
 });
