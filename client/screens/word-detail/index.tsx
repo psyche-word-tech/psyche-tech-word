@@ -78,7 +78,12 @@ export default function WordDetailPage() {
 
 	// 拖拽到目标区域
 	const handleDrop = useCallback(async (targetTable: string, status: string) => {
-		if (!word.id || word.id === 0) return;
+		console.log('handleDrop called:', targetTable, status);
+		console.log('Current word:', word.id, word.word);
+		if (!word.id || word.id === 0) {
+			console.log('Word ID is invalid, skipping');
+			return;
+		}
 		
 		try {
 			/**
@@ -96,6 +101,7 @@ export default function WordDetailPage() {
 			});
 
 			const result = await response.json();
+			console.log('Move API response:', response.status, result);
 
 			if (!response.ok) {
 				throw new Error(result.error || '移动失败');
@@ -140,20 +146,25 @@ export default function WordDetailPage() {
 				{ useNativeDriver: false }
 			),
 			onPanResponderRelease: (evt, gesture) => {
+				console.log('Drag released at:', evt.nativeEvent.pageX, evt.nativeEvent.pageY);
 				setIsDragging(false);
 				Animated.spring(dragPosition, {
 					toValue: { x: 0, y: 0 },
 					useNativeDriver: true,
 				}).start();
 
-				// 根据 x 位置判断是哪个按钮（滑动后释放）
 				const touchX = evt.nativeEvent.pageX;
+				console.log('Touch X:', touchX);
 				const buttonWidth = screenWidth / 3;
+				console.log('Button width:', buttonWidth);
 				if (touchX < buttonWidth) {
+					console.log('Calling handleDrop for words_x');
 					handleDrop('words_x', '已会');
 				} else if (touchX < buttonWidth * 2) {
+					console.log('Calling handleDrop for words_y');
 					handleDrop('words_y', '模糊');
 				} else {
+					console.log('Calling handleDrop for words_z');
 					handleDrop('words_z', '不会');
 				}
 			},
