@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Animated, Dimensions, PanResponder } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,6 +56,9 @@ export default function WordDetailPage() {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [isDragging, setIsDragging] = useState(false);
+	const [dragPosition] = useState(new Animated.ValueXY());
+	const { width: screenWidth } = Dimensions.get('window');
 	const fetchCategoryCountsRef = useRef<() => void>(() => {});
 
 	// 评论相关状态
@@ -124,6 +127,60 @@ export default function WordDetailPage() {
 			Alert.alert('错误', '操作失败');
 		}
 	}, [word.id, word.word, sourceTable]);
+
+	// 创建拖拽动画的 PanResponder
+	const panResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: () => true,
+			onPanResponderGrant: (evt, gestureState) => {
+				console.log('PanResponder grant, touches:', evt.nativeEvent.touches);
+				setIsDragging(true);
+				dragPosition.setOffset({
+					x: 0,
+					y: 0,
+				});
+				dragPosition.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: (evt, gestureState) => {
+				console.log('PanResponder move, dy:', gestureState.dy);
+				dragPosition.setValue({ x: gestureState.dx, y: gestureState.dy });
+			},
+			onPanResponderRelease: (evt, gestureState) => {
+				console.log('PanResponder release, dy:', gestureState.dy);
+				setIsDragging(false);
+				Animated.spring(dragPosition, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: true,
+				}).start();
+
+				// 根据水平滑动距离判断分类
+				const dx = gestureState.dx;
+				const screenW = Dimensions.get('window').width;
+				
+				// 如果水平滑动超过屏幕宽度的 1/3
+				if (Math.abs(dx) > screenW / 4) {
+					if (dx > 0) {
+						// 向右滑 -> 已会
+						console.log('Swipe right -> words_x');
+						handleDrop('words_x', '已会');
+					} else {
+						// 向左滑 -> 不会
+						console.log('Swipe left -> words_z');
+						handleDrop('words_z', '不会');
+					}
+				} else {
+					// 垂直滑动判断
+					const dy = gestureState.dy;
+					if (dy > 50) {
+						// 向下滑 -> 模糊
+						console.log('Swipe down -> words_y');
+						handleDrop('words_y', '模糊');
+					}
+				}
+			},
+		})
+	).current;
 
 	// 获取分类数量
 	const fetchCategoryCounts = useCallback(async () => {
@@ -414,8 +471,20 @@ export default function WordDetailPage() {
 
 				{/* Content */}
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					{/* Word Card */}
-					<View style={styles.wordCard}>
+					{/* Draggable Word Card */}
+					<Animated.View
+						{...panResponder.panHandlers}
+						style={[
+							styles.wordCard,
+							isDragging && styles.wordCardDragging,
+							{
+								transform: [
+									{ translateX: dragPosition.x },
+									{ translateY: dragPosition.y },
+								],
+							},
+						]}
+					>
 						<View style={styles.wordRow}>
 							<Text style={styles.wordText}>{word.word}</Text>
 							<TouchableOpacity 
@@ -431,7 +500,11 @@ export default function WordDetailPage() {
 							</TouchableOpacity>
 						</View>
 						<Text style={styles.phoneticText}>{word.phonetic}</Text>
-					</View>
+						<View style={styles.dragHint}>
+							<Ionicons name="hand-left-outline" size={16} color="#999" />
+							<Text style={styles.dragHintText}>拖动到下方分类</Text>
+						</View>
+					</Animated.View>
 
 
 					{/* Meaning */}
@@ -465,40 +538,34 @@ export default function WordDetailPage() {
 
 					{/* Drop Zones */}
 					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>双击按钮移动单词到对应分类</Text>
+						<Text style={styles.dropZoneHint}>长按按钮移动单词，点击查看列表</Text>
 						<View style={styles.dropZones}>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneX]} 
-								onLongPress={() => {
-									handleDrop('words_x', '已会');
-								}}
-								delayLongPress={800}
+								onLongPress={() => handleDrop('words_x', '已会')}
+								onPress={() => router.push('/word-category', { table: 'words_x', name: '已会' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneY]} 
-								onLongPress={() => {
-									handleDrop('words_y', '模糊');
-								}}
-								delayLongPress={800}
+								onLongPress={() => handleDrop('words_y', '模糊')}
+								onPress={() => router.push('/word-category', { table: 'words_y', name: '模糊' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneZ]} 
-								onLongPress={() => {
-									handleDrop('words_z', '不会');
-								}}
-								delayLongPress={800}
+								onLongPress={() => handleDrop('words_z', '不会')}
+								onPress={() => router.push('/word-category', { table: 'words_z', name: '不会' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
@@ -1183,9 +1250,10 @@ const styles = StyleSheet.create({
 		color: '#333',
 		fontFamily: 'serif',
 	},
-	dropZoneAction: {
-		fontSize: 10,
-		color: '#999',
+	dropZoneCount: {
+		fontSize: 20,
+		fontWeight: '700',
+		color: '#333',
 		marginTop: 4,
 		fontFamily: 'serif',
 	},
