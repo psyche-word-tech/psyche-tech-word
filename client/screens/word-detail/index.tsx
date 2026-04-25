@@ -323,62 +323,29 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 获取分类单词列表
-	const fetchCategoryWords = useCallback(async (table: string) => {
-		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
-			const data = await response.json();
-			if (Array.isArray(data)) {
-				setCategoryWords(data);
-				setCategoryIndex(0);
-				if (data.length > 0) {
-					setWord(data[0]);
-					setCurrentIndex(0);
-					setCommentText('');
-				}
-			}
-		} catch (error) {
-			console.error('Failed to fetch category words:', error);
-		}
-	}, []);
-
-	// 处理单词状态变化
+	// 切换分类并加载单词
 	const handleStatusChange = useCallback(async (table: string, status: string) => {
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					wordId: word.id,
-					targetTable: table
-				})
-			});
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.error || '移动失败');
-			}
-
-			Alert.alert('成功', `已标记为"${status}"，并切换到该分类`);
-			
-			// 切换到对应分类
 			setCurrentCategory(table);
-			await fetchCategoryWords(table);
-
-			// 从原列表移除当前单词
-			const updatedList = wordsList.filter((_, idx) => idx !== currentIndex);
-			setWordsList(updatedList);
-			if (updatedList.length > 0) {
-				const nextIdx = Math.min(currentIndex, updatedList.length - 1);
-				setCurrentIndex(nextIdx);
-				setWord(updatedList[nextIdx]);
+			
+			// 从对应分类加载单词
+			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
+			const data = await response.json();
+			
+			if (Array.isArray(data) && data.length > 0) {
+				setWordsList(data);
+				setCurrentIndex(0);
+				setWord(data[0]);
+				setCommentText('');
+			} else {
+				setWordsList([]);
+				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
 		} catch (error) {
-			console.error('Failed to update status:', error);
-			Alert.alert('错误', '状态更新失败');
+			console.error('Failed to switch category:', error);
+			Alert.alert('错误', '加载失败');
 		}
-	}, [word.id, currentIndex, wordsList, fetchCategoryWords]);
+	}, []);
 
 	return (
 		<Screen>
@@ -465,16 +432,42 @@ export default function WordDetailPage() {
 
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
-						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
-							<Text style={styles.statusText}>已会(x)</Text>
+						<TouchableOpacity 
+							style={[
+								styles.statusButton, 
+								styles.knownButton,
+								currentCategory === 'words_x' && styles.statusButtonActive
+							]} 
+							onPress={() => handleStatusChange('words_x', '已会')}
+						>
+							<Text style={[styles.statusText, currentCategory === 'words_x' && styles.statusTextActive]}>已会(x)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
-							<Text style={styles.statusText}>模糊(y)</Text>
+						<TouchableOpacity 
+							style={[
+								styles.statusButton, 
+								styles.vagueButton,
+								currentCategory === 'words_y' && styles.statusButtonActive
+							]} 
+							onPress={() => handleStatusChange('words_y', '模糊')}
+						>
+							<Text style={[styles.statusText, currentCategory === 'words_y' && styles.statusTextActive]}>模糊(y)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
-							<Text style={styles.statusText}>不会(z)</Text>
+						<TouchableOpacity 
+							style={[
+								styles.statusButton, 
+								styles.unknownButton,
+								currentCategory === 'words_z' && styles.statusButtonActive
+							]} 
+							onPress={() => handleStatusChange('words_z', '不会')}
+						>
+							<Text style={[styles.statusText, currentCategory === 'words_z' && styles.statusTextActive]}>不会(z)</Text>
 						</TouchableOpacity>
 					</View>
+
+					{/* Return to Word Library */}
+					<TouchableOpacity style={styles.returnButton} onPress={() => handleStatusChange('words_b', '我的词库')}>
+						<Text style={styles.returnButtonText}>返回我的词库</Text>
+					</TouchableOpacity>
 
 					{/* Familiarity Slider */}
 					<View style={styles.sliderSection}>
@@ -842,6 +835,27 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#FFFFFF',
 		fontFamily: 'serif',
+	},
+	statusButtonActive: {
+		borderWidth: 3,
+		borderColor: '#000',
+	},
+	statusTextActive: {
+		fontWeight: 'bold',
+	},
+	returnButton: {
+		marginHorizontal: 20,
+		marginTop: 16,
+		paddingVertical: 12,
+		paddingHorizontal: 20,
+		backgroundColor: '#4F46E5',
+		borderRadius: 8,
+		alignItems: 'center',
+	},
+	returnButtonText: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#FFFFFF',
 	},
 	sliderSection: {
 		paddingHorizontal: 20,
