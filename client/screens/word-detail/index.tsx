@@ -71,6 +71,11 @@ export default function WordDetailPage() {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
+	// 分类相关状态
+	const [currentCategory, setCurrentCategory] = useState<string>('words_b');
+	const [categoryWords, setCategoryWords] = useState<Word[]>([]);
+	const [categoryIndex, setCategoryIndex] = useState(0);
+
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
@@ -318,35 +323,62 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 处理单词状态变化
-	const handleStatusChange = async (table: string, status: string) => {
+	// 获取分类单词列表
+	const fetchCategoryWords = useCallback(async (table: string) => {
 		try {
-			/**
-			 * 服务端文件：server/src/routes/user-words.ts
-			 * 接口：POST /api/v1/user-words
-			 * Body参数：wordId: number, table: string
-			 */
-			await fetch(`${API_BASE_URL}/api/v1/user-words`, {
+			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
+			const data = await response.json();
+			if (Array.isArray(data)) {
+				setCategoryWords(data);
+				setCategoryIndex(0);
+				if (data.length > 0) {
+					setWord(data[0]);
+					setCurrentIndex(0);
+					setCommentText('');
+				}
+			}
+		} catch (error) {
+			console.error('Failed to fetch category words:', error);
+		}
+	}, []);
+
+	// 处理单词状态变化
+	const handleStatusChange = useCallback(async (table: string, status: string) => {
+		try {
+			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					wordId: word.id,
-					table: table
+					targetTable: table
 				})
 			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || '移动失败');
+			}
+
+			Alert.alert('成功', `已标记为"${status}"，并切换到该分类`);
 			
-			Alert.alert('成功', `已标记为"${status}"`);
-			
-			// 自动切换到下一个单词
-			const newIndex = currentIndex + 1;
-			if (newIndex < wordsList.length) {
-				setTimeout(() => switchWord('next'), 500);
+			// 切换到对应分类
+			setCurrentCategory(table);
+			await fetchCategoryWords(table);
+
+			// 从原列表移除当前单词
+			const updatedList = wordsList.filter((_, idx) => idx !== currentIndex);
+			setWordsList(updatedList);
+			if (updatedList.length > 0) {
+				const nextIdx = Math.min(currentIndex, updatedList.length - 1);
+				setCurrentIndex(nextIdx);
+				setWord(updatedList[nextIdx]);
 			}
 		} catch (error) {
 			console.error('Failed to update status:', error);
 			Alert.alert('错误', '状态更新失败');
 		}
-	};
+	}, [word.id, currentIndex, wordsList, fetchCategoryWords]);
 
 	return (
 		<Screen>
