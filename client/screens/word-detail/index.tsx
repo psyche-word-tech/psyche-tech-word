@@ -55,6 +55,7 @@ export default function WordDetailPage() {
 	const [wordsList, setWordsList] = useState<Word[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
+	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 
 	// 评论相关状态
 	const [comments, setComments] = useState<Comment[]>([]);
@@ -70,6 +71,25 @@ export default function WordDetailPage() {
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
+
+	// 获取分类数量
+	const fetchCategoryCounts = useCallback(async () => {
+		try {
+			const [xRes, yRes, zRes] = await Promise.all([
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_x/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
+			]);
+			const [xData, yData, zData] = await Promise.all([xRes.json(), yRes.json(), zRes.json()]);
+			setCategoryCounts({
+				x: xData.count || 0,
+				y: yData.count || 0,
+				z: zData.count || 0,
+			});
+		} catch (error) {
+			console.error('Failed to fetch category counts:', error);
+		}
+	}, []);
 
 	// 页面加载时获取单词列表
 	useFocusEffect(
@@ -317,7 +337,20 @@ export default function WordDetailPage() {
 			}
 
 			Alert.alert('成功', `单词已移动到"${status}"分类`);
-			setTimeout(() => switchWord('next'), 500);
+			// 更新分类数量
+			fetchCategoryCounts();
+			// 重新加载单词列表（从 words_b）
+			const refreshRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/words_b`);
+			const refreshData = await refreshRes.json();
+			if (Array.isArray(refreshData) && refreshData.length > 0) {
+				setWordsList(refreshData);
+				setCurrentIndex(0);
+				setWord(refreshData[0]);
+				setCommentText('');
+			} else {
+				setWordsList([]);
+				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
+			}
 		} catch (error) {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '操作失败');
@@ -390,13 +423,13 @@ export default function WordDetailPage() {
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
 						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
-							<Text style={styles.statusText}>已会(x)</Text>
+							<Text style={styles.statusText}>已会({categoryCounts.x})</Text>
 						</TouchableOpacity>
 						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
-							<Text style={styles.statusText}>模糊(y)</Text>
+							<Text style={styles.statusText}>模糊({categoryCounts.y})</Text>
 						</TouchableOpacity>
 						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
-							<Text style={styles.statusText}>不会(z)</Text>
+							<Text style={styles.statusText}>不会({categoryCounts.z})</Text>
 						</TouchableOpacity>
 					</View>
 
