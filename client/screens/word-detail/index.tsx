@@ -1128,8 +1128,9 @@ const styles = StyleSheet.create({
 	},
 	deleteModalButton: {
 		flex: 1,
-		paddingVertical: 14,
-		borderRadius: 12,
+		paddingVertical: 10,
+		paddingHorizontal: 20,
+		borderRadius: 10,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
