@@ -498,9 +498,9 @@ export default function WordDetailPage() {
 												{issue.replacements.length > 0 && (
 													<View style={styles.replacementContainer}>
 														<Text style={styles.replacementLabel}>建议修正：</Text>
-														{issue.replacements.map((rep, repIndex) => (
+														{issue.replacements.map((rep: any, repIndex: number) => (
 															<Text key={repIndex} style={styles.replacementText}>
-																• {rep}
+																• {typeof rep === 'string' ? rep : rep.value}
 															</Text>
 														))}
 													</View>
