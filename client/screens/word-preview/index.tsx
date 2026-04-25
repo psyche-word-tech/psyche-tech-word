@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,21 +58,101 @@ export default function WordPreviewPage() {
 		}, [fetchWords, fetchCategoryCounts])
 	);
 
-	// 点击单词跳转到详情页
-	const handleWordPress = (word: Word) => {
-		router.push('/word-detail', { wordId: word.id, word: word.word, phonetic: word.phonetic, meaning: word.meaning });
+	// 移动单词到分类
+	const moveWord = useCallback(async (word: Word, targetTable: string, status: string) => {
+		try {
+			/**
+			 * 服务端文件：server/src/routes/user-words.ts
+			 * 接口：POST /api/v1/user-words/move
+			 * Body参数：wordId: number, targetTable: string
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					wordId: word.id,
+					targetTable: targetTable
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || '移动失败');
+			}
+
+			// 从列表中移除
+			setWords(prev => prev.filter(w => w.id !== word.id));
+			
+			// 更新分类数量
+			fetchCategoryCounts();
+
+		} catch (error) {
+			console.error('Failed to move word:', error);
+			Alert.alert('错误', '移动失败，请重试');
+		}
+	}, [fetchCategoryCounts]);
+
+	// 显示分类确认
+	const showCategoryOptions = (word: Word) => {
+		Alert.alert(
+			`分类: ${word.word}`,
+			'选择将这个单词分类到哪个组',
+			[
+				{
+					text: '已会',
+					onPress: () => moveWord(word, 'words_x', '已会'),
+					style: 'default'
+				},
+				{
+					text: '模糊',
+					onPress: () => moveWord(word, 'words_y', '模糊'),
+					style: 'default'
+				},
+				{
+					text: '不会',
+					onPress: () => moveWord(word, 'words_z', '不会'),
+					style: 'default'
+				},
+				{
+					text: '取消',
+					style: 'cancel'
+				},
+			]
+		);
 	};
 
 	// 渲染单词项
 	const renderItem = ({ item }: { item: Word }) => (
-		<TouchableOpacity style={styles.wordItem} onPress={() => handleWordPress(item)}>
+		<View style={styles.wordItem}>
 			<View style={styles.wordInfo}>
 				<Text style={styles.wordText}>{item.word}</Text>
 				<Text style={styles.phoneticText}>{item.phonetic}</Text>
 			</View>
 			<Text style={styles.meaningText} numberOfLines={2}>{item.meaning}</Text>
-			<Ionicons name="chevron-forward" size={20} color="#CCC" style={styles.arrow} />
-		</TouchableOpacity>
+			
+			{/* 分类按钮组 */}
+			<View style={styles.categoryButtons}>
+				<TouchableOpacity 
+					style={[styles.categoryBtn, styles.knownBtn]}
+					onPress={() => moveWord(item, 'words_x', '已会')}
+				>
+					<Text style={styles.categoryBtnText}>已会</Text>
+				</TouchableOpacity>
+				<TouchableOpacity 
+					style={[styles.categoryBtn, styles.vagueBtn]}
+					onPress={() => moveWord(item, 'words_y', '模糊')}
+				>
+					<Text style={styles.categoryBtnText}>模糊</Text>
+				</TouchableOpacity>
+				<TouchableOpacity 
+					style={[styles.categoryBtn, styles.unknownBtn]}
+					onPress={() => moveWord(item, 'words_z', '不会')}
+				>
+					<Text style={styles.categoryBtnText}>不会</Text>
+				</TouchableOpacity>
+			</View>
+		</View>
 	);
 
 	return (
@@ -151,8 +231,6 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		padding: 16,
 		marginBottom: 12,
-		flexDirection: 'row',
-		alignItems: 'center',
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.05,
@@ -160,10 +238,10 @@ const styles = StyleSheet.create({
 		elevation: 2,
 	},
 	wordInfo: {
-		flex: 1,
+		marginBottom: 8,
 	},
 	wordText: {
-		fontSize: 18,
+		fontSize: 20,
 		fontWeight: '600',
 		color: '#333333',
 		fontFamily: 'serif',
@@ -177,12 +255,33 @@ const styles = StyleSheet.create({
 	meaningText: {
 		fontSize: 14,
 		color: '#666666',
-		flex: 1,
-		marginLeft: 12,
+		marginBottom: 12,
 		fontFamily: 'serif',
 	},
-	arrow: {
-		marginLeft: 8,
+	categoryButtons: {
+		flexDirection: 'row',
+		gap: 8,
+	},
+	categoryBtn: {
+		flex: 1,
+		paddingVertical: 8,
+		borderRadius: 8,
+		alignItems: 'center',
+	},
+	knownBtn: {
+		backgroundColor: '#4CAF50',
+	},
+	vagueBtn: {
+		backgroundColor: '#FF9800',
+	},
+	unknownBtn: {
+		backgroundColor: '#F44336',
+	},
+	categoryBtnText: {
+		fontSize: 12,
+		fontWeight: '600',
+		color: '#FFFFFF',
+		fontFamily: 'serif',
 	},
 	emptyContainer: {
 		padding: 48,
