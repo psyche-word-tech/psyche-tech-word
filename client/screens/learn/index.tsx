@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Word {
 	id: number;
@@ -22,6 +24,89 @@ interface Category {
 	count: number;
 }
 
+interface DraggableWordCardProps {
+	word: Word;
+	onDrop: (wordId: number, categoryId: number) => void;
+	onPress: () => void;
+}
+
+function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
+	const pan = useRef(new Animated.ValueXY()).current;
+	const [isDragging, setIsDragging] = useState(false);
+
+	const panResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: () => true,
+			onPanResponderGrant: () => {
+				setIsDragging(true);
+				pan.setOffset({
+					x: (pan.x as any)._value || 0,
+					y: (pan.y as any)._value || 0,
+				});
+				pan.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: (evt, gestureState) => {
+				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+			},
+			onPanResponderRelease: (evt, gestureState) => {
+				setIsDragging(false);
+				pan.flattenOffset();
+
+				// 检测放置位置
+				const absoluteY = gestureState.moveY;
+				const absoluteX = gestureState.moveX;
+
+				if (absoluteY > SCREEN_HEIGHT * 0.5) {
+					// 在下半部分释放
+					let targetCategory = 3;
+					if (absoluteX < SCREEN_WIDTH / 3) {
+						targetCategory = 1;
+					} else if (absoluteX < (SCREEN_WIDTH / 3) * 2) {
+						targetCategory = 2;
+					}
+					onDrop(word.id, targetCategory);
+				}
+
+				// 回到原位
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+				}).start();
+			},
+			onPanResponderTerminate: () => {
+				setIsDragging(false);
+				pan.flattenOffset();
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+				}).start();
+			},
+		})
+	).current;
+
+	return (
+		<Animated.View
+			{...panResponder.panHandlers}
+			style={[
+				styles.wordItemContainer,
+				{
+					transform: [
+						{ translateX: pan.x },
+						{ translateY: pan.y },
+					],
+					opacity: isDragging ? 0.8 : 1,
+					zIndex: isDragging ? 100 : 1,
+				},
+			]}
+		>
+			<View style={styles.wordCard}>
+				<Text style={styles.wordCardText}>{word.word}</Text>
+			</View>
+		</Animated.View>
+	);
+}
+
 export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
@@ -34,7 +119,6 @@ export default function LearnPage() {
 		{ id: 2, name: '模糊', letter: 'y', count: 0 },
 		{ id: 3, name: '不会', letter: 'z', count: 0 },
 	]);
-	const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 	
 	// 分类颜色配置
 	const categoryColors = {
@@ -79,18 +163,7 @@ export default function LearnPage() {
 		}, [fetchData])
 	);
 
-	const handleWordPress = (word: Word) => {
-		// 切换选中状态
-		if (selectedWord?.id === word.id) {
-			setSelectedWord(null);
-		} else {
-			setSelectedWord(word);
-		}
-	};
-
-	const handleCategoryPress = async (categoryId: number) => {
-		if (!selectedWord) return;
-		
+	const handleDrop = useCallback(async (wordId: number, categoryId: number) => {
 		const targetTableMap: Record<number, string> = {
 			1: 'words_x',
 			2: 'words_y',
@@ -105,7 +178,7 @@ export default function LearnPage() {
 				body: JSON.stringify({
 					sourceTable: table,
 					targetTable: targetTable,
-					wordId: selectedWord.id
+					wordId: wordId
 				}),
 			});
 		} catch (error) {
@@ -113,8 +186,7 @@ export default function LearnPage() {
 		}
 
 		// 从allWords中移除被分类的单词
-		setAllWords(prev => prev.filter(w => w.id !== selectedWord.id));
-		setSelectedWord(null);
+		setAllWords(prev => prev.filter(w => w.id !== wordId));
 		
 		// 更新分类数量
 		setCategories(cats =>
@@ -122,23 +194,21 @@ export default function LearnPage() {
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
 			)
 		);
-	};
+	}, [table, apiBaseUrl]);
 
-	const handleViewDetail = () => {
-		if (selectedWord) {
-			router.push('/word-detail', { 
-				word: JSON.stringify({
-					id: selectedWord.id,
-					word: selectedWord.word,
-					phonetic: selectedWord.phonetic || '',
-					meaning: selectedWord.meaning,
-					example: selectedWord.example || '',
-					example_translation: selectedWord.example_translation || '',
-					example_image_url: selectedWord.example_image_url || ''
-				}),
-				table: table
-			});
-		}
+	const handleWordPress = (word: Word) => {
+		router.push('/word-detail', { 
+			word: JSON.stringify({
+				id: word.id,
+				word: word.word,
+				phonetic: word.phonetic || '',
+				meaning: word.meaning,
+				example: word.example || '',
+				example_translation: word.example_translation || '',
+				example_image_url: word.example_image_url || ''
+			}),
+			table: table
+		});
 	};
 
 	return (
@@ -153,40 +223,18 @@ export default function LearnPage() {
 					<View style={styles.placeholder} />
 				</View>
 
-				{/* Selected Word Info */}
-				{selectedWord && (
-					<View style={styles.selectedInfo}>
-						<Text style={styles.selectedWord}>{selectedWord.word}</Text>
-						<Text style={styles.selectedHint}>已选中，点击下方按钮分类</Text>
-					</View>
-				)}
-
 				{/* Word Cards - 3 words in a row */}
 				<View style={styles.wordCardsContainer}>
 					<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 					{displayWords.length > 0 ? (
 						<View style={styles.wordRow}>
 							{displayWords.map((word) => (
-								<TouchableOpacity
+								<DraggableWordCard
 									key={word.id}
-									style={[
-										styles.wordItemContainer,
-										selectedWord?.id === word.id && styles.wordItemSelected
-									]}
+									word={word}
+									onDrop={handleDrop}
 									onPress={() => handleWordPress(word)}
-								>
-									<View style={[
-										styles.wordCard,
-										selectedWord?.id === word.id && styles.wordCardSelected
-									]}>
-										<Text style={[
-											styles.wordCardText,
-											selectedWord?.id === word.id && styles.wordCardTextSelected
-										]}>
-											{word.word}
-										</Text>
-									</View>
-								</TouchableOpacity>
+								/>
 							))}
 						</View>
 					) : (
@@ -196,44 +244,23 @@ export default function LearnPage() {
 					)}
 				</View>
 
-				{/* Category Buttons */}
+				{/* Category Drop Zones */}
 				<View style={styles.categoryContainer}>
-					<Text style={styles.categoryTitle}>
-						{selectedWord ? '选择分类' : '先点击选择一个单词'}
-					</Text>
 					<View style={styles.categoryRow}>
 						{categories.map((cat) => (
-							<TouchableOpacity
-								key={cat.id}
-								style={[
-									styles.categoryItem,
-									{ backgroundColor: categoryColors[cat.id] },
-									!selectedWord && styles.categoryDisabled
-								]}
-								onPress={() => handleCategoryPress(cat.id)}
-								disabled={!selectedWord}
-							>
-								<Text style={styles.categoryNameText}>{cat.name}</Text>
-								<Text style={styles.categoryCountText}>({cat.count})</Text>
-							</TouchableOpacity>
+							<View key={cat.id} style={styles.categoryItem}>
+								<View style={[styles.categoryCard, { backgroundColor: categoryColors[cat.id] }]}>
+									<Text style={styles.categoryName}>{cat.name}</Text>
+									<Text style={styles.categoryCount}>({cat.count})</Text>
+								</View>
+							</View>
 						))}
 					</View>
 				</View>
 
-				{/* View Detail Button */}
-				{selectedWord && (
-					<View style={styles.detailContainer}>
-						<TouchableOpacity style={styles.detailButton} onPress={handleViewDetail}>
-							<Text style={styles.detailButtonText}>查看详情</Text>
-						</TouchableOpacity>
-					</View>
-				)}
-
 				{/* Instruction */}
 				<View style={styles.instructionContainer}>
-					<Text style={styles.instructionText}>
-						点击单词选中，再点击下方按钮分类
-					</Text>
+					<Text style={styles.instructionText}>拖动单词到下方分类区域</Text>
 				</View>
 			</View>
 		</Screen>
@@ -266,22 +293,6 @@ const styles = StyleSheet.create({
 	placeholder: {
 		width: 50,
 	},
-	selectedInfo: {
-		backgroundColor: '#4F46E5',
-		padding: 12,
-		alignItems: 'center',
-	},
-	selectedWord: {
-		fontSize: 18,
-		fontWeight: '600',
-		color: '#FFFFFF',
-		fontFamily: 'serif',
-	},
-	selectedHint: {
-		fontSize: 12,
-		color: 'rgba(255,255,255,0.8)',
-		marginTop: 4,
-	},
 	wordCardsContainer: {
 		paddingHorizontal: 20,
 		paddingVertical: 40,
@@ -300,9 +311,6 @@ const styles = StyleSheet.create({
 	wordItemContainer: {
 		width: 80,
 	},
-	wordItemSelected: {
-		transform: [{ scale: 1.1 }],
-	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
 		paddingHorizontal: 8,
@@ -311,12 +319,11 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		minHeight: 60,
 		justifyContent: 'center',
-		borderWidth: 2,
-		borderColor: 'transparent',
-	},
-	wordCardSelected: {
-		backgroundColor: '#4F46E5',
-		borderColor: '#4F46E5',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	wordCardText: {
 		fontSize: 14,
@@ -324,64 +331,40 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 		fontWeight: '600',
 	},
-	wordCardTextSelected: {
-		color: '#FFFFFF',
-	},
 	categoryContainer: {
+		position: 'absolute',
+		bottom: 60,
+		left: 0,
+		right: 0,
 		paddingHorizontal: 20,
-		paddingVertical: 20,
-	},
-	categoryTitle: {
-		fontSize: 14,
-		color: '#666666',
-		textAlign: 'center',
-		marginBottom: 16,
 	},
 	categoryRow: {
 		flexDirection: 'row',
-		gap: 12,
+		justifyContent: 'space-around',
+		gap: 10,
 	},
 	categoryItem: {
 		flex: 1,
+	},
+	categoryCard: {
 		paddingVertical: 20,
 		borderRadius: 12,
 		alignItems: 'center',
 	},
-	categoryDisabled: {
-		opacity: 0.5,
-	},
-	categoryNameText: {
+	categoryName: {
 		fontSize: 16,
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 		fontWeight: '600',
 	},
-	categoryCountText: {
+	categoryCount: {
 		fontSize: 14,
 		color: 'rgba(255,255,255,0.8)',
 		marginTop: 4,
 	},
-	detailContainer: {
-		paddingHorizontal: 20,
-		paddingVertical: 10,
-	},
-	detailButton: {
-		backgroundColor: '#FFFFFF',
-		borderWidth: 1,
-		borderColor: '#4F46E5',
-		paddingVertical: 12,
-		borderRadius: 8,
-		alignItems: 'center',
-	},
-	detailButtonText: {
-		fontSize: 14,
-		color: '#4F46E5',
-		fontFamily: 'serif',
-		fontWeight: '600',
-	},
 	instructionContainer: {
 		position: 'absolute',
-		bottom: 40,
+		bottom: 20,
 		left: 0,
 		right: 0,
 		alignItems: 'center',
