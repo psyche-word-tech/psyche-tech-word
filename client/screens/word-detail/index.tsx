@@ -323,31 +323,15 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 移动单词到分类并切换
+	// 切换分类并加载单词
 	const handleStatusChange = useCallback(async (table: string, status: string) => {
 		try {
-			// 先移动单词到目标分类
-			const moveResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					wordId: word.id,
-					targetTable: table
-				})
-			});
-
-			const moveResult = await moveResponse.json();
-
-			if (!moveResponse.ok) {
-				throw new Error(moveResult.error || '移动失败');
-			}
-
 			setCurrentCategory(table);
 			
-			// 从目标分类加载单词
+			// 从对应分类加载单词
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
 			const data = await response.json();
-				
+			
 			if (Array.isArray(data) && data.length > 0) {
 				setWordsList(data);
 				setCurrentIndex(0);
@@ -357,13 +341,11 @@ export default function WordDetailPage() {
 				setWordsList([]);
 				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
-
-			Alert.alert('成功', `单词已移动到"${status}"分类`);
 		} catch (error) {
-			console.error('Failed to move word:', error);
-			Alert.alert('错误', '移动失败');
+			console.error('Failed to switch category:', error);
+			Alert.alert('错误', '加载失败');
 		}
-	}, [word.id]);
+	}, []);
 
 	return (
 		<Screen>
@@ -375,21 +357,6 @@ export default function WordDetailPage() {
 					</TouchableOpacity>
 					<Text style={styles.headerTitle}>每日单词</Text>
 					<View style={styles.placeholder} />
-				</View>
-
-				{/* Category Tag */}
-				<View style={styles.categoryTagContainer}>
-					<Text style={[
-						styles.categoryTag,
-						currentCategory === 'words_x' && styles.categoryTagX,
-						currentCategory === 'words_y' && styles.categoryTagY,
-						currentCategory === 'words_z' && styles.categoryTagZ,
-						currentCategory === 'words_b' && styles.categoryTagB,
-					]}>
-						{currentCategory === 'words_x' ? '已会' : 
-						 currentCategory === 'words_y' ? '模糊' : 
-						 currentCategory === 'words_z' ? '不会' : '我的词库'}
-					</Text>
 				</View>
 
 				{/* Content */}
@@ -673,7 +640,6 @@ export default function WordDetailPage() {
 				</Modal>
 
 				{/* 删除确认弹窗 */}
-				<View>
 				<Modal
 					visible={showDeleteConfirm}
 					transparent
@@ -701,7 +667,6 @@ export default function WordDetailPage() {
 						</View>
 					</View>
 				</Modal>
-				</View>
 			</View>
 		</Screen>
 	);
@@ -732,34 +697,6 @@ const styles = StyleSheet.create({
 	},
 	placeholder: {
 		width: 50,
-	},
-	categoryTagContainer: {
-		alignItems: 'center',
-		paddingVertical: 8,
-	},
-	categoryTag: {
-		fontSize: 14,
-		fontWeight: '600',
-		paddingHorizontal: 16,
-		paddingVertical: 6,
-		borderRadius: 16,
-		overflow: 'hidden',
-	},
-	categoryTagX: {
-		backgroundColor: '#4CAF50',
-		color: '#FFFFFF',
-	},
-	categoryTagY: {
-		backgroundColor: '#FF9800',
-		color: '#FFFFFF',
-	},
-	categoryTagZ: {
-		backgroundColor: '#F44336',
-		color: '#FFFFFF',
-	},
-	categoryTagB: {
-		backgroundColor: '#4F46E5',
-		color: '#FFFFFF',
 	},
 	content: {
 		flex: 1,

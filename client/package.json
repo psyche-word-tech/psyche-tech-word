@@ -3,6 +3,7 @@
   "description": "my-expo-app",
   "main": "expo-router/entry",
   "private": true,
+  "proxy": "http://localhost:9091",
   "scripts": {
     "check-deps": "npx depcheck",
     "postinstall": "npm run install-missing",
