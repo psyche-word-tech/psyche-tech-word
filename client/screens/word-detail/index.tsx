@@ -538,25 +538,31 @@ export default function WordDetailPage() {
 
 					{/* Drop Zones */}
 					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>拖动单词到下方区域分类，或点击查看列表</Text>
+						<Text style={styles.dropZoneHint}>长按按钮移动单词，点击查看列表</Text>
 						<View style={styles.dropZones}>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneX]} 
+								onLongPress={() => handleDrop('words_x', '已会')}
 								onPress={() => router.push('/word-category', { table: 'words_x', name: '已会' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneY]} 
+								onLongPress={() => handleDrop('words_y', '模糊')}
 								onPress={() => router.push('/word-category', { table: 'words_y', name: '模糊' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneZ]} 
+								onLongPress={() => handleDrop('words_z', '不会')}
 								onPress={() => router.push('/word-category', { table: 'words_z', name: '不会' })}
+								delayLongPress={500}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
