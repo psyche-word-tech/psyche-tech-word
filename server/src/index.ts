@@ -6,6 +6,7 @@ import wordbooksRouter from "./routes/wordbooks";
 import authRouter from "./routes/auth";
 import commentsRouter from "./routes/comments";
 import exampleImagesRouter from "./routes/example-images";
+import grammarCheckRouter from "./routes/grammar-check";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -38,6 +39,7 @@ app.use('/api/v1/wordbooks', wordbooksRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/comments', commentsRouter);
 app.use('/api/v1/example-images', exampleImagesRouter);
+app.use('/api/v1/grammar-check', grammarCheckRouter);
 
 
 app.listen(port, () => {
