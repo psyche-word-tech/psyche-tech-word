@@ -411,8 +411,8 @@ export default function WordDetailPage() {
 				throw new Error(result.error || '移动失败');
 			}
 
-			// 从目标分类加载单词
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
+			// 从 words_b 重新加载单词列表（移除已移动的单词）
+			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await listResponse.json();
 				
 			if (Array.isArray(data) && data.length > 0) {
