@@ -522,20 +522,29 @@ export default function WordDetailPage() {
 
 					{/* Drop Zones */}
 					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>拖动单词到下方区域</Text>
+						<Text style={styles.dropZoneHint}>拖动单词到下方区域分类，或点击查看列表</Text>
 						<View style={styles.dropZones}>
-							<View style={[styles.dropZone, styles.dropZoneX]}>
+							<TouchableOpacity 
+								style={[styles.dropZone, styles.dropZoneX]} 
+								onPress={() => router.push('/word-category', { table: 'words_x', name: '已会' })}
+							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
-							</View>
-							<View style={[styles.dropZone, styles.dropZoneY]}>
+							</TouchableOpacity>
+							<TouchableOpacity 
+								style={[styles.dropZone, styles.dropZoneY]} 
+								onPress={() => router.push('/word-category', { table: 'words_y', name: '模糊' })}
+							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
-							</View>
-							<View style={[styles.dropZone, styles.dropZoneZ]}>
+							</TouchableOpacity>
+							<TouchableOpacity 
+								style={[styles.dropZone, styles.dropZoneZ]} 
+								onPress={() => router.push('/word-category', { table: 'words_z', name: '不会' })}
+							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
-							</View>
+							</TouchableOpacity>
 						</View>
 					</View>
 
