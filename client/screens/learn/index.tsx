@@ -70,12 +70,15 @@ function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 					return;
 				}
 
-				// 检测放置位置
-				const absoluteX = gestureState.moveX;
+				// 检测放置位置 - 使用相对位置
+				const cardCenterY = evt.nativeEvent.pageY + gestureState.dy;
 				const absoluteY = gestureState.moveY;
+				const absoluteX = gestureState.moveX;
 
-				// 分类区域在屏幕下方（约 y > 450）
-				if (absoluteY > 450) {
+				// 分类区域在屏幕下方，阈值设为屏幕高度的 50%
+				const dropThreshold = Dimensions.get('window').height * 0.5;
+				
+				if (absoluteY > dropThreshold) {
 					let targetCategory = 3;
 					if (absoluteX < ITEM_WIDTH) {
 						targetCategory = 1;
