@@ -67,15 +67,6 @@ export default function WordDetailPage() {
 	const [grammarResult, setGrammarResult] = useState<GrammarResult | null>(null);
 	const [showResultModal, setShowResultModal] = useState(false);
 
-	// 删除确认相关状态
-	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-	const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-
-	// 分类相关状态
-	const [currentCategory, setCurrentCategory] = useState<string>('words_b');
-	const [categoryWords, setCategoryWords] = useState<Word[]>([]);
-	const [categoryIndex, setCategoryIndex] = useState(0);
-
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
@@ -192,43 +183,6 @@ export default function WordDetailPage() {
 		}
 	}, [commentText]);
 
-	// 删除评论
-	const deleteComment = useCallback(async (commentId: number) => {
-		setDeleteTargetId(commentId);
-		setShowDeleteConfirm(true);
-	}, []);
-
-	// 确认删除
-	const confirmDelete = useCallback(async () => {
-		if (!deleteTargetId) return;
-		
-		try {
-			/**
-			 * 服务端文件：server/src/routes/comments.ts
-			 * 接口：DELETE /api/v1/comments/:id
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/comments/${deleteTargetId}`, {
-				method: 'DELETE'
-			});
-
-			if (!response.ok) throw new Error('删除失败');
-
-			// 刷新评论列表
-			fetchComments(word.id);
-		} catch (error) {
-			console.error('Failed to delete comment:', error);
-		} finally {
-			setShowDeleteConfirm(false);
-			setDeleteTargetId(null);
-		}
-	}, [deleteTargetId, word.id, fetchComments]);
-
-	// 取消删除
-	const cancelDelete = useCallback(() => {
-		setShowDeleteConfirm(false);
-		setDeleteTargetId(null);
-	}, []);
-
 	// 发布评论
 	const submitComment = useCallback(async () => {
 		if (!commentText.trim() || !word.id) {
@@ -272,7 +226,7 @@ export default function WordDetailPage() {
 	const cancelPublish = useCallback(() => {
 		setShowResultModal(false);
 		setGrammarResult(null);
-	}, []);
+	});
 
 	// 当单词变化时获取评论
 	useEffect(() => {
@@ -323,15 +277,35 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 切换分类并加载单词
-	const handleStatusChange = useCallback(async (table: string, status: string) => {
+	// 处理单词状态变化 - 移动单词到对应分类
+	const handleStatusChange = async (table: string, status: string) => {
 		try {
+			/**
+			 * 服务端文件：server/src/routes/user-words.ts
+			 * 接口：POST /api/v1/user-words/move
+			 * Body参数：wordId: number, targetTable: string
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					wordId: word.id,
+					targetTable: table
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || '移动失败');
+			}
+
 			setCurrentCategory(table);
-			
-			// 从对应分类加载单词
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
-			const data = await response.json();
-			
+				
+			// 从目标分类加载单词
+			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${table}`);
+			const data = await listResponse.json();
+				
 			if (Array.isArray(data) && data.length > 0) {
 				setWordsList(data);
 				setCurrentIndex(0);
@@ -341,11 +315,14 @@ export default function WordDetailPage() {
 				setWordsList([]);
 				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
+
+			Alert.alert('成功', `单词已移动到"${status}"分类`);
+			setTimeout(() => switchWord('next'), 500);
 		} catch (error) {
-			console.error('Failed to switch category:', error);
-			Alert.alert('错误', '加载失败');
+			console.error('Failed to move word:', error);
+			Alert.alert('错误', '操作失败');
 		}
-	}, []);
+	};
 
 	return (
 		<Screen>
@@ -432,42 +409,16 @@ export default function WordDetailPage() {
 
 					{/* Status Buttons */}
 					<View style={styles.statusSection}>
-						<TouchableOpacity 
-							style={[
-								styles.statusButton, 
-								styles.knownButton,
-								currentCategory === 'words_x' && styles.statusButtonActive
-							]} 
-							onPress={() => handleStatusChange('words_x', '已会')}
-						>
-							<Text style={[styles.statusText, currentCategory === 'words_x' && styles.statusTextActive]}>已会(x)</Text>
+						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
+							<Text style={styles.statusText}>已会(x)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity 
-							style={[
-								styles.statusButton, 
-								styles.vagueButton,
-								currentCategory === 'words_y' && styles.statusButtonActive
-							]} 
-							onPress={() => handleStatusChange('words_y', '模糊')}
-						>
-							<Text style={[styles.statusText, currentCategory === 'words_y' && styles.statusTextActive]}>模糊(y)</Text>
+						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
+							<Text style={styles.statusText}>模糊(y)</Text>
 						</TouchableOpacity>
-						<TouchableOpacity 
-							style={[
-								styles.statusButton, 
-								styles.unknownButton,
-								currentCategory === 'words_z' && styles.statusButtonActive
-							]} 
-							onPress={() => handleStatusChange('words_z', '不会')}
-						>
-							<Text style={[styles.statusText, currentCategory === 'words_z' && styles.statusTextActive]}>不会(z)</Text>
+						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
+							<Text style={styles.statusText}>不会(z)</Text>
 						</TouchableOpacity>
 					</View>
-
-					{/* Return to Word Library */}
-					<TouchableOpacity style={styles.returnButton} onPress={() => handleStatusChange('words_b', '我的词库')}>
-						<Text style={styles.returnButtonText}>返回我的词库</Text>
-					</TouchableOpacity>
 
 					{/* Familiarity Slider */}
 					<View style={styles.sliderSection}>
@@ -527,17 +478,9 @@ export default function WordDetailPage() {
 									<View key={comment.id} style={styles.commentItem}>
 										<View style={styles.commentHeader}>
 											<Text style={styles.commentUserName}>{comment.user_name}</Text>
-											<View style={styles.commentHeaderRight}>
-												<Text style={styles.commentDate}>
-													{new Date(comment.created_at).toLocaleDateString('zh-CN')}
-												</Text>
-												<TouchableOpacity
-													style={styles.deleteButton}
-													onPress={() => deleteComment(comment.id)}
-												>
-													<Ionicons name="trash-outline" size={16} color="#F44336" />
-												</TouchableOpacity>
-											</View>
+											<Text style={styles.commentDate}>
+												{new Date(comment.created_at).toLocaleDateString('zh-CN')}
+											</Text>
 										</View>
 										<Text style={styles.commentContent}>{comment.content}</Text>
 									</View>
@@ -633,35 +576,6 @@ export default function WordDetailPage() {
 									) : (
 										<Text style={styles.publishButtonText}>发布</Text>
 									)}
-								</TouchableOpacity>
-							</View>
-						</View>
-					</View>
-				</Modal>
-
-				{/* 删除确认弹窗 */}
-				<Modal
-					visible={showDeleteConfirm}
-					transparent
-					animationType="fade"
-					onRequestClose={cancelDelete}
-				>
-					<View style={styles.deleteModalOverlay}>
-						<View style={styles.deleteModalContent}>
-							<Text style={styles.deleteModalTitle}>确认删除</Text>
-							<Text style={styles.deleteModalText}>确定要删除这条笔记吗？</Text>
-							<View style={styles.deleteModalButtons}>
-								<TouchableOpacity
-									style={[styles.deleteModalButton, styles.deleteCancelButton]}
-									onPress={cancelDelete}
-								>
-									<Text style={styles.deleteCancelText}>取消</Text>
-								</TouchableOpacity>
-								<TouchableOpacity
-									style={[styles.deleteModalButton, styles.deleteConfirmButton]}
-									onPress={confirmDelete}
-								>
-									<Text style={styles.deleteConfirmText}>删除</Text>
 								</TouchableOpacity>
 							</View>
 						</View>
@@ -836,27 +750,6 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 	},
-	statusButtonActive: {
-		borderWidth: 3,
-		borderColor: '#000',
-	},
-	statusTextActive: {
-		fontWeight: 'bold',
-	},
-	returnButton: {
-		marginHorizontal: 20,
-		marginTop: 16,
-		paddingVertical: 12,
-		paddingHorizontal: 20,
-		backgroundColor: '#4F46E5',
-		borderRadius: 8,
-		alignItems: 'center',
-	},
-	returnButtonText: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#FFFFFF',
-	},
 	sliderSection: {
 		paddingHorizontal: 20,
 		paddingVertical: 16,
@@ -952,11 +845,6 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		marginBottom: 6,
 	},
-	commentHeaderRight: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 8,
-	},
 	commentUserName: {
 		fontSize: 13,
 		fontWeight: '600',
@@ -967,9 +855,6 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: '#999',
 		fontFamily: 'serif',
-	},
-	deleteButton: {
-		padding: 6,
 	},
 	commentContent: {
 		fontSize: 14,
@@ -1132,71 +1017,5 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#FFF',
 		fontFamily: 'serif',
-	},
-		// 删除确认弹窗样式
-	deleteModalOverlay: {
-		flex: 1,
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	deleteModalContent: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 20,
-		padding: 28,
-		width: 300,
-		alignItems: 'center',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
-	},
-	deleteModalTitle: {
-		fontSize: 20,
-		fontWeight: '700',
-		color: '#1a1a1a',
-		marginBottom: 12,
-	},
-	deleteModalText: {
-		fontSize: 15,
-		color: '#666',
-		marginBottom: 24,
-		textAlign: 'center',
-		lineHeight: 22,
-	},
-	deleteModalButtons: {
-		flexDirection: 'row',
-		gap: 12,
-		width: '100%',
-	},
-	deleteModalButton: {
-		flex: 1,
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-		borderRadius: 10,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	deleteCancelButton: {
-		backgroundColor: '#f0f0f5',
-	},
-	deleteCancelText: {
-		fontSize: 15,
-		color: '#333',
-		fontWeight: '600',
-	},
-	deleteConfirmButton: {
-		backgroundColor: '#ff4757',
-		shadowColor: '#ff4757',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-	deleteConfirmText: {
-		fontSize: 15,
-		color: '#FFF',
-		fontWeight: '600',
 	},
 });
