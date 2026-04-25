@@ -227,8 +227,8 @@ router.post('/move', async (req, res) => {
       return;
     }
 
-    // 准备插入数据（移除 id 让数据库自动生成）
-    const { id, ...wordData } = word;
+    // 准备插入数据（移除 id 和不兼容的字段，让数据库自动生成）
+    const { id, example_translation, ...wordData } = word;
 
     // 插入到目标表
     const { error: insertError } = await client

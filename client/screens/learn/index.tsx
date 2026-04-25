@@ -270,11 +270,12 @@ export default function LearnPage() {
 						<View style={styles.placeholder} />
 					</View>
 
-					{/* Word Cards - Horizontal with Drag */}
+					{/* Word Cards - Vertical Scroll with Drag */}
 					<View style={styles.wordCardsContainer}>
+						<Text style={styles.wordCountText}>{availableWords.length} 个单词待分类</Text>
 						{availableWords.length > 0 ? (
-							<View style={styles.wordRow}>
-								{availableWords.slice(0, 3).map((word) => (
+							<View style={styles.wordGrid}>
+								{availableWords.map((word) => (
 									<DraggableWord
 										key={word.id}
 										word={word}
@@ -286,7 +287,7 @@ export default function LearnPage() {
 							</View>
 						) : (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>暂无单词</Text>
+								<Text style={styles.emptyText}>所有单词已分类完成！</Text>
 							</View>
 						)}
 					</View>
@@ -345,8 +346,21 @@ const styles = StyleSheet.create({
 		width: 50,
 	},
 	wordCardsContainer: {
-		paddingHorizontal: 20,
-		paddingVertical: 60,
+		paddingHorizontal: 16,
+		paddingVertical: 20,
+		paddingBottom: 200,
+	},
+	wordCountText: {
+		fontSize: 14,
+		color: '#999999',
+		marginBottom: 16,
+		textAlign: 'center',
+	},
+	wordGrid: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		gap: 12,
+		justifyContent: 'flex-start',
 	},
 	wordRow: {
 		flexDirection: 'row',
@@ -354,15 +368,17 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	wordItemContainer: {
-		flex: 1,
-		maxWidth: 100,
+		width: '31%',
+		marginBottom: 12,
 	},
 	wordCard: {
-		backgroundColor: '#F0F0F0',
-		paddingHorizontal: 12,
-		paddingVertical: 12,
-		borderRadius: 8,
+		backgroundColor: '#F5F5F5',
+		paddingHorizontal: 8,
+		paddingVertical: 16,
+		borderRadius: 12,
 		alignItems: 'center',
+		minHeight: 60,
+		justifyContent: 'center',
 	},
 	wordCardUsed: {
 		backgroundColor: '#CCCCCC',
