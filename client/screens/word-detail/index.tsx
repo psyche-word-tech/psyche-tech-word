@@ -390,13 +390,19 @@ export default function WordDetailPage() {
 				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
 			}
 
-			Alert.alert('成功', `单词已移动到"${status}"分类，页面切换到 ${status} 列表`);
-			// 更新分类数量
-			fetchCategoryCounts();
-			// 页面已切换到目标分类列表（上面已加载）
+			Alert.alert('成功', `单词已移动到"${status}"分类`, [
+				{
+					text: '确定',
+					onPress: () => {
+						fetchCategoryCounts();
+						// 返回到词汇预览列表
+						router.back();
+					}
+				}
+			]);
 		} catch (error) {
 			console.error('Failed to move word:', error);
-			Alert.alert('错误', '操作失败');
+			Alert.alert('错误', '移动失败，请重试');
 		}
 	};
 
