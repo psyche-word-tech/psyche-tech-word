@@ -359,6 +359,21 @@ export default function WordDetailPage() {
 					<View style={styles.placeholder} />
 				</View>
 
+				{/* Category Tag */}
+				<View style={styles.categoryTagContainer}>
+					<Text style={[
+						styles.categoryTag,
+						currentCategory === 'words_x' && styles.categoryTagX,
+						currentCategory === 'words_y' && styles.categoryTagY,
+						currentCategory === 'words_z' && styles.categoryTagZ,
+						currentCategory === 'words_b' && styles.categoryTagB,
+					]}>
+						{currentCategory === 'words_x' ? '已会' : 
+						 currentCategory === 'words_y' ? '模糊' : 
+						 currentCategory === 'words_z' ? '不会' : '我的词库'}
+					</Text>
+				</View>
+
 				{/* Content */}
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 					{/* Word Section */}
@@ -697,6 +712,34 @@ const styles = StyleSheet.create({
 	},
 	placeholder: {
 		width: 50,
+	},
+	categoryTagContainer: {
+		alignItems: 'center',
+		paddingVertical: 8,
+	},
+	categoryTag: {
+		fontSize: 14,
+		fontWeight: '600',
+		paddingHorizontal: 16,
+		paddingVertical: 6,
+		borderRadius: 16,
+		overflow: 'hidden',
+	},
+	categoryTagX: {
+		backgroundColor: '#4CAF50',
+		color: '#FFFFFF',
+	},
+	categoryTagY: {
+		backgroundColor: '#FF9800',
+		color: '#FFFFFF',
+	},
+	categoryTagZ: {
+		backgroundColor: '#F44336',
+		color: '#FFFFFF',
+	},
+	categoryTagB: {
+		backgroundColor: '#4F46E5',
+		color: '#FFFFFF',
 	},
 	content: {
 		flex: 1,
