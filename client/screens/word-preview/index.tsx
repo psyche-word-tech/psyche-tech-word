@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, memo } from 'react';
-import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -19,7 +19,7 @@ interface DraggableWordCardProps {
 	onMoveComplete: (word: Word, targetTable: string) => void;
 }
 
-// 可拖动单词卡片组件（定义在文件顶层，符合 Hooks 规则）
+// 可拖动单词卡片组件（定义在文件顶层）
 const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete }: DraggableWordCardProps) {
 	const pan = useRef(new Animated.ValueXY()).current;
 
@@ -41,11 +41,9 @@ const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete
 			onPanResponderRelease: (evt, gestureState) => {
 				pan.flattenOffset();
 
-				// 计算卡片在屏幕上的绝对位置
 				const cardX = gestureState.moveX;
 				const cardY = gestureState.moveY;
 
-				// 检测放置位置
 				const dropZoneTop = screenHeight - 180;
 				if (cardY > dropZoneTop) {
 					const zoneWidth = screenWidth / 3;
@@ -58,7 +56,6 @@ const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete
 					onMoveComplete(word, targetTable);
 				}
 
-				// 回到原位
 				Animated.spring(pan, {
 					toValue: { x: 0, y: 0 },
 					useNativeDriver: false,
@@ -94,19 +91,29 @@ const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete
 export default function WordPreviewPage() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [isLoading, setIsLoading] = useState(true);
+	const fetchWordsRef = useRef<() => void>(() => {});
 
 	// 获取词汇列表
 	const fetchWords = useCallback(async () => {
+		setIsLoading(true);
 		try {
+			console.log('Fetching words from /api/v1/user-words/category/words_b');
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await response.json();
+			console.log('Received data:', Array.isArray(data) ? `${data.length} words` : 'not array', data);
 			if (Array.isArray(data)) {
 				setWords(data);
 			}
 		} catch (error) {
 			console.error('Failed to fetch words:', error);
+		} finally {
+			setIsLoading(false);
 		}
 	}, []);
+
+	// 保存引用
+	fetchWordsRef.current = fetchWords;
 
 	// 获取分类数量
 	const fetchCategoryCounts = useCallback(async () => {
@@ -162,9 +169,9 @@ export default function WordPreviewPage() {
 		} catch (error) {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '移动失败，请重试');
-			fetchWords(); // 重新获取列表
+			fetchWordsRef.current();
 		}
-	}, [fetchCategoryCounts, fetchWords]);
+	}, [fetchCategoryCounts]);
 
 	return (
 		<Screen>
@@ -172,7 +179,10 @@ export default function WordPreviewPage() {
 				{/* Header */}
 				<View style={styles.header}>
 					<Text style={styles.headerTitle}>词汇预览</Text>
-					<Text style={styles.headerCount}>{words.length} 个单词待分类</Text>
+					<Text style={styles.headerCount}>{isLoading ? '加载中...' : `${words.length} 个单词待分类`}</Text>
+					<TouchableOpacity style={styles.refreshButton} onPress={fetchWords}>
+						<Text style={styles.refreshText}>刷新</Text>
+					</TouchableOpacity>
 				</View>
 
 				{/* Word Cards */}
@@ -188,12 +198,11 @@ export default function WordPreviewPage() {
 							onMoveComplete={handleMoveComplete}
 						/>
 					))}
-					{words.length === 0 && (
+					{words.length === 0 && !isLoading && (
 						<View style={styles.emptyContainer}>
 							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
 						</View>
 					)}
-					{/* 底部留白，确保最后一个卡片不会被分类栏遮挡 */}
 					<View style={styles.bottomSpacer} />
 				</ScrollView>
 
@@ -231,6 +240,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 16,
 		borderBottomWidth: 1,
 		borderBottomColor: '#E5E5E5',
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
 	},
 	headerTitle: {
 		fontSize: 24,
@@ -241,8 +253,20 @@ const styles = StyleSheet.create({
 	headerCount: {
 		fontSize: 14,
 		color: '#999999',
-		marginTop: 4,
 		fontFamily: 'serif',
+		flex: 1,
+		marginLeft: 12,
+	},
+	refreshButton: {
+		backgroundColor: '#4F46E5',
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 8,
+	},
+	refreshText: {
+		color: '#FFFFFF',
+		fontSize: 12,
+		fontWeight: '600',
 	},
 	scrollContainer: {
 		flex: 1,
