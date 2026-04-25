@@ -923,9 +923,7 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 	},
 	deleteButton: {
-		padding: 8,
-		backgroundColor: '#FFEBEE',
-		borderRadius: 4,
+		padding: 6,
 	},
 	commentContent: {
 		fontSize: 14,
