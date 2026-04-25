@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert } from 'react-native';
+import { useState, useCallback, useRef, memo } from 'react';
+import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, ScrollView } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -14,10 +14,86 @@ interface Word {
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+interface DraggableWordCardProps {
+	word: Word;
+	onMoveComplete: (word: Word, targetTable: string) => void;
+}
+
+// 可拖动单词卡片组件（定义在文件顶层，符合 Hooks 规则）
+const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete }: DraggableWordCardProps) {
+	const pan = useRef(new Animated.ValueXY()).current;
+
+	const panResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: () => true,
+			onPanResponderGrant: () => {
+				pan.setOffset({
+					x: (pan.x as any)._value || 0,
+					y: (pan.y as any)._value || 0,
+				});
+				pan.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: Animated.event(
+				[null, { dx: pan.x, dy: pan.y }],
+				{ useNativeDriver: false }
+			),
+			onPanResponderRelease: (evt, gestureState) => {
+				pan.flattenOffset();
+
+				// 计算卡片在屏幕上的绝对位置
+				const cardX = gestureState.moveX;
+				const cardY = gestureState.moveY;
+
+				// 检测放置位置
+				const dropZoneTop = screenHeight - 180;
+				if (cardY > dropZoneTop) {
+					const zoneWidth = screenWidth / 3;
+					let targetTable = 'words_z';
+					if (cardX < zoneWidth) {
+						targetTable = 'words_x';
+					} else if (cardX < zoneWidth * 2) {
+						targetTable = 'words_y';
+					}
+					onMoveComplete(word, targetTable);
+				}
+
+				// 回到原位
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+				}).start();
+			},
+		})
+	).current;
+
+	return (
+		<Animated.View
+			{...panResponder.panHandlers}
+			style={[
+				styles.wordCard,
+				{
+					transform: [
+						{ translateX: pan.x },
+						{ translateY: pan.y },
+					],
+				},
+			]}
+		>
+			<Text style={styles.wordText}>{word.word}</Text>
+			<Text style={styles.phoneticText}>{word.phonetic}</Text>
+			<Text style={styles.meaningText} numberOfLines={2}>{word.meaning}</Text>
+			<View style={styles.dragHint}>
+				<Ionicons name="move-outline" size={14} color="#999" />
+				<Text style={styles.dragHintText}>拖动分类</Text>
+			</View>
+		</Animated.View>
+	);
+});
+
 export default function WordPreviewPage() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
-	const fetchCategoryCountsRef = useRef<() => void>(() => {});
 
 	// 获取词汇列表
 	const fetchWords = useCallback(async () => {
@@ -51,9 +127,6 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 保存引用供拖拽完成后调用
-	fetchCategoryCountsRef.current = fetchCategoryCounts;
-
 	// 页面加载时获取数据
 	useFocusEffect(
 		useCallback(() => {
@@ -63,7 +136,7 @@ export default function WordPreviewPage() {
 	);
 
 	// 移动单词到分类
-	const moveWord = useCallback(async (word: Word, targetTable: string) => {
+	const handleMoveComplete = useCallback(async (word: Word, targetTable: string) => {
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
 				method: 'POST',
@@ -84,97 +157,14 @@ export default function WordPreviewPage() {
 			setWords(prev => prev.filter(w => w.id !== word.id));
 			
 			// 更新分类数量
-			fetchCategoryCountsRef.current();
+			fetchCategoryCounts();
 
 		} catch (error) {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '移动失败，请重试');
+			fetchWords(); // 重新获取列表
 		}
-	}, []);
-
-	// 检测放置位置
-	const getDropZone = (absX: number, absY: number): string | null => {
-		const dropZoneTop = screenHeight - 180; // 底部区域起始位置
-		if (absY > dropZoneTop) {
-			const zoneWidth = screenWidth / 3;
-			if (absX < zoneWidth) {
-				return 'words_x';
-			} else if (absX < zoneWidth * 2) {
-				return 'words_y';
-			} else {
-				return 'words_z';
-			}
-		}
-		return null;
-	};
-
-	// 创建可拖动的单词卡片
-	const DraggableWordCard = ({ word }: { word: Word }) => {
-		const pan = useRef(new Animated.ValueXY()).current;
-		const originalY = useRef(0);
-
-		const panResponder = useRef(
-			PanResponder.create({
-				onStartShouldSetPanResponder: () => true,
-				onMoveShouldSetPanResponder: () => true,
-				onPanResponderGrant: () => {
-					originalY.current = (pan.y as any)._value || 0;
-					pan.setOffset({
-						x: (pan.x as any)._value || 0,
-						y: originalY.current,
-					});
-					pan.setValue({ x: 0, y: 0 });
-				},
-				onPanResponderMove: Animated.event(
-					[null, { dx: pan.x, dy: pan.y }],
-					{ useNativeDriver: false }
-				),
-				onPanResponderRelease: (evt, gestureState) => {
-					pan.flattenOffset();
-
-					// 计算卡片在屏幕上的绝对位置
-					const cardX = gestureState.moveX;
-					const cardY = gestureState.moveY;
-
-					// 检测放置位置
-					const targetTable = getDropZone(cardX, cardY);
-					if (targetTable) {
-						// 直接移动，不等待动画
-						moveWord(word, targetTable);
-					}
-
-					// 回到原位
-					Animated.spring(pan, {
-						toValue: { x: 0, y: 0 },
-						useNativeDriver: false,
-					}).start();
-				},
-			})
-		).current;
-
-		return (
-			<Animated.View
-				{...panResponder.panHandlers}
-				style={[
-					styles.wordCard,
-					{
-						transform: [
-							{ translateX: pan.x },
-							{ translateY: pan.y },
-						],
-					},
-				]}
-			>
-				<Text style={styles.wordText}>{word.word}</Text>
-				<Text style={styles.phoneticText}>{word.phonetic}</Text>
-				<Text style={styles.meaningText} numberOfLines={2}>{word.meaning}</Text>
-				<View style={styles.dragHint}>
-					<Ionicons name="move-outline" size={14} color="#999" />
-					<Text style={styles.dragHintText}>拖动分类</Text>
-				</View>
-			</Animated.View>
-		);
-	};
+	}, [fetchCategoryCounts, fetchWords]);
 
 	return (
 		<Screen>
@@ -186,16 +176,26 @@ export default function WordPreviewPage() {
 				</View>
 
 				{/* Word Cards */}
-				<View style={styles.cardsContainer}>
+				<ScrollView 
+					style={styles.scrollContainer}
+					contentContainerStyle={styles.scrollContent}
+					showsVerticalScrollIndicator={false}
+				>
 					{words.map((word) => (
-						<DraggableWordCard key={word.id} word={word} />
+						<DraggableWordCard 
+							key={word.id} 
+							word={word} 
+							onMoveComplete={handleMoveComplete}
+						/>
 					))}
 					{words.length === 0 && (
 						<View style={styles.emptyContainer}>
 							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
 						</View>
 					)}
-				</View>
+					{/* 底部留白，确保最后一个卡片不会被分类栏遮挡 */}
+					<View style={styles.bottomSpacer} />
+				</ScrollView>
 
 				{/* Drop Zones */}
 				<View style={styles.categorySection}>
@@ -244,8 +244,10 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 		fontFamily: 'serif',
 	},
-	cardsContainer: {
+	scrollContainer: {
 		flex: 1,
+	},
+	scrollContent: {
 		padding: 16,
 		paddingBottom: 180,
 	},
@@ -299,6 +301,9 @@ const styles = StyleSheet.create({
 	emptyText: {
 		fontSize: 16,
 		color: '#999999',
+	},
+	bottomSpacer: {
+		height: 20,
 	},
 	categorySection: {
 		position: 'absolute',
