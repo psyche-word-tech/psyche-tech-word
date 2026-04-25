@@ -30,17 +30,15 @@ interface Category {
 
 interface DraggableWordProps {
 	word: Word;
-	onDrop: (categoryId: number) => void;
+	onDrop: (wordId: number, categoryId: number) => void;
 	onPress: () => void;
-	isUsed: boolean;
 }
 
-function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
+function DraggableWord({ word, onDrop, onPress }: DraggableWordProps) {
 	const translateX = useSharedValue(0);
 	const translateY = useSharedValue(0);
 	const scale = useSharedValue(1);
 	const zIndex = useSharedValue(1);
-	const opacity = useSharedValue(1);
 	const hasDragged = useSharedValue(false);
 
 	// 拖动手势
@@ -56,14 +54,14 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			translateY.value = event.translationY;
 		})
 		.onEnd((event) => {
-			// 如果没有拖动过，直接返回
 			if (!hasDragged.value) {
 				return;
 			}
 
 			const dropY = event.absoluteY;
 			let targetCategory: number | null = null;
-			if (dropY > 150 && dropY < 700) {
+			// 分类区域在屏幕下方
+			if (dropY > 500) {
 				const relativeX = event.absoluteX;
 				if (relativeX < ITEM_WIDTH) {
 					targetCategory = 1;
@@ -75,10 +73,11 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			}
 
 			if (targetCategory !== null) {
-				// 立即调用 onDrop 更新数据库
-				runOnJS(onDrop)(targetCategory);
-				// 隐藏卡片
-				opacity.value = withSpring(0);
+				runOnJS(onDrop)(word.id, targetCategory);
+				translateX.value = withSpring(0);
+				translateY.value = withSpring(0);
+				scale.value = withSpring(1);
+				zIndex.value = 1;
 			} else {
 				// 没有拖动到有效区域：卡片回到原位
 				translateX.value = withSpring(0);
@@ -107,16 +106,13 @@ function DraggableWord({ word, onDrop, onPress, isUsed }: DraggableWordProps) {
 			{ scale: scale.value },
 		],
 		zIndex: zIndex.value,
-		opacity: opacity.value,
 	}));
 
 	return (
 		<GestureDetector gesture={composedGesture}>
 			<Animated.View style={[styles.wordItemContainer, animatedStyle]}>
-				<View style={[styles.wordCard, isUsed && styles.wordCardUsed]}>
-					<Text style={[styles.wordCardText, isUsed && styles.wordCardTextUsed]}>
-						{word.word}
-					</Text>
+				<View style={styles.wordCard}>
+					<Text style={styles.wordCardText}>{word.word}</Text>
 				</View>
 			</Animated.View>
 		</GestureDetector>
@@ -127,9 +123,9 @@ export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
 	const { apiBaseUrl } = useApiConfig();
-	const table = params.table || 'words_b'; // 默认从 words_b 获取
+	const table = params.table || 'words_b';
 	
-	const [words, setWords] = useState<Word[]>([]);
+	const [allWords, setAllWords] = useState<Word[]>([]);
 	const [categories, setCategories] = useState<Category[]>([
 		{ id: 1, name: '已会', letter: 'x', count: 0 },
 		{ id: 2, name: '模糊', letter: 'y', count: 0 },
@@ -138,70 +134,57 @@ export default function LearnPage() {
 	
 	// 分类颜色配置
 	const categoryColors = {
-		1: { bg: '#4CAF50', badge: '#388E3C' }, // 已会 - 绿色
-		2: { bg: '#FF9800', badge: '#F57C00' }, // 模糊 - 橙色
-		3: { bg: '#F44336', badge: '#D32F2F' }, // 不会 - 红色
+		1: { bg: '#4CAF50', badge: '#388E3C' },
+		2: { bg: '#FF9800', badge: '#F57C00' },
+		3: { bg: '#F44336', badge: '#D32F2F' },
 	};
-	const [usedWords, setUsedWords] = useState<Set<number>>(new Set());
 
-		const fetchData = async () => {
-			try {
-				// 直接使用指定的表
-				const wordsTable = table;
+	// 显示的单词（最多3个）
+	const displayWords = allWords.slice(0, 3);
+	const remainingCount = allWords.length;
 
-				// 并行获取单词列表和分类数据
-				const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-					fetch(`${apiBaseUrl}/api/v1/wordbooks/${wordsTable}`),
-					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
-					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
-					fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
-				]);
+	const fetchData = async () => {
+		try {
+			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/${table}`),
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
+				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
+			]);
 
-				const wordsData = await wordsRes.json();
-				const xResult = await xRes.json();
-				const yResult = await yRes.json();
-				const zResult = await zRes.json();
+			const wordsData = await wordsRes.json();
+			const xResult = await xRes.json();
+			const yResult = await yRes.json();
+			const zResult = await zRes.json();
 
-				// 更新单词列表
-				const wordsResult = Array.isArray(wordsData) ? wordsData : [];
-				setWords(wordsResult);
-				setUsedWords(new Set());
+			const wordsResult = Array.isArray(wordsData) ? wordsData : [];
+			setAllWords(wordsResult);
 				
-				// 更新分类数量
-				setCategories([
-					{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
-					{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
-					{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
-				]);
-			} catch (error) {
-				console.error('Failed to fetch data:', error);
-			}
-		};
+			setCategories([
+				{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
+				{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
+				{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
+			]);
+		} catch (error) {
+			console.error('Failed to fetch data:', error);
+		}
+	};
 
-		// 页面返回时自动刷新数据
-		useFocusEffect(
-			useCallback(() => {
-				fetchData();
-				// eslint-disable-next-line react-hooks/exhaustive-deps
-			}, [table, apiBaseUrl])
-		);
+	useFocusEffect(
+		useCallback(() => {
+			fetchData();
+		}, [table, apiBaseUrl])
+	);
 
 	const handleDrop = async (wordId: number, categoryId: number) => {
-		// 分类ID对应的目标表
 		const targetTableMap: Record<number, string> = {
-			1: 'words_x', // 已会
-			2: 'words_y', // 模糊
-			3: 'words_z'  // 不会
+			1: 'words_x',
+			2: 'words_y',
+			3: 'words_z'
 		};
 		const targetTable = targetTableMap[categoryId];
 
-		// 调用API将单词移动到对应表
 		try {
-			/**
-			 * 服务端文件：server/src/routes/wordbooks.ts
-			 * 接口：POST /api/v1/wordbooks/move
-			 * Body 参数：sourceTable: string, targetTable: string, wordId: number
-			 */
 			await fetch(`${apiBaseUrl}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -215,31 +198,15 @@ export default function LearnPage() {
 			console.error('Failed to move word:', error);
 		}
 
-		setUsedWords(prev => new Set([...prev, wordId]));
+		// 从allWords中移除被拖走的单词，后续单词会自动补上
+		setAllWords(prev => prev.filter(w => w.id !== wordId));
+		
+		// 更新分类数量
 		setCategories(cats =>
 			cats.map(cat =>
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
 			)
 		);
-
-		// 检查是否所有单词都用完了，如果是则重新获取新单词
-		const newUsedWords = new Set([...usedWords, wordId]);
-		const remainingWords = words.filter(w => !newUsedWords.has(w.id));
-		if (remainingWords.length === 0 && words.length > 0) {
-			await fetchData();
-		}
-	};
-
-	const availableWords = words.filter(w => !usedWords.has(w.id));
-
-	const handleCategoryPress = (categoryId: number) => {
-		if (categoryId === 1) {
-			router.push('/known-words');
-		} else if (categoryId === 2) {
-			router.push('/vague-words');
-		} else if (categoryId === 3) {
-			router.push('/unknown-words');
-		}
 	};
 
 	const handleWordPress = (word: Word) => {
@@ -260,7 +227,7 @@ export default function LearnPage() {
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<Screen>
-				<ScrollView style={styles.container}>
+				<View style={styles.container}>
 					{/* Header */}
 					<View style={styles.header}>
 						<TouchableOpacity onPress={() => router.back()}>
@@ -270,18 +237,17 @@ export default function LearnPage() {
 						<View style={styles.placeholder} />
 					</View>
 
-					{/* Word Cards - Vertical Scroll with Drag */}
+					{/* Word Cards - 3 words in a row */}
 					<View style={styles.wordCardsContainer}>
-						<Text style={styles.wordCountText}>{availableWords.length} 个单词待分类</Text>
-						{availableWords.length > 0 ? (
-							<View style={styles.wordGrid}>
-								{availableWords.map((word) => (
+						<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
+						{displayWords.length > 0 ? (
+							<View style={styles.wordRow}>
+								{displayWords.map((word) => (
 									<DraggableWord
 										key={word.id}
 										word={word}
-										onDrop={(categoryId) => handleDrop(word.id, categoryId)}
+										onDrop={handleDrop}
 										onPress={() => handleWordPress(word)}
-										isUsed={usedWords.has(word.id)}
 									/>
 								))}
 							</View>
@@ -296,13 +262,10 @@ export default function LearnPage() {
 					<View style={styles.categoryContainer}>
 						<View style={styles.categoryRow}>
 							{categories.map((cat) => (
-								<TouchableOpacity key={cat.id} style={styles.categoryItem} onPress={() => handleCategoryPress(cat.id)}>
+								<TouchableOpacity key={cat.id} style={styles.categoryItem}>
 									<View style={[styles.categoryCardLarge, { backgroundColor: categoryColors[cat.id as keyof typeof categoryColors].bg }]}>
 										<Text style={styles.categoryNameText}>{cat.name}</Text>
-										<Text style={styles.categoryLetterText}>({cat.letter})</Text>
-									</View>
-									<View style={[styles.categoryCountBadge, { backgroundColor: categoryColors[cat.id as keyof typeof categoryColors].badge }]}>
-										<Text style={styles.categoryCountText}>{cat.count}</Text>
+										<Text style={styles.categoryLetterText}>({cat.count})</Text>
 									</View>
 								</TouchableOpacity>
 							))}
@@ -313,7 +276,7 @@ export default function LearnPage() {
 					<View style={styles.instructionContainer}>
 						<Text style={styles.instructionText}>拖拽单词到下方分类</Text>
 					</View>
-				</ScrollView>
+				</View>
 			</Screen>
 		</GestureHandlerRootView>
 	);
@@ -346,21 +309,14 @@ const styles = StyleSheet.create({
 		width: 50,
 	},
 	wordCardsContainer: {
-		paddingHorizontal: 16,
-		paddingVertical: 20,
-		paddingBottom: 200,
+		paddingHorizontal: 20,
+		paddingVertical: 60,
+		alignItems: 'center',
 	},
-	wordCountText: {
+	remainingText: {
 		fontSize: 14,
 		color: '#999999',
-		marginBottom: 16,
-		textAlign: 'center',
-	},
-	wordGrid: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 12,
-		justifyContent: 'flex-start',
+		marginBottom: 20,
 	},
 	wordRow: {
 		flexDirection: 'row',
@@ -368,29 +324,27 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	wordItemContainer: {
-		width: '31%',
-		marginBottom: 12,
+		width: 100,
 	},
 	wordCard: {
-		backgroundColor: '#F5F5F5',
-		paddingHorizontal: 8,
-		paddingVertical: 16,
+		backgroundColor: '#F0F0F0',
+		paddingHorizontal: 12,
+		paddingVertical: 20,
 		borderRadius: 12,
 		alignItems: 'center',
-		minHeight: 60,
+		minHeight: 80,
 		justifyContent: 'center',
-	},
-	wordCardUsed: {
-		backgroundColor: '#CCCCCC',
-
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	wordCardText: {
-		fontSize: 14,
+		fontSize: 16,
 		color: '#333333',
 		fontFamily: 'serif',
-	},
-	wordCardTextUsed: {
-		color: '#888888',
+		fontWeight: '600',
 	},
 	categoryContainer: {
 		paddingHorizontal: 20,
@@ -404,56 +358,41 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	categoryCardLarge: {
-		paddingHorizontal: 12,
-		paddingVertical: 15,
-		borderRadius: 6,
-		minWidth: 60,
+		paddingHorizontal: 20,
+		paddingVertical: 20,
+		borderRadius: 12,
+		minWidth: 80,
 		alignItems: 'center',
 	},
 	categoryNameText: {
-		fontSize: 12,
+		fontSize: 16,
 		color: '#FFFFFF',
 		fontFamily: 'serif',
 		fontWeight: '600',
 	},
 	categoryLetterText: {
-		fontSize: 10,
-		color: '#CCCCCC',
+		fontSize: 14,
+		color: 'rgba(255,255,255,0.8)',
 		fontFamily: 'serif',
-		marginTop: 2,
-	},
-	categoryCountBadge: {
-		borderRadius: 10,
-		width: 20,
-		height: 20,
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginTop: 6,
-	},
-	categoryCountText: {
-		fontSize: 12,
-		color: '#FFFFFF',
-		fontFamily: 'serif',
-		fontWeight: '600',
+		marginTop: 4,
 	},
 	instructionContainer: {
-		padding: 20,
+		position: 'absolute',
+		bottom: 40,
+		left: 0,
+		right: 0,
 		alignItems: 'center',
 	},
 	instructionText: {
 		fontSize: 12,
 		color: '#999999',
-		fontFamily: 'serif',
 	},
 	emptyContainer: {
-		flex: 1,
-		justifyContent: 'center',
+		padding: 48,
 		alignItems: 'center',
-		paddingVertical: 40,
 	},
 	emptyText: {
-		fontSize: 14,
+		fontSize: 16,
 		color: '#999999',
-		fontFamily: 'serif',
 	},
 });
