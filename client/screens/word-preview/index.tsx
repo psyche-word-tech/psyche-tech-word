@@ -17,12 +17,14 @@ export default function WordPreviewPage() {
 	const router = useSafeRouter();
 	const [words, setWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [refreshKey, setRefreshKey] = useState(0);
 
 	// 获取词汇列表
 	const fetchWords = useCallback(async () => {
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await response.json();
+			console.log('Fetched words:', Array.isArray(data) ? data.length : 0);
 			if (Array.isArray(data)) {
 				setWords(data);
 			}
@@ -50,12 +52,13 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面加载时获取数据
+	// 页面加载时获取数据（每次进入页面都重新获取）
 	useFocusEffect(
 		useCallback(() => {
+			console.log('Page focused, refreshing data...');
 			fetchWords();
 			fetchCategoryCounts();
-		}, [fetchWords, fetchCategoryCounts])
+		}, [fetchWords, fetchCategoryCounts, refreshKey])
 	);
 
 	// 移动单词到分类
@@ -86,6 +89,9 @@ export default function WordPreviewPage() {
 			
 			// 更新分类数量
 			fetchCategoryCounts();
+
+			// 强制刷新列表
+			setRefreshKey(prev => prev + 1);
 
 		} catch (error) {
 			console.error('Failed to move word:', error);
