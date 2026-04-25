@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResp
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
-import { useApiConfig } from '@/contexts/ApiConfigContext';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -110,7 +110,6 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
-	const { apiBaseUrl } = useApiConfig();
 	const table = params.table || 'words_b';
 	
 	const [allWords, setAllWords] = useState<Word[]>([]);
@@ -134,10 +133,10 @@ export default function LearnPage() {
 	const fetchData = useCallback(async () => {
 		try {
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/${table}`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`),
-				fetch(`${apiBaseUrl}/api/v1/wordbooks/words_z`)
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
 			]);
 
 			const wordsData = await wordsRes.json();
@@ -155,7 +154,7 @@ export default function LearnPage() {
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
 		}
-	}, [table, apiBaseUrl]);
+	}, [table]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -172,7 +171,7 @@ export default function LearnPage() {
 		const targetTable = targetTableMap[categoryId];
 
 		try {
-			await fetch(`${apiBaseUrl}/api/v1/wordbooks/move`, {
+			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -194,7 +193,7 @@ export default function LearnPage() {
 				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
 			)
 		);
-	}, [table, apiBaseUrl]);
+	}, [table]);
 
 	const handleWordPress = (word: Word) => {
 		router.push('/word-detail', { 
