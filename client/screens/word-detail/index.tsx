@@ -196,7 +196,7 @@ export default function WordDetailPage() {
 	const cancelPublish = useCallback(() => {
 		setShowResultModal(false);
 		setGrammarResult(null);
-	};
+	});
 
 	// 当单词变化时获取评论
 	useEffect(() => {
