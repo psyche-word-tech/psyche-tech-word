@@ -230,7 +230,7 @@ export default function WordDetailPage() {
 					<TouchableOpacity onPress={() => router.back()}>
 						<Text style={styles.backText}>← back</Text>
 					</TouchableOpacity>
-					<Text style={styles.headerTitle}>每日单词(a)</Text>
+					<Text style={styles.headerTitle}>语法检测</Text>
 					<View style={styles.placeholder} />
 				</View>
 
