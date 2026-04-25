@@ -332,7 +332,7 @@ export default function WordDetailPage() {
 								{isSubmitting ? (
 									<ActivityIndicator size="small" color="#FFF" />
 								) : (
-									<Text style={styles.submitButtonText}>发布</Text>
+									<Text style={styles.submitButtonText}>语法检测</Text>
 								)}
 							</TouchableOpacity>
 						</View>
