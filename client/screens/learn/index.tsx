@@ -17,13 +17,6 @@ interface Word {
 	example_image_url?: string;
 }
 
-interface Category {
-	id: number;
-	name: string;
-	letter: string;
-	count: number;
-}
-
 interface DraggableWordCardProps {
 	word: Word;
 	onDrop: (wordId: number, categoryId: number) => void;
@@ -53,12 +46,10 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				setIsDragging(false);
 				pan.flattenOffset();
 
-				// 检测放置位置 - 使用相对Y位置判断是否在分类区域
 				const dy = gestureState.dy;
 				const absoluteX = gestureState.moveX;
 
-				// 当卡片向下拖动超过100时，视为放入分类区域
-				if (dy > 100) {
+				if (dy > 80) {
 					let targetCategory = 3;
 					if (absoluteX < SCREEN_WIDTH / 3) {
 						targetCategory = 1;
@@ -68,7 +59,6 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 					onDrop(word.id, targetCategory);
 				}
 
-				// 回到原位
 				Animated.spring(pan, {
 					toValue: { x: 0, y: 0 },
 					useNativeDriver: false,
@@ -100,9 +90,11 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				},
 			]}
 		>
-			<View style={styles.wordCard}>
-				<Text style={styles.wordCardText}>{word.word}</Text>
-			</View>
+			<TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+				<View style={styles.wordCard}>
+					<Text style={styles.wordCardText}>{word.word}</Text>
+				</View>
+			</TouchableOpacity>
 		</Animated.View>
 	);
 }
@@ -113,20 +105,11 @@ export default function LearnPage() {
 	const table = params.table || 'words_b';
 	
 	const [allWords, setAllWords] = useState<Word[]>([]);
-	const [categories, setCategories] = useState<Category[]>([
-		{ id: 1, name: '已会', letter: 'x', count: 0 },
-		{ id: 2, name: '模糊', letter: 'y', count: 0 },
-		{ id: 3, name: '不会', letter: 'z', count: 0 },
-	]);
-	
-	// 分类颜色配置
-	const categoryColors = {
-		1: '#4CAF50',
-		2: '#FF9800',
-		3: '#F44336',
-	};
+	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 
-	// 显示的单词（最多3个）
+	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
+	const categoryNames = ['已会', '模糊', '不会'];
+
 	const displayWords = allWords.slice(0, 3);
 	const remainingCount = allWords.length;
 
@@ -145,12 +128,11 @@ export default function LearnPage() {
 			const zResult = await zRes.json();
 
 			setAllWords(Array.isArray(wordsData) ? wordsData : []);
-				
-			setCategories([
-				{ id: 1, name: '已会', letter: 'x', count: Array.isArray(xResult) ? xResult.length : 0 },
-				{ id: 2, name: '模糊', letter: 'y', count: Array.isArray(yResult) ? yResult.length : 0 },
-				{ id: 3, name: '不会', letter: 'z', count: Array.isArray(zResult) ? zResult.length : 0 },
-			]);
+			setCategoryCounts({
+				x: Array.isArray(xResult) ? xResult.length : 0,
+				y: Array.isArray(yResult) ? yResult.length : 0,
+				z: Array.isArray(zResult) ? zResult.length : 0,
+			});
 		} catch (error) {
 			console.error('Failed to fetch data:', error);
 		}
@@ -184,15 +166,12 @@ export default function LearnPage() {
 			console.error('Failed to move word:', error);
 		}
 
-		// 从allWords中移除被分类的单词
 		setAllWords(prev => prev.filter(w => w.id !== wordId));
 		
-		// 更新分类数量
-		setCategories(cats =>
-			cats.map(cat =>
-				cat.id === categoryId ? { ...cat, count: cat.count + 1 } : cat
-			)
-		);
+		setCategoryCounts(prev => {
+			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
+			return { ...prev, [key]: prev[key] + 1 };
+		});
 	}, [table]);
 
 	const handleWordPress = (word: Word) => {
@@ -213,17 +192,15 @@ export default function LearnPage() {
 	return (
 		<Screen>
 			<View style={styles.container}>
-				{/* Header */}
 				<View style={styles.header}>
 					<TouchableOpacity onPress={() => router.back()}>
-						<Text style={styles.backText}>← back</Text>
+						<Text style={styles.backText}>back</Text>
 					</TouchableOpacity>
 					<Text style={styles.title}>词汇预览</Text>
 					<View style={styles.placeholder} />
 				</View>
 
-				{/* Word Cards - 3 words in a row */}
-				<View style={styles.wordCardsContainer}>
+				<View style={styles.content}>
 					<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 					{displayWords.length > 0 ? (
 						<View style={styles.wordRow}>
@@ -234,7 +211,7 @@ export default function LearnPage() {
 									onDrop={handleDrop}
 									onPress={() => handleWordPress(word)}
 								/>
-							))}
+								))}
 						</View>
 					) : (
 						<View style={styles.emptyContainer}>
@@ -243,20 +220,22 @@ export default function LearnPage() {
 					)}
 				</View>
 
-				{/* Category Drop Zones - Normal layout for proper gesture handling */}
 				<View style={styles.categorySection}>
 					<View style={styles.categoryRow}>
-						{categories.map((cat) => (
-							<View key={cat.id} style={styles.categoryItem}>
-								<View style={[styles.categoryCard, { backgroundColor: categoryColors[cat.id] }]}>
-									<Text style={styles.categoryName}>{cat.name}</Text>
-									<Text style={styles.categoryCount}>({cat.count})</Text>
+						{[1, 2, 3].map((id) => (
+							<View key={id} style={styles.categoryItem}>
+								<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+									<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+									<Text style={styles.categoryCount}>
+										({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+									</Text>
 								</View>
 							</View>
 						))}
 					</View>
 					<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
 				</View>
+			</View>
 		</Screen>
 	);
 }
@@ -265,7 +244,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#FFFFFF',
-		justifyContent: 'space-between',
 	},
 	header: {
 		flexDirection: 'row',
@@ -277,18 +255,17 @@ const styles = StyleSheet.create({
 	backText: {
 		fontSize: 14,
 		color: '#000000',
-		fontFamily: 'serif',
 	},
 	title: {
 		fontSize: 16,
 		color: '#333333',
-		fontFamily: 'serif',
 		fontWeight: '600',
 	},
 	placeholder: {
 		width: 50,
 	},
-	wordCardsContainer: {
+	content: {
+		flex: 1,
 		paddingHorizontal: 20,
 		paddingVertical: 40,
 		alignItems: 'center',
@@ -323,7 +300,6 @@ const styles = StyleSheet.create({
 	wordCardText: {
 		fontSize: 14,
 		color: '#333333',
-		fontFamily: 'serif',
 		fontWeight: '600',
 	},
 	categorySection: {
@@ -333,7 +309,6 @@ const styles = StyleSheet.create({
 	},
 	categoryRow: {
 		flexDirection: 'row',
-		justifyContent: 'space-around',
 		gap: 10,
 	},
 	categoryItem: {
@@ -347,7 +322,6 @@ const styles = StyleSheet.create({
 	categoryName: {
 		fontSize: 16,
 		color: '#FFFFFF',
-		fontFamily: 'serif',
 		fontWeight: '600',
 	},
 	categoryCount: {
