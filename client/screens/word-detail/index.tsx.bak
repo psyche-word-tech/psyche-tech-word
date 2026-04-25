@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Animated, Dimensions, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,10 +56,6 @@ export default function WordDetailPage() {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
-	const [isDragging, setIsDragging] = useState(false);
-	const [dragPosition] = useState(new Animated.ValueXY());
-	const { width: screenWidth } = Dimensions.get('window');
-	const dropZoneY = useRef(0);
 
 	// 评论相关状态
 	const [comments, setComments] = useState<Comment[]>([]);
@@ -75,97 +71,6 @@ export default function WordDetailPage() {
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
-
-	// 拖拽到目标区域
-	const handleDrop = useCallback(async (targetTable: string, status: string) => {
-		if (!word.id || word.id === 0) return;
-		
-		try {
-			/**
-			 * 服务端文件：server/src/routes/user-words.ts
-			 * 接口：POST /api/v1/user-words/move
-			 * Body参数：wordId: number, targetTable: string
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					wordId: word.id,
-					targetTable: targetTable
-				})
-			});
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.error || '移动失败');
-			}
-
-			Alert.alert('成功', `单词已移动到"${status}"分类`);
-			// 更新分类数量
-			fetchCategoryCounts();
-			// 重新加载当前分类的列表
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
-			const data = await listResponse.json();
-			if (Array.isArray(data) && data.length > 0) {
-				setWordsList(data);
-				setCurrentIndex(0);
-				setWord(data[0]);
-				setCommentText('');
-			} else {
-				setWordsList([]);
-				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
-			}
-		} catch (error) {
-			console.error('Failed to move word:', error);
-			Alert.alert('错误', '操作失败');
-		}
-	}, [word.id, word.word, sourceTable, fetchCategoryCounts]);
-
-	// 创建拖拽动画的 PanResponder
-	const panResponder = useRef(
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => true,
-			onMoveShouldSetPanResponder: () => true,
-			onPanResponderGrant: () => {
-				setIsDragging(true);
-				dragPosition.setOffset({
-					x: 0,
-					y: 0,
-				});
-				dragPosition.setValue({ x: 0, y: 0 });
-			},
-			onPanResponderMove: Animated.event(
-				[null, { dx: dragPosition.x, dy: dragPosition.y }],
-				{ useNativeDriver: false }
-			),
-			onPanResponderRelease: (evt, gesture) => {
-				setIsDragging(false);
-				Animated.spring(dragPosition, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: true,
-				}).start();
-
-				// 检测释放位置是否在按钮区域内
-				const touchY = evt.nativeEvent.pageY;
-				// 按钮区域大约在屏幕下方 100-200px
-				const buttonAreaTop = Dimensions.get('window').height - 180;
-				
-				if (touchY > buttonAreaTop) {
-					// 根据 x 位置判断是哪个按钮
-					const touchX = evt.nativeEvent.pageX;
-					const buttonWidth = screenWidth / 3;
-					if (touchX < buttonWidth) {
-						handleDrop('words_x', '已会');
-					} else if (touchX < buttonWidth * 2) {
-						handleDrop('words_y', '模糊');
-					} else {
-						handleDrop('words_z', '不会');
-					}
-				}
-			},
-		})
-	).current;
 
 	// 获取分类数量
 	const fetchCategoryCounts = useCallback(async () => {
@@ -455,20 +360,8 @@ export default function WordDetailPage() {
 
 				{/* Content */}
 				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					{/* Draggable Word Card */}
-					<Animated.View
-						{...panResponder.panHandlers}
-						style={[
-							styles.wordCard,
-							isDragging && styles.wordCardDragging,
-							{
-								transform: [
-									{ translateX: dragPosition.x },
-									{ translateY: dragPosition.y },
-								],
-							},
-						]}
-					>
+					{/* Word Section */}
+					<View style={styles.wordSection}>
 						<View style={styles.wordRow}>
 							<Text style={styles.wordText}>{word.word}</Text>
 							<TouchableOpacity 
@@ -484,11 +377,7 @@ export default function WordDetailPage() {
 							</TouchableOpacity>
 						</View>
 						<Text style={styles.phoneticText}>{word.phonetic}</Text>
-						<View style={styles.dragHint}>
-							<Ionicons name="hand-left-outline" size={16} color="#999" />
-							<Text style={styles.dragHintText}>拖动到下方分类</Text>
-						</View>
-					</Animated.View>
+					</View>
 
 
 					{/* Meaning */}
@@ -520,23 +409,17 @@ export default function WordDetailPage() {
 						</View>
 					)}
 
-					{/* Drop Zones */}
-					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>拖动单词到下方区域</Text>
-						<View style={styles.dropZones}>
-							<View style={[styles.dropZone, styles.dropZoneX]}>
-								<Text style={styles.dropZoneText}>已会</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
-							</View>
-							<View style={[styles.dropZone, styles.dropZoneY]}>
-								<Text style={styles.dropZoneText}>模糊</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
-							</View>
-							<View style={[styles.dropZone, styles.dropZoneZ]}>
-								<Text style={styles.dropZoneText}>不会</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
-							</View>
-						</View>
+					{/* Status Buttons */}
+					<View style={styles.statusSection}>
+						<TouchableOpacity style={[styles.statusButton, styles.knownButton]} onPress={() => handleStatusChange('words_x', '已会')}>
+							<Text style={styles.statusText}>已会({categoryCounts.x})</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={[styles.statusButton, styles.vagueButton]} onPress={() => handleStatusChange('words_y', '模糊')}>
+							<Text style={styles.statusText}>模糊({categoryCounts.y})</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={[styles.statusButton, styles.unknownButton]} onPress={() => handleStatusChange('words_z', '不会')}>
+							<Text style={styles.statusText}>不会({categoryCounts.z})</Text>
+						</TouchableOpacity>
 					</View>
 
 					{/* Familiarity Slider */}
@@ -1135,95 +1018,6 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: '600',
 		color: '#FFF',
-		fontFamily: 'serif',
-	},
-	// 拖拽相关样式
-	wordCard: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 16,
-		padding: 24,
-		marginHorizontal: 20,
-		marginVertical: 16,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-	wordCardDragging: {
-		shadowOpacity: 0.3,
-		shadowRadius: 16,
-		elevation: 8,
-		opacity: 0.9,
-	},
-	dragHint: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		marginTop: 16,
-		paddingTop: 12,
-		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
-		gap: 6,
-	},
-	dragHintText: {
-		fontSize: 12,
-		color: '#999',
-		fontFamily: 'serif',
-	},
-	dropZonesContainer: {
-		paddingHorizontal: 20,
-		paddingVertical: 16,
-		backgroundColor: '#F8F8F8',
-		borderTopWidth: 1,
-		borderTopColor: '#E0E0E0',
-	},
-	dropZoneHint: {
-		fontSize: 12,
-		color: '#999',
-		textAlign: 'center',
-		marginBottom: 12,
-		fontFamily: 'serif',
-	},
-	dropZones: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-	},
-	dropZone: {
-		flex: 1,
-		marginHorizontal: 6,
-		paddingVertical: 16,
-		borderRadius: 12,
-		alignItems: 'center',
-		justifyContent: 'center',
-		minHeight: 70,
-	},
-	dropZoneX: {
-		backgroundColor: '#E8F5E9',
-		borderWidth: 2,
-		borderColor: '#4CAF50',
-	},
-	dropZoneY: {
-		backgroundColor: '#FFF3E0',
-		borderWidth: 2,
-		borderColor: '#FF9800',
-	},
-	dropZoneZ: {
-		backgroundColor: '#FFEBEE',
-		borderWidth: 2,
-		borderColor: '#F44336',
-	},
-	dropZoneText: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#333',
-		fontFamily: 'serif',
-	},
-	dropZoneCount: {
-		fontSize: 20,
-		fontWeight: '700',
-		color: '#333',
-		marginTop: 4,
 		fontFamily: 'serif',
 	},
 });
