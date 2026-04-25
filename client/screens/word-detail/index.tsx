@@ -103,9 +103,9 @@ export default function WordDetailPage() {
 
 			Alert.alert('成功', `单词已移动到"${status}"分类`);
 			// 更新分类数量
-			fetchCategoryCounts();
-			// 重新加载当前分类的列表
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
+			fetchCategoryCountsRef.current();
+			// 从 words_b 重新加载单词列表（移除已移动的单词）
+			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await listResponse.json();
 			if (Array.isArray(data) && data.length > 0) {
 				setWordsList(data);
