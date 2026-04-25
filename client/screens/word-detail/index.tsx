@@ -519,12 +519,12 @@ export default function WordDetailPage() {
 								{grammarResult?.issues && grammarResult.issues.length > 0 && (
 									<View style={styles.resultSection}>
 										<Text style={styles.resultLabel}>问题详情</Text>
-										{grammarResult.issues.map((issue, index) => (
+										{grammarResult.issues.map((issue: any, index: number) => (
 											<View key={index} style={styles.issueItem}>
+												<View style={styles.issueTitleRow}>
+													<Text style={styles.issueTitle}>{issue.title}</Text>
+												</View>
 												<Text style={styles.issueMessage}>{issue.message}</Text>
-												{issue.shortMessage && issue.shortMessage !== issue.message && (
-													<Text style={styles.issueShortMessage}>- {issue.shortMessage}</Text>
-												)}
 												{issue.replacements.length > 0 && (
 													<View style={styles.replacementContainer}>
 														<Text style={styles.replacementLabel}>建议修正：</Text>
@@ -924,21 +924,27 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 	},
 	issueItem: {
-		backgroundColor: '#FAFAFA',
+		backgroundColor: '#FFF3E0',
 		padding: 12,
 		borderRadius: 8,
 		marginBottom: 10,
+		borderLeftWidth: 4,
+		borderLeftColor: '#FF9800',
+	},
+	issueTitleRow: {
+		marginBottom: 8,
+	},
+	issueTitle: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#E65100',
+		fontFamily: 'serif',
 	},
 	issueMessage: {
 		fontSize: 14,
-		color: '#FFFFFF',
+		color: '#333',
 		fontFamily: 'serif',
 		lineHeight: 20,
-		backgroundColor: '#DC2626',
-		paddingHorizontal: 10,
-		paddingVertical: 6,
-		borderRadius: 6,
-		overflow: 'hidden',
 	},
 	issueShortMessage: {
 		fontSize: 13,
