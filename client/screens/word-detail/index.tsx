@@ -143,8 +143,38 @@ export default function WordDetailPage() {
 				throw new Error(result.error || '检测失败');
 			}
 
-			setGrammarResult(result);
-			setShowResultModal(true);
+			// 语法正确时直接发布，不弹窗
+			if (result.isCorrect) {
+				// 直接发布
+				setIsSubmitting(true);
+				try {
+					const publishResponse = await fetch(`${API_BASE_URL}/api/v1/comments`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							wordId: word.id,
+							wordText: word.word,
+							userName: '用户',
+							content: commentText.trim()
+						})
+					});
+					
+					if (!publishResponse.ok) throw new Error('提交失败');
+					
+					setCommentText('');
+					fetchComments(word.id);
+					Alert.alert('成功', '笔记已发布');
+				} catch (error) {
+					console.error('Failed to submit comment:', error);
+					Alert.alert('错误', '发布失败');
+				} finally {
+					setIsSubmitting(false);
+				}
+			} else {
+				// 有错误时显示弹窗
+				setGrammarResult(result);
+				setShowResultModal(true);
+			}
 		} catch (error: any) {
 			console.error('Grammar check error:', error);
 			Alert.alert('错误', error.message || '语法检测失败，请稍后重试');
