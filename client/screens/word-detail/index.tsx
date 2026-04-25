@@ -465,40 +465,28 @@ export default function WordDetailPage() {
 
 					{/* Drop Zones */}
 					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>双击按钮移动单词到对应分类</Text>
+						<Text style={styles.dropZoneHint}>点击按钮移动单词到对应分类</Text>
 						<View style={styles.dropZones}>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneX]} 
-								onLongPress={() => {
-									handleDrop('words_x', '已会');
-								}}
-								delayLongPress={800}
+								onPress={() => handleDrop('words_x', '已会')}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneY]} 
-								onLongPress={() => {
-									handleDrop('words_y', '模糊');
-								}}
-								delayLongPress={800}
+								onPress={() => handleDrop('words_y', '模糊')}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneZ]} 
-								onLongPress={() => {
-									handleDrop('words_z', '不会');
-								}}
-								delayLongPress={800}
+								onPress={() => handleDrop('words_z', '不会')}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
-								<Text style={styles.dropZoneAction}>长按移动</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
