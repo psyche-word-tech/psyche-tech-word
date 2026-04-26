@@ -7,6 +7,7 @@ import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { createFormDataFile } from '@/utils/createFormDataFile';
 
 interface Word {
 	id: number;
@@ -41,6 +42,17 @@ interface GrammarResult {
 	issues: GrammarIssue[];
 }
 
+interface EvaluationResult {
+	success: boolean;
+	transcription: string;
+	accuracy: number;
+	fluency: number;
+	pronunciation: number;
+	overall: number;
+	feedback: string;
+	wordCorrect: boolean;
+}
+
 export default function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ word: string; table?: string }>();
@@ -68,6 +80,13 @@ export default function WordDetailPage() {
 	const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
 	const [grammarResult, setGrammarResult] = useState<GrammarResult | null>(null);
 	const [showResultModal, setShowResultModal] = useState(false);
+
+	// 录音评分相关状态
+	const [isRecording, setIsRecording] = useState(false);
+	const [isEvaluating, setIsEvaluating] = useState(false);
+	const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+	const [showEvalModal, setShowEvalModal] = useState(false);
+	const recordingRef = useRef<Audio.Recording | null>(null);
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
@@ -370,6 +389,72 @@ export default function WordDetailPage() {
 		}
 	};
 
+	// 录音评分功能
+	const startRecording = async () => {
+		try {
+			const { status } = await Audio.requestPermissionsAsync();
+			if (status !== 'granted') {
+				Alert.alert('权限不足', '需要麦克风权限才能录音');
+				return;
+			}
+			await Audio.setAudioModeAsync({
+				allowsRecordingIOS: true,
+				playsInSilentModeIOS: true,
+			});
+			const { recording } = await Audio.Recording.createAsync(
+				Audio.RecordingOptionsPresets.HIGH_QUALITY
+			);
+			recordingRef.current = recording;
+			setIsRecording(true);
+		} catch (error) {
+			console.error('Failed to start recording:', error);
+			Alert.alert('错误', '无法启动录音');
+		}
+	};
+
+	const stopRecording = async () => {
+		try {
+			setIsRecording(false);
+			if (!recordingRef.current) return;
+
+			await recordingRef.current.stopAndUnloadAsync();
+			const uri = recordingRef.current.getURI();
+			recordingRef.current = null;
+
+			if (!uri || !word.example) return;
+
+			setIsEvaluating(true);
+
+			// 上传音频到后端进行评分
+			const formData = new FormData();
+			formData.append('audio', createFormDataFile(uri, 'recording.m4a', 'audio/m4a'));
+			formData.append('originalText', word.example);
+
+			/**
+			 * 服务端文件：server/src/routes/speech-eval.ts
+			 * 接口：POST /api/v1/speech-eval
+			 * Body参数：audio: File, originalText: string
+			 */
+			const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
+				method: 'POST',
+				body: formData,
+			});
+
+			const result = await response.json();
+			if (!response.ok) {
+				throw new Error(result.error || '评分失败');
+			}
+
+			setEvaluationResult(result);
+			setShowEvalModal(true);
+		} catch (error: any) {
+			console.error('Evaluation error:', error);
+			Alert.alert('评分失败', error.message || '无法完成评分，请重试');
+		} finally {
+			setIsEvaluating(false);
+		}
+	};
+
 	// 切换单词
 	const switchWord = async (direction: 'prev' | 'next') => {
 		const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
@@ -480,17 +565,38 @@ export default function WordDetailPage() {
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
 							<View style={styles.exampleRow}>
 								<Text style={styles.exampleText}>{word.example}</Text>
-								<TouchableOpacity
-									style={styles.exampleSpeakerIcon}
-									onPress={() => playPronunciation(word.example)}
-									disabled={isPlaying}
-								>
-									<Ionicons
-										name={isPlaying ? "volume-high" : "volume-medium-outline"}
-										size={20}
-										color="#4F46E5"
-									/>
-								</TouchableOpacity>
+								<View style={styles.exampleActions}>
+									<TouchableOpacity
+										style={styles.exampleSpeakerIcon}
+										onPress={() => playPronunciation(word.example)}
+										disabled={isPlaying}
+									>
+										<Ionicons
+											name={isPlaying ? "volume-high" : "volume-medium-outline"}
+											size={20}
+											color="#4F46E5"
+										/>
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={[
+											styles.recordButton,
+											isRecording && styles.recordButtonActive
+										]}
+										onPressIn={startRecording}
+										onPressOut={stopRecording}
+										disabled={isEvaluating}
+									>
+										{isEvaluating ? (
+											<ActivityIndicator size="small" color="#FFF" />
+										) : (
+											<Ionicons
+												name={isRecording ? "mic" : "mic-outline"}
+												size={20}
+												color={isRecording ? "#FFF" : "#EF4444"}
+											/>
+										)}
+									</TouchableOpacity>
+								</View>
 							</View>
 							{word.example_translation && (
 								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
@@ -690,6 +796,75 @@ export default function WordDetailPage() {
 									) : (
 										<Text style={styles.publishButtonText}>发布</Text>
 									)}
+								</TouchableOpacity>
+							</View>
+						</View>
+					</View>
+				</Modal>
+
+				{/* 发音评分弹窗 */}
+				<Modal
+					visible={showEvalModal}
+					transparent
+					animationType="slide"
+					onRequestClose={() => setShowEvalModal(false)}
+				>
+					<View style={styles.modalOverlay}>
+						<View style={styles.modalContent}>
+							<View style={styles.modalHeader}>
+								<Text style={styles.modalTitle}>发音评分</Text>
+								<TouchableOpacity onPress={() => setShowEvalModal(false)}>
+									<Ionicons name="close" size={24} color="#666" />
+								</TouchableOpacity>
+							</View>
+
+							<ScrollView style={styles.resultScrollView}>
+								{/* 识别文本 */}
+								<View style={styles.resultSection}>
+									<Text style={styles.resultLabel}>识别结果</Text>
+									<Text style={styles.originalText}>{evaluationResult?.transcription || '-'}</Text>
+								</View>
+
+								{/* 总分 */}
+								<View style={styles.resultSection}>
+									<View style={styles.scoreContainer}>
+										<Text style={styles.scoreValue}>{evaluationResult?.overall || 0}</Text>
+										<Text style={styles.scoreLabel}>总分</Text>
+									</View>
+								</View>
+
+								{/* 分项得分 */}
+								<View style={styles.resultSection}>
+									<Text style={styles.resultLabel}>分项得分</Text>
+									<View style={styles.scoreRow}>
+										<View style={styles.scoreItem}>
+											<Text style={styles.scoreItemValue}>{evaluationResult?.accuracy || 0}</Text>
+											<Text style={styles.scoreItemLabel}>准确度</Text>
+										</View>
+										<View style={styles.scoreItem}>
+											<Text style={styles.scoreItemValue}>{evaluationResult?.fluency || 0}</Text>
+											<Text style={styles.scoreItemLabel}>流利度</Text>
+										</View>
+										<View style={styles.scoreItem}>
+											<Text style={styles.scoreItemValue}>{evaluationResult?.pronunciation || 0}</Text>
+											<Text style={styles.scoreItemLabel}>发音</Text>
+										</View>
+									</View>
+								</View>
+
+								{/* 反馈 */}
+								<View style={styles.resultSection}>
+									<Text style={styles.resultLabel}>评语</Text>
+									<Text style={styles.feedbackText}>{evaluationResult?.feedback || '-'}</Text>
+								</View>
+							</ScrollView>
+
+							<View style={styles.modalFooter}>
+								<TouchableOpacity
+									style={[styles.modalButton, styles.publishButton]}
+									onPress={() => setShowEvalModal(false)}
+								>
+									<Text style={styles.publishButtonText}>确定</Text>
 								</TouchableOpacity>
 							</View>
 						</View>
@@ -1225,5 +1400,73 @@ const styles = StyleSheet.create({
 		color: 'rgba(255,255,255,0.9)',
 		marginTop: 4,
 		fontFamily: 'serif',
+	},
+	// 录音按钮样式
+	exampleActions: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 6,
+	},
+	recordButton: {
+		padding: 8,
+		backgroundColor: '#FEE2E2',
+		borderRadius: 8,
+	},
+	recordButtonActive: {
+		backgroundColor: '#EF4444',
+	},
+	// 评分弹窗样式
+	scoreContainer: {
+		alignItems: 'center',
+		paddingVertical: 16,
+		backgroundColor: '#F0FDF4',
+		borderRadius: 12,
+	},
+	scoreValue: {
+		fontSize: 48,
+		fontWeight: '700',
+		color: '#16A34A',
+		fontFamily: 'serif',
+	},
+	scoreLabel: {
+		fontSize: 14,
+		color: '#666',
+		fontFamily: 'serif',
+		marginTop: 4,
+	},
+	scoreRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		marginTop: 8,
+	},
+	scoreItem: {
+		alignItems: 'center',
+		backgroundColor: '#F5F5F5',
+		borderRadius: 8,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		flex: 1,
+		marginHorizontal: 4,
+	},
+	scoreItemValue: {
+		fontSize: 24,
+		fontWeight: '700',
+		color: '#4F46E5',
+		fontFamily: 'serif',
+	},
+	scoreItemLabel: {
+		fontSize: 12,
+		color: '#666',
+		fontFamily: 'serif',
+		marginTop: 4,
+	},
+	feedbackText: {
+		fontSize: 14,
+		color: '#333',
+		fontFamily: 'serif',
+		lineHeight: 22,
+		backgroundColor: '#F5F5F5',
+		padding: 12,
+		borderRadius: 8,
 	},
 });
