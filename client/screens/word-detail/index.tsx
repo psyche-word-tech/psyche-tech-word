@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
 import { createFormDataFile } from '@/utils/createFormDataFile';
@@ -371,7 +372,7 @@ export default function WordDetailPage() {
 				setIsPlaying(false);
 			}
 		} else {
-			// 移动端：直接播放有道词典在线音频
+			// 移动端：先下载音频到本地，再播放
 			setIsPlaying(true);
 			try {
 				if (soundRef.current) {
@@ -385,9 +386,19 @@ export default function WordDetailPage() {
 				});
 				const encoded = encodeURIComponent(playText);
 				const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
+				const localUri = (FileSystem as any).cacheDirectory + 'tts.mp3';
+
+				// 下载音频到本地缓存
+				const downloadResult = await (FileSystem as any).downloadAsync(audioUrl, localUri);
+				if (downloadResult.status !== 200) {
+					throw new Error(`Download failed with status ${downloadResult.status}`);
+				}
+
 				const { sound } = await Audio.Sound.createAsync(
-					{ uri: audioUrl },
-					{ shouldPlay: true }
+					{ uri: localUri },
+					{ shouldPlay: true },
+					undefined,
+					true
 				);
 				soundRef.current = sound;
 				sound.setOnPlaybackStatusUpdate((status) => {
