@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -331,24 +331,42 @@ export default function WordDetailPage() {
 	// 发音功能
 	const playPronunciation = async (text?: string) => {
 		try {
-			if (soundRef.current) {
-				await soundRef.current.unloadAsync();
-			}
 			const playText = text || word.word;
 			const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(playText)}&type=1`;
-			const { sound } = await Audio.Sound.createAsync(
-				{ uri: audioUrl },
-				{ shouldPlay: true }
-			);
-			soundRef.current = sound;
-			setIsPlaying(true);
-			sound.setOnPlaybackStatusUpdate((status) => {
-				if (status.isLoaded && status.didJustFinish) {
+
+			if (Platform.OS === 'web') {
+				// Web 端使用 Web Speech API
+				const utterance = new (globalThis as any).SpeechSynthesisUtterance(playText);
+				utterance.lang = 'en-US';
+				utterance.rate = 0.9;
+				setIsPlaying(true);
+				utterance.onend = () => setIsPlaying(false);
+				utterance.onerror = () => {
 					setIsPlaying(false);
+					console.error('Speech synthesis error');
+				};
+				(globalThis as any).speechSynthesis.speak(utterance);
+			} else {
+				// 移动端使用 Expo AV
+				if (soundRef.current) {
+					await soundRef.current.unloadAsync();
 				}
-			});
+				const { sound } = await Audio.Sound.createAsync(
+					{ uri: audioUrl },
+					{ shouldPlay: true }
+				);
+				soundRef.current = sound;
+				setIsPlaying(true);
+				sound.setOnPlaybackStatusUpdate((status) => {
+					if (status.isLoaded && status.didJustFinish) {
+						setIsPlaying(false);
+					}
+				});
+			}
 		} catch (error) {
 			console.error('Failed to play pronunciation:', error);
+			Alert.alert('发音失败', '无法播放音频，请检查网络连接');
+			setIsPlaying(false);
 		}
 	};
 
@@ -804,8 +822,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	exampleSpeakerIcon: {
-		padding: 4,
+		padding: 8,
 		marginLeft: 8,
+		backgroundColor: '#EEF2FF',
+		borderRadius: 8,
 	},
 	exampleTranslation: {
 		fontSize: 13,
