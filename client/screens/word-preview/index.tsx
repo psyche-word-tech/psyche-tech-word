@@ -141,7 +141,15 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面加载时获取数据
+	// 页面加载时获取数据（useEffect 保证首次挂载加载，useFocusEffect 保证返回后刷新）
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			fetchWords();
+			fetchCategoryCounts();
+		}, 0);
+		return () => clearTimeout(timer);
+	}, [fetchWords, fetchCategoryCounts]);
+
 	useFocusEffect(
 		useCallback(() => {
 			fetchWords();

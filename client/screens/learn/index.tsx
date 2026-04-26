@@ -142,6 +142,13 @@ export default function LearnPage() {
 		}
 	}, [table]);
 
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			fetchData();
+		}, 0);
+		return () => clearTimeout(timer);
+	}, [fetchData]);
+
 	useFocusEffect(
 		useCallback(() => {
 			fetchData();
