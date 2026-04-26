@@ -153,7 +153,7 @@ export default function CalendarPage() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <FontAwesome6 name="arrow-left" size={20} color="#3E2723" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>学习统计</Text>
+          <Text style={styles.headerTitle}>我的足迹</Text>
           <Text style={styles.headerSubtitle}>近7天单词学习量</Text>
         </View>
 
