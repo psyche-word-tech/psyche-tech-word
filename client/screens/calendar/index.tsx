@@ -168,7 +168,7 @@ export default function CalendarPage() {
               return (
                 <View key={index} style={styles.barColumn}>
                   <Text style={styles.barLabel}>
-                    {hasData ? `${renderData.total}词` : ''}
+                    {hasData ? `${renderData.total}` : ''}
                   </Text>
                   <View style={styles.barWrapper}>
                     {hasData ? (
