@@ -73,27 +73,28 @@ export default function WordDetailPage() {
 	const isInitialized = useRef(false);
 	const soundRef = useRef<Audio.Sound | null>(null);
 
-	// 拖拽到目标区域
+	// 移动单词到目标分类，并自动显示当前表中的下一个单词
 	const handleDrop = useCallback(async (targetTable: string, status: string) => {
 		console.log('handleDrop called:', targetTable, status);
-		console.log('Current word:', word.id, word.word);
+		console.log('Current word:', word.id, word.word, 'sourceTable:', sourceTable);
 		if (!word.id || word.id === 0) {
 			console.log('Word ID is invalid, skipping');
 			return;
 		}
-		
+
 		try {
 			/**
-			 * 服务端文件：server/src/routes/user-words.ts
-			 * 接口：POST /api/v1/user-words/move
-			 * Body参数：wordId: number, targetTable: string
+			 * 服务端文件：server/src/routes/wordbooks.ts
+			 * 接口：POST /api/v1/wordbooks/move
+			 * Body参数：sourceTable: string, targetTable: string, wordId: number
 			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
+					sourceTable: sourceTable,
+					targetTable: targetTable,
 					wordId: word.id,
-					targetTable: targetTable
 				})
 			});
 
@@ -104,16 +105,22 @@ export default function WordDetailPage() {
 				throw new Error(result.error || '移动失败');
 			}
 
-			Alert.alert('成功', `单词已移动到"${status}"分类`);
 			// 更新分类数量
 			fetchCategoryCountsRef.current();
-			// 从 words_b 重新加载单词列表（移除已移动的单词）
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
+
+			// 从当前源表重新加载单词列表，并自动显示下一个单词
+			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${sourceTable}`);
 			const data = await listResponse.json();
 			if (Array.isArray(data) && data.length > 0) {
-				setWordsList(data);
-				setCurrentIndex(0);
-				setWord(data[0]);
+				// 移除已移动的单词，显示下一个
+				const nextWords = data.filter((w: Word) => w.id !== word.id);
+				setWordsList(nextWords);
+				if (nextWords.length > 0) {
+					setCurrentIndex(0);
+					setWord(nextWords[0]);
+				} else {
+					setWord({ id: 0, word: '', phonetic: '', meaning: '' });
+				}
 				setCommentText('');
 			} else {
 				setWordsList([]);
