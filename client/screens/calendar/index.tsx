@@ -30,6 +30,41 @@ const mockSegments: DaySegment[] = [
 const MAX_VALUE = 25;
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
+function SegmentBar({
+  height,
+  color,
+  count,
+  topRadius,
+  bottomRadius,
+}: {
+  height: number;
+  color: string;
+  count: number;
+  topRadius?: boolean;
+  bottomRadius?: boolean;
+}) {
+  const showText = height > 16 && count > 0;
+  return (
+    <View
+      style={[
+        styles.segment,
+        {
+          height: Math.max(height, 2),
+          backgroundColor: color,
+          borderTopLeftRadius: topRadius ? 14 : 0,
+          borderTopRightRadius: topRadius ? 14 : 0,
+          borderBottomLeftRadius: bottomRadius ? 14 : 0,
+          borderBottomRightRadius: bottomRadius ? 14 : 0,
+        },
+      ]}
+    >
+      {showText && (
+        <Text style={styles.segmentText}>{count}</Text>
+      )}
+    </View>
+  );
+}
+
 export default function CalendarPage() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +92,6 @@ export default function CalendarPage() {
     };
   }, []);
 
-  // 获取某一天的分段数据（周一用真实 stats，其余用虚构）
   const getDaySegments = (index: number): DaySegment => {
     if (index === 0 && stats) {
       return {
@@ -70,7 +104,6 @@ export default function CalendarPage() {
     return mockSegments[index];
   };
 
-  // 计算分段柱的渲染数据
   const getSegmentRenderData = (segment: DaySegment) => {
     const known = segment.known;
     const vague = segment.vague;
@@ -123,39 +156,22 @@ export default function CalendarPage() {
                   <View style={styles.barWrapper}>
                     {hasData ? (
                       <>
-                        {/* 不会 (红色) - z表 */}
-                        <View
-                          style={[
-                            styles.segment,
-                            {
-                              height: Math.max(renderData.unknownHeight, 2),
-                              backgroundColor: '#E53935',
-                              borderTopLeftRadius: 14,
-                              borderTopRightRadius: 14,
-                            },
-                          ]}
+                        <SegmentBar
+                          height={renderData.unknownHeight}
+                          color="#E53935"
+                          count={segment.unknown}
+                          topRadius
                         />
-                        {/* 模糊 (橙色) - y表 */}
-                        <View
-                          style={[
-                            styles.segment,
-                            {
-                              height: Math.max(renderData.vagueHeight, 2),
-                              backgroundColor: '#FB8C00',
-                            },
-                          ]}
+                        <SegmentBar
+                          height={renderData.vagueHeight}
+                          color="#FB8C00"
+                          count={segment.vague}
                         />
-                        {/* 会 (绿色) - x表 */}
-                        <View
-                          style={[
-                            styles.segment,
-                            {
-                              height: Math.max(renderData.knownHeight, 2),
-                              backgroundColor: '#43A047',
-                              borderBottomLeftRadius: 14,
-                              borderBottomRightRadius: 14,
-                            },
-                          ]}
+                        <SegmentBar
+                          height={renderData.knownHeight}
+                          color="#43A047"
+                          count={segment.known}
+                          bottomRadius
                         />
                       </>
                     ) : (
@@ -231,7 +247,7 @@ const styles = StyleSheet.create({
     height: 14,
   },
   barWrapper: {
-    width: 28,
+    width: 32,
     height: 180,
     justifyContent: 'flex-end',
     backgroundColor: '#E8E0D8',
@@ -245,6 +261,13 @@ const styles = StyleSheet.create({
   },
   segment: {
     width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  segmentText: {
+    fontSize: 9,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   barDay: {
     fontSize: 12,
