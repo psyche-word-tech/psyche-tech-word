@@ -472,7 +472,6 @@ export default function WordDetailPage() {
 
 					{/* Drop Zones */}
 					<View style={styles.dropZonesContainer}>
-						<Text style={styles.dropZoneHint}>点击按钮移动单词到对应分类</Text>
 						<View style={styles.dropZones}>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneX]} 
