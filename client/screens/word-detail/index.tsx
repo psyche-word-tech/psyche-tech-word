@@ -445,7 +445,6 @@ export default function WordDetailPage() {
 			Alert.alert('发音提示', `发音失败: ${error?.message || '网络错误'}`);
 		}
 	};
-	};
 
 	// 录音评分功能
 	const startRecording = async () => {
