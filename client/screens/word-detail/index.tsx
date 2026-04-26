@@ -779,7 +779,6 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: '#333333',
 		fontFamily: 'Times New Roman',
-		fontStyle: 'italic',
 		flex: 1,
 	},
 	exampleTranslation: {
@@ -983,7 +982,6 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: '#333',
 		fontFamily: 'Times New Roman',
-		fontStyle: 'italic',
 		lineHeight: 24,
 		backgroundColor: '#F5F5F5',
 		padding: 12,
