@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 180,
     justifyContent: 'flex-end',
-    backgroundColor: '#E8E0D8',
+    backgroundColor: 'transparent',
     borderRadius: 14,
     overflow: 'hidden',
   },
