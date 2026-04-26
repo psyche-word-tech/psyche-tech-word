@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     height: 14,
   },
   barWrapper: {
-    width: 24,
+    width: 18,
     height: 180,
     justifyContent: 'flex-end',
     backgroundColor: 'transparent',
