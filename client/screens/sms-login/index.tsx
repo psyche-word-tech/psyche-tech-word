@@ -3,6 +3,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 const logo = require('@/assets/logo.png');
 
@@ -20,7 +21,7 @@ export default function SmsLoginPage() {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/send-code`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -61,7 +62,7 @@ export default function SmsLoginPage() {
     }
     setLoginLoading(true);
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/sms-login`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, code }),

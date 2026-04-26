@@ -37,7 +37,7 @@ const mockSegments: DaySegment[] = [
 ];
 
 const MAX_VALUE = 25;
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 type RoutePath = '/known-words' | '/vague-words' | '/unknown-words';
 

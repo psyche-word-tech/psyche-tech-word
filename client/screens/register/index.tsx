@@ -3,6 +3,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 const logo = require('@/assets/logo.png');
 
@@ -29,7 +30,7 @@ export default function RegisterPage() {
      * Body 参数：phone: string
      */
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/send-code`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/send-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -75,7 +76,7 @@ export default function RegisterPage() {
        * 接口：POST /api/v1/auth/register
        * Body 参数：phone: string, password: string, code: string
        */
-      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, password, code }),
