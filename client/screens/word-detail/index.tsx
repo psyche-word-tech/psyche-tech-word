@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
 		marginLeft: 40,
 	},
 	wordText: {
-		fontSize: 36,
+		fontSize: 28,
 		fontWeight: '700',
 		color: '#333333',
 		fontFamily: 'Times New Roman',
