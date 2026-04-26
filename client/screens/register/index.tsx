@@ -35,6 +35,9 @@ export default function RegisterPage() {
       });
       const result = await response.json();
       if (result.success) {
+        if (result.code) {
+          Alert.alert('开发模式', `验证码: ${result.code}`);
+        }
         setCountdown(60);
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -45,9 +48,12 @@ export default function RegisterPage() {
             return prev - 1;
           });
         }, 1000);
+      } else {
+        Alert.alert('发送失败', result.error || '请稍后重试');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
+      Alert.alert('错误', '网络连接失败，请稍后重试');
     }
     setLoading(false);
   };
