@@ -13,53 +13,41 @@ const SALT_ROUNDS = 10;
 router.post('/send-code', async (req, res) => {
   try {
     const { phone } = req.body;
-    
+
     if (!phone || phone.length !== 11) {
       return res.json({ success: false, error: '请输入正确的手机号' });
     }
-    
-    // 生成6位验证码
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
+    // 先删除该手机号之前的验证码
+    const client = getSupabaseClient();
+    await client.from('verification_codes').delete().eq('phone', phone);
+
+    // 调用阿里云号码认证服务发送验证码（服务自动生成验证码）
+    const smsResult = await sendSmsCode(phone);
+
+    if (!smsResult.success || !smsResult.code) {
+      console.error('短信服务返回失败:', smsResult.error);
+      return res.json({ success: false, error: smsResult.error || '短信发送失败' });
+    }
+
+    const code = smsResult.code;
+
     // 验证码5分钟有效
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    
-    const client = getSupabaseClient();
-    
-    // 删除该手机号之前的验证码
-    await client.from('verification_codes').delete().eq('phone', phone);
-    
-    // 存储新验证码到数据库
+
+    // 存储验证码到数据库
     const { error } = await client.from('verification_codes').insert({
       phone,
       code,
       expires_at: expiresAt.toISOString()
     });
-    
+
     if (error) {
       console.error('存储验证码失败:', error);
       return res.json({ success: false, error: '发送失败' });
     }
-    
-    // 始终尝试发送真实短信
-    let smsSent = false;
-    try {
-      smsSent = await sendSmsCode(phone, code);
-    } catch (err) {
-      console.error('短信发送异常:', err);
-    }
 
-    if (smsSent) {
-      res.json({ success: true, message: '验证码已发送' });
-    } else {
-      // 短信发送失败时，返回验证码作为兜底（便于开发测试）
-      console.log(`短信发送失败，验证码: ${code}`);
-      res.json({
-        success: true,
-        message: '验证码为 ' + code,
-        code: code,
-      });
-    }
+    res.json({ success: true, message: '验证码已发送', code });
   } catch (error) {
     console.error('发送验证码失败:', error);
     res.json({ success: false, error: '发送失败' });
