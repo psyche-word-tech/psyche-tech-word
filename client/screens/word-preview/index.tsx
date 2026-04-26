@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -92,28 +92,35 @@ export default function WordPreviewPage() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [isLoading, setIsLoading] = useState(true);
-	const fetchWordsRef = useRef<() => void>(() => {});
+	const [error, setError] = useState<string | null>(null);
+	const fetchWordsRef = useRef<() => void>(() => { /* noop */ });
 
 	// 获取词汇列表
 	const fetchWords = useCallback(async () => {
 		setIsLoading(true);
+		setError(null);
 		try {
-			console.log('Fetching words from /api/v1/user-words/category/words_b');
+			console.log('Fetching words from', `${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
 			const data = await response.json();
 			console.log('Received data:', Array.isArray(data) ? `${data.length} words` : 'not array', data);
 			if (Array.isArray(data)) {
 				setWords(data);
+			} else {
+				setError('返回数据格式错误');
 			}
-		} catch (error) {
-			console.error('Failed to fetch words:', error);
+		} catch (err: any) {
+			console.error('Failed to fetch words:', err);
+			setError(err?.message || '网络请求失败');
 		} finally {
 			setIsLoading(false);
 		}
 	}, []);
 
-	// 保存引用
-	fetchWordsRef.current = fetchWords;
+	// 保存引用到 ref（在 effect 中执行，避免 render 阶段更新 ref）
+	useEffect(() => {
+		fetchWordsRef.current = fetchWords;
+	}, [fetchWords]);
 
 	// 获取分类数量
 	const fetchCategoryCounts = useCallback(async () => {
@@ -198,7 +205,13 @@ export default function WordPreviewPage() {
 							onMoveComplete={handleMoveComplete}
 						/>
 					))}
-					{words.length === 0 && !isLoading && (
+					{error && (
+						<View style={styles.emptyContainer}>
+							<Text style={styles.errorText}>加载失败: {error}</Text>
+							<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
+						</View>
+					)}
+					{words.length === 0 && !isLoading && !error && (
 						<View style={styles.emptyContainer}>
 							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
 						</View>
@@ -324,6 +337,15 @@ const styles = StyleSheet.create({
 	},
 	emptyText: {
 		fontSize: 16,
+		color: '#999999',
+	},
+	errorText: {
+		fontSize: 14,
+		color: '#E53935',
+		marginBottom: 8,
+	},
+	errorSubText: {
+		fontSize: 12,
 		color: '#999999',
 	},
 	bottomSpacer: {

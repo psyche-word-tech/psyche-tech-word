@@ -107,6 +107,7 @@ export default function LearnPage() {
 	
 	const [allWords, setAllWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [error, setError] = useState<string | null>(null);
 
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
@@ -115,6 +116,7 @@ export default function LearnPage() {
 	const remainingCount = allWords.length;
 
 	const fetchData = useCallback(async () => {
+		setError(null);
 		try {
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
@@ -134,8 +136,9 @@ export default function LearnPage() {
 				y: Array.isArray(yResult) ? yResult.length : 0,
 				z: Array.isArray(zResult) ? zResult.length : 0,
 			});
-		} catch (error) {
-			console.error('Failed to fetch data:', error);
+		} catch (err: any) {
+			console.error('Failed to fetch data:', err);
+			setError(err?.message || '网络请求失败');
 		}
 	}, [table]);
 
@@ -205,49 +208,58 @@ export default function LearnPage() {
 
 				<View style={styles.centerContainer}>
 					<View style={styles.content}>
-					<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
-					{displayWords.length > 0 ? (
-						<View style={styles.wordRow}>
-							{displayWords.map((word) => (
-								<DraggableWordCard
-									key={word.id}
-									word={word}
-									onDrop={handleDrop}
-									onPress={() => handleWordPress(word)}
-								/>
-								))}
-						</View>
-					) : (
-						<View style={styles.emptyContainer}>
-							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
-						</View>
-					)}
-				</View>
-
-				<View style={styles.categorySection}>
-					<View style={styles.categoryRow}>
-						{[1, 2, 3].map((id) => {
-							const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
-							return (
-								<TouchableOpacity
-									key={id}
-									style={styles.categoryItem}
-									onPress={() => router.push('/word-list', { table: targetTable })}
-								>
-									<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
-										<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
-										<Text style={styles.categoryCount}>
-											({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
-										</Text>
+						{error ? (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.errorText}>加载失败: {error}</Text>
+								<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
+							</View>
+						) : (
+							<>
+								<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
+								{displayWords.length > 0 ? (
+									<View style={styles.wordRow}>
+										{displayWords.map((word) => (
+											<DraggableWordCard
+												key={word.id}
+												word={word}
+												onDrop={handleDrop}
+												onPress={() => handleWordPress(word)}
+											/>
+												))}
 									</View>
-								</TouchableOpacity>
-							);
-						})}
+								) : (
+									<View style={styles.emptyContainer}>
+										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+									</View>
+								)}
+							</>
+						)}
 					</View>
-					<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+
+					<View style={styles.categorySection}>
+						<View style={styles.categoryRow}>
+							{[1, 2, 3].map((id) => {
+								const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+								return (
+									<TouchableOpacity
+										key={id}
+										style={styles.categoryItem}
+										onPress={() => router.push('/word-list', { table: targetTable })}
+									>
+										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+											<Text style={styles.categoryCount}>
+												({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+											</Text>
+										</View>
+									</TouchableOpacity>
+								);
+							})}
+						</View>
+						<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+					</View>
 				</View>
 			</View>
-		</View>
 		</Screen>
 	);
 }
@@ -356,6 +368,15 @@ const styles = StyleSheet.create({
 	},
 	emptyText: {
 		fontSize: 16,
+		color: '#999999',
+	},
+	errorText: {
+		fontSize: 14,
+		color: '#E53935',
+		marginBottom: 8,
+	},
+	errorSubText: {
+		fontSize: 12,
 		color: '#999999',
 	},
 });
