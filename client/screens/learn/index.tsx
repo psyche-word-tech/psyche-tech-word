@@ -222,16 +222,23 @@ export default function LearnPage() {
 
 				<View style={styles.categorySection}>
 					<View style={styles.categoryRow}>
-						{[1, 2, 3].map((id) => (
-							<View key={id} style={styles.categoryItem}>
-								<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
-									<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
-									<Text style={styles.categoryCount}>
-										({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
-									</Text>
-								</View>
-							</View>
-						))}
+						{[1, 2, 3].map((id) => {
+							const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+							return (
+								<TouchableOpacity
+									key={id}
+									style={styles.categoryItem}
+									onPress={() => router.push('/word-list', { table: targetTable })}
+								>
+									<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+										<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+										<Text style={styles.categoryCount}>
+											({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+										</Text>
+									</View>
+								</TouchableOpacity>
+							);
+						})}
 					</View>
 					<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
 				</View>
