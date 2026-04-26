@@ -329,12 +329,13 @@ export default function WordDetailPage() {
 	}, []);
 
 	// 发音功能
-	const playPronunciation = async () => {
+	const playPronunciation = async (text?: string) => {
 		try {
 			if (soundRef.current) {
 				await soundRef.current.unloadAsync();
 			}
-			const audioUrl = `https://dict.youdao.com/dictvoice?audio=${word.word}&type=1`;
+			const playText = text || word.word;
+			const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(playText)}&type=1`;
 			const { sound } = await Audio.Sound.createAsync(
 				{ uri: audioUrl },
 				{ shouldPlay: true }
@@ -434,7 +435,7 @@ export default function WordDetailPage() {
 							<Text style={styles.wordText}>{word.word}</Text>
 							<TouchableOpacity 
 								style={styles.speakerIcon}
-								onPress={playPronunciation}
+								onPress={() => playPronunciation()}
 								disabled={isPlaying}
 							>
 								<Ionicons 
@@ -461,6 +462,17 @@ export default function WordDetailPage() {
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
 							<View style={styles.exampleRow}>
 								<Text style={styles.exampleText}>{word.example}</Text>
+								<TouchableOpacity
+									style={styles.exampleSpeakerIcon}
+									onPress={() => playPronunciation(word.example)}
+									disabled={isPlaying}
+								>
+									<Ionicons
+										name={isPlaying ? "volume-high" : "volume-medium-outline"}
+										size={20}
+										color="#4F46E5"
+									/>
+								</TouchableOpacity>
 							</View>
 							{word.example_translation && (
 								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
@@ -790,6 +802,10 @@ const styles = StyleSheet.create({
 		color: '#333333',
 		fontFamily: 'Times New Roman',
 		flex: 1,
+	},
+	exampleSpeakerIcon: {
+		padding: 4,
+		marginLeft: 8,
 	},
 	exampleTranslation: {
 		fontSize: 13,
