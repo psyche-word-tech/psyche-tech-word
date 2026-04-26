@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
@@ -372,46 +373,78 @@ export default function WordDetailPage() {
 				setIsPlaying(false);
 			}
 		} else {
-			// 移动端：先下载音频到本地，再播放
+			// 移动端：尝试系统 TTS，失败则尝试下载播放
 			setIsPlaying(true);
 			try {
-				if (soundRef.current) {
-					await soundRef.current.unloadAsync();
-				}
-				// 配置音频模式，确保在 iOS 静音模式下也能播放
-				await Audio.setAudioModeAsync({
-					playsInSilentModeIOS: true,
-					staysActiveInBackground: false,
-					shouldDuckAndroid: true,
-				});
-				const encoded = encodeURIComponent(playText);
-				const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
-				const localUri = (FileSystem as any).cacheDirectory + 'tts.mp3';
-
-				// 下载音频到本地缓存
-				const downloadResult = await (FileSystem as any).downloadAsync(audioUrl, localUri);
-				if (downloadResult.status !== 200) {
-					throw new Error(`Download failed with status ${downloadResult.status}`);
-				}
-
-				const { sound } = await Audio.Sound.createAsync(
-					{ uri: localUri },
-					{ shouldPlay: true },
-					undefined,
-					true
-				);
-				soundRef.current = sound;
-				sound.setOnPlaybackStatusUpdate((status) => {
-					if (status.isLoaded && status.didJustFinish) {
+				// 先尝试系统 TTS（最可靠的方式）
+				Speech.speak(playText, {
+					language: 'en-US',
+					rate: 0.9,
+					onDone: () => setIsPlaying(false),
+					onError: (err) => {
+						console.error('expo-speech error:', err);
 						setIsPlaying(false);
-					}
+						// fallback: 下载在线音频
+						playDownloadedTTS(playText);
+					},
 				});
-			} catch (error) {
-				console.error('Mobile TTS error:', error);
+			} catch {
 				setIsPlaying(false);
-				Alert.alert('发音提示', '当前网络环境暂不支持在线发音，请检查网络连接');
+				playDownloadedTTS(playText);
 			}
 		}
+	};
+
+	// 下载在线音频并播放
+	const playDownloadedTTS = async (text: string) => {
+		setIsPlaying(true);
+		try {
+			if (soundRef.current) {
+				await soundRef.current.unloadAsync();
+			}
+			await Audio.setAudioModeAsync({
+				playsInSilentModeIOS: true,
+				staysActiveInBackground: false,
+				shouldDuckAndroid: true,
+			});
+			const encoded = encodeURIComponent(text);
+			const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
+
+			const response = await fetch(audioUrl);
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}`);
+			}
+			const arrayBuffer = await response.arrayBuffer();
+			const bytes = new Uint8Array(arrayBuffer);
+			let binary = '';
+			for (let i = 0; i < bytes.byteLength; i++) {
+				binary += String.fromCharCode(bytes[i]);
+			}
+			const base64 = btoa(binary);
+
+			const localUri = (FileSystem as any).cacheDirectory + 'tts.mp3';
+			await (FileSystem as any).writeAsStringAsync(localUri, base64, {
+				encoding: 'base64',
+			});
+
+			const { sound } = await Audio.Sound.createAsync(
+				{ uri: localUri },
+				{ shouldPlay: true },
+				undefined,
+				true
+			);
+			soundRef.current = sound;
+			sound.setOnPlaybackStatusUpdate((status) => {
+				if (status.isLoaded && status.didJustFinish) {
+					setIsPlaying(false);
+				}
+			});
+		} catch (error: any) {
+			console.error('Downloaded TTS error:', error);
+			setIsPlaying(false);
+			Alert.alert('发音提示', `发音失败: ${error?.message || '网络错误'}`);
+		}
+	};
 	};
 
 	// 录音评分功能
