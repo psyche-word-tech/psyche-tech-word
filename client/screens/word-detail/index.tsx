@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
 import { createFormDataFile } from '@/utils/createFormDataFile';
@@ -353,7 +354,6 @@ export default function WordDetailPage() {
 	const playPronunciation = async (text?: string) => {
 		try {
 			const playText = text || word.word;
-			const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(playText)}&type=1`;
 
 			if (Platform.OS === 'web') {
 				// Web 端使用 Web Speech API
@@ -368,20 +368,16 @@ export default function WordDetailPage() {
 				};
 				(globalThis as any).speechSynthesis.speak(utterance);
 			} else {
-				// 移动端使用 Expo AV
-				if (soundRef.current) {
-					await soundRef.current.unloadAsync();
-				}
-				const { sound } = await Audio.Sound.createAsync(
-					{ uri: audioUrl },
-					{ shouldPlay: true }
-				);
-				soundRef.current = sound;
+				// 移动端使用 expo-speech
 				setIsPlaying(true);
-				sound.setOnPlaybackStatusUpdate((status) => {
-					if (status.isLoaded && status.didJustFinish) {
+				Speech.speak(playText, {
+					language: 'en',
+					rate: 0.9,
+					onDone: () => setIsPlaying(false),
+					onError: () => {
 						setIsPlaying(false);
-					}
+						Alert.alert('发音失败', '无法播放音频，请检查网络连接');
+					},
 				});
 			}
 		} catch (error) {
