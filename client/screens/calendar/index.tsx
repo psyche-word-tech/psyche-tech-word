@@ -1,5 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { Screen } from '@/components/Screen';
+import { useSafeRouter } from '@/hooks/useSafeRouter';
 import React, { useEffect, useState } from 'react';
 
 interface DaySegment {
@@ -30,22 +38,28 @@ const mockSegments: DaySegment[] = [
 const MAX_VALUE = 25;
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
+type RoutePath = '/known-words' | '/vague-words' | '/unknown-words';
+
 function SegmentBar({
   height,
   color,
   count,
   topRadius,
   bottomRadius,
+  onPress,
 }: {
   height: number;
   color: string;
   count: number;
   topRadius?: boolean;
   bottomRadius?: boolean;
+  onPress?: () => void;
 }) {
   const showText = height > 16 && count > 0;
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
       style={[
         styles.segment,
         {
@@ -58,14 +72,13 @@ function SegmentBar({
         },
       ]}
     >
-      {showText && (
-        <Text style={styles.segmentText}>{count}</Text>
-      )}
-    </View>
+      {showText && <Text style={styles.segmentText}>{count}</Text>}
+    </TouchableOpacity>
   );
 }
 
 export default function CalendarPage() {
+  const router = useSafeRouter();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -127,6 +140,10 @@ export default function CalendarPage() {
     };
   };
 
+  const handleSegmentPress = (route: RoutePath) => {
+    router.push(route);
+  };
+
   return (
     <Screen>
       <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 40 }}>
@@ -161,17 +178,20 @@ export default function CalendarPage() {
                           color="#E53935"
                           count={segment.unknown}
                           topRadius
+                          onPress={() => handleSegmentPress('/unknown-words')}
                         />
                         <SegmentBar
                           height={renderData.vagueHeight}
                           color="#FB8C00"
                           count={segment.vague}
+                          onPress={() => handleSegmentPress('/vague-words')}
                         />
                         <SegmentBar
                           height={renderData.knownHeight}
                           color="#43A047"
                           count={segment.known}
                           bottomRadius
+                          onPress={() => handleSegmentPress('/known-words')}
                         />
                       </>
                     ) : (
