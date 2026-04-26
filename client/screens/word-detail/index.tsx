@@ -478,21 +478,21 @@ export default function WordDetailPage() {
 								onPress={() => handleDrop('words_x', '已会')}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.x}</Text>
+								<Text style={styles.dropZoneCount}>({categoryCounts.x})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneY]} 
 								onPress={() => handleDrop('words_y', '模糊')}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.y}</Text>
+								<Text style={styles.dropZoneCount}>({categoryCounts.y})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity 
 								style={[styles.dropZone, styles.dropZoneZ]} 
 								onPress={() => handleDrop('words_z', '不会')}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
-								<Text style={styles.dropZoneCount}>{categoryCounts.z}</Text>
+								<Text style={styles.dropZoneCount}>({categoryCounts.z})</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
@@ -1150,36 +1150,35 @@ const styles = StyleSheet.create({
 	dropZone: {
 		flex: 1,
 		marginHorizontal: 6,
-		paddingVertical: 16,
-		borderRadius: 12,
+		paddingVertical: 14,
+		borderRadius: 16,
 		alignItems: 'center',
 		justifyContent: 'center',
 		minHeight: 70,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 3 },
+		shadowOpacity: 0.15,
+		shadowRadius: 6,
+		elevation: 4,
 	},
 	dropZoneX: {
-		backgroundColor: '#E8F5E9',
-		borderWidth: 2,
-		borderColor: '#4CAF50',
+		backgroundColor: '#66BB6A',
 	},
 	dropZoneY: {
-		backgroundColor: '#FFF3E0',
-		borderWidth: 2,
-		borderColor: '#FF9800',
+		backgroundColor: '#FFA726',
 	},
 	dropZoneZ: {
-		backgroundColor: '#FFEBEE',
-		borderWidth: 2,
-		borderColor: '#F44336',
+		backgroundColor: '#EF5350',
 	},
 	dropZoneText: {
-		fontSize: 14,
+		fontSize: 15,
 		fontWeight: '600',
-		color: '#333',
+		color: '#FFFFFF',
 		fontFamily: 'serif',
 	},
-	dropZoneAction: {
-		fontSize: 10,
-		color: '#999',
+	dropZoneCount: {
+		fontSize: 12,
+		color: 'rgba(255,255,255,0.9)',
 		marginTop: 4,
 		fontFamily: 'serif',
 	},
