@@ -27,6 +27,45 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/wordbooks/stats
+ * 获取学习进度统计（已会/模糊/不会/待学习）
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+    const tables = ['words_b', 'words_x', 'words_y', 'words_z'];
+    const labels = ['learning', 'known', 'vague', 'unknown'];
+
+    const stats: Record<string, number> = {};
+
+    for (let i = 0; i < tables.length; i++) {
+      const table = tables[i];
+      const label = labels[i];
+      const { count, error } = await client
+        .from(table)
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error(`Error counting ${table}:`, error);
+        stats[label] = 0;
+      } else {
+        stats[label] = count || 0;
+      }
+    }
+
+    res.json({
+      learning: stats.learning || 0,
+      known: stats.known || 0,
+      vague: stats.vague || 0,
+      unknown: stats.unknown || 0,
+    });
+  } catch (err) {
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/v1/wordbooks/:table
  * 获取指定表的单词列表
  */
@@ -317,3 +356,5 @@ router.get('/:table', async (req, res) => {
 });
 
 export default router;
+
+
