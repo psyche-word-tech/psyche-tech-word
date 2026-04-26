@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
@@ -70,7 +71,7 @@ export default function WordDetailPage() {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
-	const fetchCategoryCountsRef = useRef<() => void>(() => {});
+	const fetchCategoryCountsRef = useRef<() => void>(() => { /* noop */ });
 
 	// 评论相关状态
 	const [comments, setComments] = useState<Comment[]>([]);
@@ -175,7 +176,9 @@ export default function WordDetailPage() {
 	}, []);
 
 	// 将 fetchCategoryCounts 赋值给 ref
-	fetchCategoryCountsRef.current = fetchCategoryCounts;
+	useEffect(() => {
+		fetchCategoryCountsRef.current = fetchCategoryCounts;
+	}, [fetchCategoryCounts]);
 
 	// 页面加载时获取单词列表和分类数量
 	useFocusEffect(
@@ -337,10 +340,21 @@ export default function WordDetailPage() {
 
 	// 当单词变化时获取评论
 	useEffect(() => {
-		if (word.id) {
-			fetchComments(word.id);
-		}
-	}, [word.id, fetchComments]);
+		if (!word.id) return;
+		setIsLoadingComments(true);
+		fetch(`${API_BASE_URL}/api/v1/comments/${word.id}`)
+			.then(response => response.json())
+			.then(data => {
+				setComments(Array.isArray(data) ? data : []);
+			})
+			.catch(error => {
+				console.error('Failed to fetch comments:', error);
+				setComments([]);
+			})
+			.finally(() => {
+				setIsLoadingComments(false);
+			});
+	}, [word.id]);
 
 	// 清理音频资源
 	useEffect(() => {

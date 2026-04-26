@@ -7,11 +7,8 @@ function isValidApiUrl(url: string | undefined): url is string {
   return !!url && !url.includes('localhost') && !url.includes('railway.app');
 }
 
-// 优先从环境变量读取，过滤掉明显错误的地址，其次从 expoConfig.extra 读取，最后使用硬编码兜底
-const envUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
-const extraUrl = (Constants.expoConfig?.extra as Record<string, string> | undefined)?.backendBaseUrl;
-
-const API_BASE_URL = isValidApiUrl(envUrl) ? envUrl : isValidApiUrl(extraUrl) ? extraUrl : PROD_API_URL;
+// 强制使用有数据的后端地址，避免生产环境自动注入的空数据库域名
+const API_BASE_URL = PROD_API_URL;
 
 console.log('[API_BASE_URL]', API_BASE_URL);
 

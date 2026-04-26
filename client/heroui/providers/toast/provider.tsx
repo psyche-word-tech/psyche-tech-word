@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
   useRef,
@@ -249,7 +250,9 @@ export function ToastProvider({
   );
 
   // Keep hide ref up to date
-  hideRef.current = hide;
+  useEffect(() => {
+    hideRef.current = hide;
+  }, [hide]);
 
   /**
    * Show a toast

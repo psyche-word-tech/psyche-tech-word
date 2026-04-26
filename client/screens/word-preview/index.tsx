@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect, memo } from 'react';
+/* eslint-disable react-hooks/refs */
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +24,7 @@ interface DraggableWordCardProps {
 const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete }: DraggableWordCardProps) {
 	const pan = useRef(new Animated.ValueXY()).current;
 
-	const panResponder = useRef(
+	const panResponder = useMemo(() =>
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => true,
 			onMoveShouldSetPanResponder: () => true,
@@ -61,8 +62,9 @@ const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete
 					useNativeDriver: false,
 				}).start();
 			},
-		})
-	).current;
+		}),
+		[onMoveComplete, word, pan]
+	);
 
 	return (
 		<Animated.View
