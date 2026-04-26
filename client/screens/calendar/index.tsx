@@ -208,15 +208,15 @@ export default function CalendarPage() {
           <View style={styles.legend}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
-              <Text style={styles.legendText}>会的</Text>
+              <Text style={styles.legendText}>已会</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#FB8C00' }]} />
-              <Text style={styles.legendText}>模糊的</Text>
+              <Text style={styles.legendText}>模糊</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
-              <Text style={styles.legendText}>不会的</Text>
+              <Text style={styles.legendText}>不会</Text>
             </View>
           </View>
         </View>
