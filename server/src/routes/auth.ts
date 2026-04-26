@@ -41,23 +41,23 @@ router.post('/send-code', async (req, res) => {
       return res.json({ success: false, error: '发送失败' });
     }
     
-    // 判断是否为生产环境
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    if (isProduction) {
-      // 生产环境：调用真实短信接口
-      const smsSent = await sendSmsCode(phone, code);
-      if (!smsSent) {
-        return res.json({ success: false, error: '短信发送失败，请稍后重试' });
-      }
+    // 始终尝试发送真实短信
+    let smsSent = false;
+    try {
+      smsSent = await sendSmsCode(phone, code);
+    } catch (err) {
+      console.error('短信发送异常:', err);
+    }
+
+    if (smsSent) {
       res.json({ success: true, message: '验证码已发送' });
     } else {
-      // 开发环境：直接返回验证码
-      console.log(`验证码: ${code}`);
-      res.json({ 
-        success: true, 
-        message: '开发模式：验证码为 ' + code, 
-        code: code 
+      // 短信发送失败时，返回验证码作为兜底（便于开发测试）
+      console.log(`短信发送失败，验证码: ${code}`);
+      res.json({
+        success: true,
+        message: '验证码为 ' + code,
+        code: code,
       });
     }
   } catch (error) {

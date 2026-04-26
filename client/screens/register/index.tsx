@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [devCode, setDevCode] = useState('');
 
   const handleSendCode = async () => {
     if (!phone || phone.length !== 11) {
@@ -36,7 +37,7 @@ export default function RegisterPage() {
       const result = await response.json();
       if (result.success) {
         if (result.code) {
-          Alert.alert('开发模式', `验证码: ${result.code}`);
+          setDevCode(result.code);
         }
         setCountdown(60);
         const timer = setInterval(() => {

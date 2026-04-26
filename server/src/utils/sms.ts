@@ -9,18 +9,20 @@
  * ALIBABA_CLOUD_SMS_TEMPLATE_CODE=你的模板ID
  */
 
-import Dysmsapi, * as DysmsapiTypes from '@alicloud/dysmsapi20170525';
+import DysmsapiModule, * as DysmsapiTypes from '@alicloud/dysmsapi20170525';
 import * as OpenApi from '@alicloud/openapi-client';
 import * as Util from '@alicloud/tea-util';
 
+const DysmsapiClient = (DysmsapiModule as any).default as typeof DysmsapiModule;
+
 // 创建短信客户端
-function createSmsClient(): Dysmsapi {
+function createSmsClient(): InstanceType<typeof DysmsapiClient> {
   const config = new OpenApi.Config({
     accessKeyId: process.env.ALIBABA_CLOUD_ACCESS_KEY_ID || '',
     accessKeySecret: process.env.ALIBABA_CLOUD_ACCESS_KEY_SECRET || '',
   });
   config.endpoint = 'dysmsapi.aliyuncs.com';
-  return new Dysmsapi(config);
+  return new (DysmsapiClient as any)(config);
 }
 
 /**
