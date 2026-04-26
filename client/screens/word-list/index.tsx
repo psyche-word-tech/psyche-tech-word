@@ -95,11 +95,13 @@ export default function WordListPage() {
                 style={styles.wordItem}
                 onPress={() => handleWordPress(word)}
               >
-                <Text style={styles.wordText}>{word.word}</Text>
+                <View style={styles.wordRow}>
+                  <Text style={styles.wordText}>{word.word}</Text>
+                  {word.phonetic && (
+                    <Text style={styles.phoneticText}>{word.phonetic}</Text>
+                  )}
+                </View>
                 <Text style={styles.meaningText}>{word.meaning}</Text>
-                {word.phonetic && (
-                  <Text style={styles.phoneticText}>{word.phonetic}</Text>
-                )}
               </TouchableOpacity>
             ))
           ) : (
@@ -166,18 +168,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
 
   },
+  wordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   wordText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
     fontFamily: 'serif',
-    marginBottom: 4,
   },
   phoneticText: {
     fontSize: 14,
     color: '#666666',
     fontFamily: 'Times New Roman',
-    marginTop: 4,
+    marginLeft: 8,
   },
   meaningText: {
     fontSize: 14,
