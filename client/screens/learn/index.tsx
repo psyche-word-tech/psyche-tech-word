@@ -108,6 +108,30 @@ export default function LearnPage() {
 	const [allWords, setAllWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [error, setError] = useState<string | null>(null);
+	const [debugInfo, setDebugInfo] = useState<string>('');
+	const [fetchStatus, setFetchStatus] = useState<string>('idle');
+
+	// 强制测试 fetch（绕过所有封装，直接请求）
+	const testFetch = useCallback(async () => {
+		setFetchStatus('fetching...');
+		try {
+			const url = `${API_BASE_URL}/api/v1/wordbooks/${table}`;
+			console.log('[TEST FETCH] URL:', url);
+			const res = await fetch(url);
+			const text = await res.text();
+			console.log('[TEST FETCH] status:', res.status, 'body preview:', text.slice(0, 200));
+			setFetchStatus(`HTTP ${res.status}, len=${text.length}`);
+			setDebugInfo(text.slice(0, 300));
+		} catch (e: any) {
+			console.log('[TEST FETCH] error:', e);
+			setFetchStatus(`error: ${e.message}`);
+			setDebugInfo(String(e));
+		}
+	}, [table]);
+
+	useEffect(() => {
+		testFetch();
+	}, [testFetch]);
 
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
@@ -241,6 +265,13 @@ export default function LearnPage() {
 								)}
 							</>
 						)}
+					</View>
+
+					<View style={styles.debugContainer}>
+						<Text style={styles.debugText}>API: {API_BASE_URL}</Text>
+						<Text style={styles.debugText}>table: {table}</Text>
+						<Text style={styles.debugText}>status: {fetchStatus}</Text>
+						<Text style={styles.debugText} numberOfLines={3}>{debugInfo}</Text>
 					</View>
 
 					<View style={styles.categorySection}>
@@ -385,5 +416,16 @@ const styles = StyleSheet.create({
 	errorSubText: {
 		fontSize: 12,
 		color: '#999999',
+	},
+	debugContainer: {
+		marginTop: 12,
+		padding: 10,
+		backgroundColor: '#FFFDE7',
+		borderRadius: 6,
+	},
+	debugText: {
+		fontSize: 10,
+		color: '#666666',
+		fontFamily: 'monospace',
 	},
 });
