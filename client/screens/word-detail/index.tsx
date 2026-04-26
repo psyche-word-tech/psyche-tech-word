@@ -700,6 +700,7 @@ const styles = StyleSheet.create({
 	wordRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'center',
 		gap: 12,
 	},
 	wordText: {
@@ -717,6 +718,7 @@ const styles = StyleSheet.create({
 		color: '#666666',
 		fontFamily: 'Times New Roman',
 		marginTop: 8,
+		textAlign: 'center',
 	},
 	navSection: {
 		flexDirection: 'row',
