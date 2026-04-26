@@ -15,7 +15,7 @@ interface Word {
 	meaning: string;
 	example?: string;
 	example_translation?: string;
-	example_image_url?: string;
+	image_url?: string;
 }
 
 interface Comment {
@@ -303,7 +303,7 @@ export default function WordDetailPage() {
 	const cancelPublish = useCallback(() => {
 		setShowResultModal(false);
 		setGrammarResult(null);
-	});
+	}, []);
 
 	// 当单词变化时获取评论
 	useEffect(() => {
@@ -458,10 +458,10 @@ export default function WordDetailPage() {
 							{word.example_translation && (
 								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
 							)}
-							{word.example_image_url && (
+							{word.image_url && (
 								<View style={styles.exampleImageContainer}>
 									<Image 
-										source={{ uri: word.example_image_url }} 
+										source={{ uri: word.image_url }} 
 										style={styles.exampleImage}
 										resizeMode="cover"
 									/>
