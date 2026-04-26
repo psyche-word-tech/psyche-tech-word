@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResp
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -197,7 +198,9 @@ export default function LearnPage() {
 						<Text style={styles.backText}>back</Text>
 					</TouchableOpacity>
 					<Text style={styles.title}>词汇预览</Text>
-					<View style={styles.placeholder} />
+					<TouchableOpacity onPress={() => router.push('/calendar')}>
+							<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+						</TouchableOpacity>
 				</View>
 
 				<View style={styles.centerContainer}>
