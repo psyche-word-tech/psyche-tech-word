@@ -281,6 +281,7 @@ const styles = StyleSheet.create({
 	content: {
 		paddingVertical: 16,
 		alignItems: 'center',
+		marginTop: -70,
 	},
 	remainingText: {
 		fontSize: 14,
