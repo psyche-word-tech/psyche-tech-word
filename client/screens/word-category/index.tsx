@@ -11,6 +11,8 @@ interface Word {
 	phonetic: string;
 	meaning: string;
 	example?: string;
+	example_translation?: string;
+	image_url?: string;
 }
 
 export default function WordCategoryPage() {

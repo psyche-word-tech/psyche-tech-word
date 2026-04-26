@@ -10,6 +10,9 @@ interface Word {
   word: string;
   meaning: string;
   phonetic?: string;
+  example?: string;
+  example_translation?: string;
+  image_url?: string;
 }
 
 export default function UnknownWordsPage() {
@@ -36,13 +39,7 @@ export default function UnknownWordsPage() {
 
   const handleWordPress = (word: Word) => {
     router.push('/word-detail', {
-      word: JSON.stringify({
-        id: word.id,
-        word: word.word,
-        phonetic: word.phonetic || '',
-        meaning: word.meaning,
-        example: ''
-      }),
+      word: JSON.stringify(word),
       table: 'words_z'
     });
   };

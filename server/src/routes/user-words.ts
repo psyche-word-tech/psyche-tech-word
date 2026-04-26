@@ -130,6 +130,7 @@ router.post('/move', async (req, res) => {
       phonetic: word.phonetic,
       example: word.example,
       translation: word.translation,
+      image_url: word.image_url,
     });
 
     if (insertError) {
