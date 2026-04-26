@@ -25,9 +25,10 @@ router.post("/", upload.single("audio"), async (req, res) => {
     let transcription = "";
     try {
       const asrClient = new ASRClient(config);
-      const asrResult = await asrClient.asr({
-        file: file.buffer,
-        language: "en-US",
+      const audioBase64 = file.buffer.toString("base64");
+      const asrResult = await asrClient.recognize({
+        uid: "speech-eval",
+        base64Data: audioBase64,
       });
       transcription = asrResult.text || "";
     } catch (asrError: any) {
