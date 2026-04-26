@@ -154,7 +154,7 @@ export default function CalendarPage() {
             <FontAwesome6 name="arrow-left" size={20} color="#3E2723" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>我的足迹</Text>
-          <Text style={styles.headerSubtitle}>单词学习量</Text>
+          
         </View>
 
         {/* 柱状图区域 */}
