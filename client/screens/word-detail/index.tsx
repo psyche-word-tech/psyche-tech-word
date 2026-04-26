@@ -5,7 +5,6 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
 import { createFormDataFile } from '@/utils/createFormDataFile';
@@ -352,11 +351,12 @@ export default function WordDetailPage() {
 
 	// 发音功能
 	const playPronunciation = async (text?: string) => {
-		try {
-			const playText = text || word.word;
+		const playText = text || word?.word || '';
+		if (!playText) return;
 
-			if (Platform.OS === 'web') {
-				// Web 端使用 Web Speech API
+		if (Platform.OS === 'web') {
+			// Web 端使用 Web Speech API
+			try {
 				const utterance = new (globalThis as any).SpeechSynthesisUtterance(playText);
 				utterance.lang = 'en-US';
 				utterance.rate = 0.9;
@@ -367,23 +367,39 @@ export default function WordDetailPage() {
 					console.error('Speech synthesis error');
 				};
 				(globalThis as any).speechSynthesis.speak(utterance);
-			} else {
-				// 移动端使用 expo-speech
-				setIsPlaying(true);
-				Speech.speak(playText, {
-					language: 'en',
-					rate: 0.9,
-					onDone: () => setIsPlaying(false),
-					onError: () => {
-						setIsPlaying(false);
-						Alert.alert('发音失败', '无法播放音频，请检查网络连接');
-					},
-				});
+			} catch {
+				setIsPlaying(false);
 			}
-		} catch (error) {
-			console.error('Failed to play pronunciation:', error);
-			Alert.alert('发音失败', '无法播放音频，请检查网络连接');
-			setIsPlaying(false);
+		} else {
+			// 移动端：直接播放有道词典在线音频
+			setIsPlaying(true);
+			try {
+				if (soundRef.current) {
+					await soundRef.current.unloadAsync();
+				}
+				// 配置音频模式，确保在 iOS 静音模式下也能播放
+				await Audio.setAudioModeAsync({
+					playsInSilentModeIOS: true,
+					staysActiveInBackground: false,
+					shouldDuckAndroid: true,
+				});
+				const encoded = encodeURIComponent(playText);
+				const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
+				const { sound } = await Audio.Sound.createAsync(
+					{ uri: audioUrl },
+					{ shouldPlay: true }
+				);
+				soundRef.current = sound;
+				sound.setOnPlaybackStatusUpdate((status) => {
+					if (status.isLoaded && status.didJustFinish) {
+						setIsPlaying(false);
+					}
+				});
+			} catch (error) {
+				console.error('Mobile TTS error:', error);
+				setIsPlaying(false);
+				Alert.alert('发音提示', '当前网络环境暂不支持在线发音，请检查网络连接');
+			}
 		}
 	};
 

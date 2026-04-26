@@ -8,6 +8,7 @@ import commentsRouter from "./routes/comments";
 import exampleImagesRouter from "./routes/example-images";
 import grammarCheckRouter from "./routes/grammar-check";
 import speechEvalRouter from "./routes/speech-eval";
+import ttsRouter from "./routes/tts";
 
 const app = express();
 const port = process.env.PORT || 9091;
@@ -42,6 +43,7 @@ app.use('/api/v1/comments', commentsRouter);
 app.use('/api/v1/example-images', exampleImagesRouter);
 app.use('/api/v1/grammar-check', grammarCheckRouter);
 app.use('/api/v1/speech-eval', speechEvalRouter);
+app.use('/api/v1/tts', ttsRouter);
 
 
 app.listen(port, () => {
