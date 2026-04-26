@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		paddingHorizontal: 20,
-		paddingVertical: 40,
+		paddingVertical: 16,
 		alignItems: 'center',
 	},
 	remainingText: {
@@ -288,15 +288,15 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	wordItemContainer: {
-		width: 80,
+		width: 68,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
-		paddingHorizontal: 8,
-		paddingVertical: 12,
-		borderRadius: 10,
+		paddingHorizontal: 6,
+		paddingVertical: 8,
+		borderRadius: 8,
 		alignItems: 'center',
-		minHeight: 60,
+		minHeight: 44,
 		justifyContent: 'center',
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
@@ -305,13 +305,13 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	wordCardText: {
-		fontSize: 14,
+		fontSize: 12,
 		color: '#333333',
 		fontWeight: '600',
 	},
 	categorySection: {
 		paddingHorizontal: 20,
-		paddingVertical: 20,
+		paddingVertical: 10,
 		backgroundColor: '#FFFFFF',
 	},
 	categoryRow: {
@@ -322,25 +322,25 @@ const styles = StyleSheet.create({
 		flex: 1,
 	},
 	categoryCard: {
-		paddingVertical: 20,
-		borderRadius: 12,
+		paddingVertical: 10,
+		borderRadius: 10,
 		alignItems: 'center',
 	},
 	categoryName: {
-		fontSize: 16,
+		fontSize: 13,
 		color: '#FFFFFF',
 		fontWeight: '600',
 	},
 	categoryCount: {
-		fontSize: 14,
+		fontSize: 11,
 		color: 'rgba(255,255,255,0.8)',
-		marginTop: 4,
+		marginTop: 2,
 	},
 	instructionText: {
-		fontSize: 12,
+		fontSize: 11,
 		color: '#999999',
 		textAlign: 'center',
-		marginTop: 12,
+		marginTop: 6,
 	},
 	emptyContainer: {
 		padding: 48,
