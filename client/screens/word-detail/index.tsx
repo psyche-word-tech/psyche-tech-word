@@ -147,7 +147,7 @@ export default function WordDetailPage() {
 	// 将 fetchCategoryCounts 赋值给 ref
 	fetchCategoryCountsRef.current = fetchCategoryCounts;
 
-	// 页面加载时获取单词列表
+	// 页面加载时获取单词列表和分类数量
 	useFocusEffect(
 		useCallback(() => {
 			const fetchWordsList = async () => {
@@ -167,6 +167,7 @@ export default function WordDetailPage() {
 				}
 			};
 			fetchWordsList();
+			fetchCategoryCountsRef.current();
 		}, [sourceTable])
 	);
 
