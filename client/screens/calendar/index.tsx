@@ -2,10 +2,11 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { Screen } from '@/components/Screen';
 import React, { useEffect, useState } from 'react';
 
-interface DayData {
+interface DaySegment {
   day: string;
-  value: number;
-  label: string;
+  known: number;
+  vague: number;
+  unknown: number;
 }
 
 interface StatsData {
@@ -15,14 +16,15 @@ interface StatsData {
   unknown: number;
 }
 
-const mockData: DayData[] = [
-  { day: '周一', value: 0, label: '' },
-  { day: '周二', value: 8, label: '8词' },
-  { day: '周三', value: 15, label: '15词' },
-  { day: '周四', value: 20, label: '20词' },
-  { day: '周五', value: 6, label: '6词' },
-  { day: '周六', value: 18, label: '18词' },
-  { day: '周日', value: 10, label: '10词' },
+// 周一用真实数据，其余用虚构数据，保持风格一致
+const mockSegments: DaySegment[] = [
+  { day: '周一', known: 0, vague: 0, unknown: 0 }, // 真实数据会覆盖
+  { day: '周二', known: 5, vague: 2, unknown: 1 },
+  { day: '周三', known: 10, vague: 3, unknown: 2 },
+  { day: '周四', known: 14, vague: 4, unknown: 2 },
+  { day: '周五', known: 4, vague: 1, unknown: 1 },
+  { day: '周六', known: 12, vague: 4, unknown: 2 },
+  { day: '周日', known: 7, vague: 2, unknown: 1 },
 ];
 
 const MAX_VALUE = 25;
@@ -55,29 +57,42 @@ export default function CalendarPage() {
     };
   }, []);
 
-  // 计算周一的总高度和各段比例
-  const getMondaySegments = () => {
-    if (!stats) return null;
-    const known = stats.known || 0;
-    const vague = stats.vague || 0;
-    const unknown = stats.unknown || 0;
+  // 获取某一天的分段数据（周一用真实 stats，其余用虚构）
+  const getDaySegments = (index: number): DaySegment => {
+    if (index === 0 && stats) {
+      return {
+        day: '周一',
+        known: stats.known || 0,
+        vague: stats.vague || 0,
+        unknown: stats.unknown || 0,
+      };
+    }
+    return mockSegments[index];
+  };
+
+  // 计算分段柱的渲染数据
+  const getSegmentRenderData = (segment: DaySegment) => {
+    const known = segment.known;
+    const vague = segment.vague;
+    const unknown = segment.unknown;
     const total = known + vague + unknown;
-    if (total === 0) return null;
+    if (total === 0) {
+      return {
+        total: 0,
+        knownHeight: 0,
+        vagueHeight: 0,
+        unknownHeight: 0,
+      };
+    }
 
     const totalHeight = Math.min((total / MAX_VALUE) * 180, 180);
     return {
       total,
-      totalHeight,
       knownHeight: (known / total) * totalHeight,
       vagueHeight: (vague / total) * totalHeight,
       unknownHeight: (unknown / total) * totalHeight,
-      known,
-      vague,
-      unknown,
     };
   };
-
-  const mondaySegments = getMondaySegments();
 
   return (
     <Screen>
@@ -95,84 +110,79 @@ export default function CalendarPage() {
           )}
 
           <View style={styles.chartInner}>
-            {mockData.map((item, index) => {
-              if (index === 0 && mondaySegments) {
-                // 周一：分段柱
-                return (
-                  <View key={index} style={styles.barColumn}>
-                    <Text style={styles.barLabel}>{mondaySegments.total}词</Text>
-                    <View style={styles.barWrapper}>
-                      {/* 不会 (红色) - z表 */}
-                      <View
-                        style={[
-                          styles.segment,
-                          {
-                            height: Math.max(mondaySegments.unknownHeight, 2),
-                            backgroundColor: '#E53935',
-                            borderTopLeftRadius: 14,
-                            borderTopRightRadius: 14,
-                          },
-                        ]}
-                      />
-                      {/* 模糊 (橙色) - y表 */}
-                      <View
-                        style={[
-                          styles.segment,
-                          {
-                            height: Math.max(mondaySegments.vagueHeight, 2),
-                            backgroundColor: '#FB8C00',
-                          },
-                        ]}
-                      />
-                      {/* 会 (绿色) - x表 */}
-                      <View
-                        style={[
-                          styles.segment,
-                          {
-                            height: Math.max(mondaySegments.knownHeight, 2),
-                            backgroundColor: '#43A047',
-                            borderBottomLeftRadius: 14,
-                            borderBottomRightRadius: 14,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.barDay}>{item.day}</Text>
-                  </View>
-                );
-              }
+            {mockSegments.map((_, index) => {
+              const segment = getDaySegments(index);
+              const renderData = getSegmentRenderData(segment);
+              const hasData = renderData.total > 0;
 
-              // 其他天：单色柱
-              const barHeight = (item.value / MAX_VALUE) * 180;
               return (
                 <View key={index} style={styles.barColumn}>
-                  <Text style={styles.barLabel}>{item.label}</Text>
+                  <Text style={styles.barLabel}>
+                    {hasData ? `${renderData.total}词` : ''}
+                  </Text>
                   <View style={styles.barWrapper}>
-                    <View style={[styles.bar, { height: Math.max(barHeight, 4) }]} />
+                    {hasData ? (
+                      <>
+                        {/* 不会 (红色) - z表 */}
+                        <View
+                          style={[
+                            styles.segment,
+                            {
+                              height: Math.max(renderData.unknownHeight, 2),
+                              backgroundColor: '#E53935',
+                              borderTopLeftRadius: 14,
+                              borderTopRightRadius: 14,
+                            },
+                          ]}
+                        />
+                        {/* 模糊 (橙色) - y表 */}
+                        <View
+                          style={[
+                            styles.segment,
+                            {
+                              height: Math.max(renderData.vagueHeight, 2),
+                              backgroundColor: '#FB8C00',
+                            },
+                          ]}
+                        />
+                        {/* 会 (绿色) - x表 */}
+                        <View
+                          style={[
+                            styles.segment,
+                            {
+                              height: Math.max(renderData.knownHeight, 2),
+                              backgroundColor: '#43A047',
+                              borderBottomLeftRadius: 14,
+                              borderBottomRightRadius: 14,
+                            },
+                          ]}
+                        />
+                      </>
+                    ) : (
+                      <View style={[styles.bar, { height: 4 }]} />
+                    )}
                   </View>
-                  <Text style={styles.barDay}>{item.day}</Text>
+                  <Text style={styles.barDay}>{segment.day}</Text>
                 </View>
               );
             })}
           </View>
 
           {/* 图例 */}
-          {mondaySegments && (
-            <View style={styles.legend}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
-                <Text style={styles.legendText}>会的({mondaySegments.known})</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#FB8C00' }]} />
-                <Text style={styles.legendText}>模糊的({mondaySegments.vague})</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
-                <Text style={styles.legendText}>不会的({mondaySegments.unknown})</Text>
-              </View>
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#43A047' }]} />
+              <Text style={styles.legendText}>会的</Text>
             </View>
-          )}
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#FB8C00' }]} />
+              <Text style={styles.legendText}>模糊的</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
+              <Text style={styles.legendText}>不会的</Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </Screen>
@@ -218,6 +228,7 @@ const styles = StyleSheet.create({
     color: '#5D4037',
     fontWeight: '600',
     marginBottom: 6,
+    height: 14,
   },
   barWrapper: {
     width: 28,
