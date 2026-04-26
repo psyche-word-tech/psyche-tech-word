@@ -200,7 +200,8 @@ export default function LearnPage() {
 					<View style={styles.placeholder} />
 				</View>
 
-				<View style={styles.content}>
+				<View style={styles.centerContainer}>
+					<View style={styles.content}>
 					<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 					{displayWords.length > 0 ? (
 						<View style={styles.wordRow}>
@@ -243,6 +244,7 @@ export default function LearnPage() {
 					<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
 				</View>
 			</View>
+		</View>
 		</Screen>
 	);
 }
@@ -271,9 +273,12 @@ const styles = StyleSheet.create({
 	placeholder: {
 		width: 50,
 	},
-	content: {
+	centerContainer: {
 		flex: 1,
+		justifyContent: 'center',
 		paddingHorizontal: 20,
+	},
+	content: {
 		paddingVertical: 16,
 		alignItems: 'center',
 	},
@@ -310,7 +315,6 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 	},
 	categorySection: {
-		paddingHorizontal: 20,
 		paddingVertical: 10,
 		backgroundColor: '#FFFFFF',
 	},
