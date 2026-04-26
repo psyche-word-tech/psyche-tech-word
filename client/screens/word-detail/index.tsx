@@ -1151,11 +1151,11 @@ const styles = StyleSheet.create({
 	dropZone: {
 		flex: 1,
 		marginHorizontal: 6,
-		paddingVertical: 14,
+		paddingVertical: 10,
 		borderRadius: 16,
 		alignItems: 'center',
 		justifyContent: 'center',
-		minHeight: 70,
+		minHeight: 52,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 3 },
 		shadowOpacity: 0.15,
