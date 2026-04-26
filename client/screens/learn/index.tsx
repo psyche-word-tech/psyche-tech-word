@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
 	},
 	wordRow: {
 		flexDirection: 'row',
-		gap: 10,
+		gap: 28,
 		justifyContent: 'center',
 	},
 	wordItemContainer: {
