@@ -14,7 +14,7 @@ interface Word {
 	phonetic?: string;
 	example?: string;
 	example_translation?: string;
-	example_image_url?: string;
+	image_url?: string;
 }
 
 interface DraggableWordCardProps {
@@ -183,7 +183,7 @@ export default function LearnPage() {
 				meaning: word.meaning,
 				example: word.example || '',
 				example_translation: word.example_translation || '',
-				example_image_url: word.example_image_url || ''
+				image_url: word.image_url || ''
 			}),
 			table: table
 		});
