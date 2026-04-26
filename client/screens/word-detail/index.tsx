@@ -87,6 +87,8 @@ export default function WordDetailPage() {
 	const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
 	const [showEvalModal, setShowEvalModal] = useState(false);
 	const recordingRef = useRef<Audio.Recording | null>(null);
+	const [recordingVolume, setRecordingVolume] = useState<number[]>(new Array(20).fill(0));
+	const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
@@ -406,6 +408,22 @@ export default function WordDetailPage() {
 			);
 			recordingRef.current = recording;
 			setIsRecording(true);
+
+			// 启动音量监测
+			setRecordingVolume(new Array(20).fill(0));
+			meteringIntervalRef.current = setInterval(async () => {
+				if (recordingRef.current) {
+					const status = await recordingRef.current.getStatusAsync();
+					if (status.isRecording && status.metering !== undefined) {
+						// metering 范围通常是 -160 ~ 0，映射到 0 ~ 1
+						const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
+						setRecordingVolume(prev => {
+							const next = [...prev.slice(1), normalized];
+							return next;
+						});
+					}
+				}
+			}, 100);
 		} catch (error) {
 			console.error('Failed to start recording:', error);
 			Alert.alert('错误', '无法启动录音');
@@ -415,6 +433,11 @@ export default function WordDetailPage() {
 	const stopRecording = async () => {
 		try {
 			setIsRecording(false);
+			// 清除音量监测定时器
+			if (meteringIntervalRef.current) {
+				clearInterval(meteringIntervalRef.current);
+				meteringIntervalRef.current = null;
+			}
 			if (!recordingRef.current) return;
 
 			await recordingRef.current.stopAndUnloadAsync();
@@ -563,6 +586,23 @@ export default function WordDetailPage() {
 						<View style={styles.section}>
 							<View style={styles.divider} />
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
+							{/* 录音音波 */}
+							{isRecording && (
+								<View style={styles.waveformContainer}>
+									{recordingVolume.map((vol, idx) => (
+										<View
+											key={idx}
+											style={[
+												styles.waveformBar,
+												{
+													height: Math.max(4, vol * 36),
+													backgroundColor: vol > 0.5 ? '#EF4444' : '#F87171',
+												}
+											]}
+										/>
+									))}
+								</View>
+							)}
 							<View style={styles.exampleRow}>
 								<Text style={styles.exampleText}>{word.example}</Text>
 								<View style={styles.exampleActions}>
@@ -1413,6 +1453,20 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 	},
 	recordButtonActive: {
+		backgroundColor: '#EF4444',
+	},
+	// 音波动画样式
+	waveformContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		height: 40,
+		marginBottom: 8,
+		gap: 3,
+	},
+	waveformBar: {
+		width: 4,
+		borderRadius: 2,
 		backgroundColor: '#EF4444',
 	},
 	// 评分弹窗样式
