@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { FontAwesome6 } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 
 interface DaySegment {
@@ -149,6 +150,9 @@ export default function CalendarPage() {
       <ScrollView className="flex-1 bg-white" contentContainerStyle={{ paddingBottom: 40 }}>
         {/* 标题区域 */}
         <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <FontAwesome6 name="arrow-left" size={20} color="#3E2723" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>学习统计</Text>
           <Text style={styles.headerSubtitle}>近7天单词学习量</Text>
         </View>
@@ -228,8 +232,13 @@ export default function CalendarPage() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 12,
     paddingBottom: 16,
+  },
+  backButton: {
+    marginBottom: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
   headerTitle: {
     fontSize: 28,
