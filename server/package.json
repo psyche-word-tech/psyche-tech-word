@@ -15,6 +15,7 @@
     "@alicloud/tea-util": "^1.4.11",
     "@supabase/supabase-js": "2.95.3",
     "axios": "^1.13.6",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "coze-coding-dev-sdk": "^0.7.21",
     "dayjs": "^1.11.19",
@@ -28,6 +29,7 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.0.0",

@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 
 const logo = require('@/assets/logo.png');
 
 export default function RegisterPage() {
   const router = useSafeRouter();
+  const { login } = useAuth();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -50,20 +52,48 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!phone || !password || !code) {
+      Alert.alert('提示', '请填写完整信息');
       return;
     }
     if (password !== confirmPassword) {
+      Alert.alert('提示', '两次输入的密码不一致');
       return;
     }
-    // 注册 API
-    /**
-     * 服务端文件：server/src/routes/auth.ts
-     * 接口：POST /api/v1/auth/register
-     * Body 参数：phone: string, password: string, code: string
-     */
-    router.replace('/study');
+    setLoading(true);
+    try {
+      /**
+       * 服务端文件：server/src/routes/auth.ts
+       * 接口：POST /api/v1/auth/register
+       * Body 参数：phone: string, password: string, code: string
+       */
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password, code }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // 自动登录
+        await login({
+          id: data.user.id,
+          username: data.user.username || phone,
+          phone: phone,
+          token: '',
+        });
+        Alert.alert('注册成功', '欢迎加入！');
+        router.replace('/study');
+      } else {
+        Alert.alert('注册失败', data.error || '请稍后重试');
+      }
+    } catch (error) {
+      console.error('注册错误:', error);
+      Alert.alert('错误', '网络连接失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

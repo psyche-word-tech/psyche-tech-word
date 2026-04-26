@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { getSupabaseClient } from '@/storage/database/supabase-client';
 import { sendSmsCode } from '@/utils/sms';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
+const SALT_ROUNDS = 10;
 
 /**
  * POST /api/v1/auth/send-code
@@ -103,10 +105,9 @@ router.post('/register', async (req, res) => {
       return res.json({ success: false, error: '该手机号已注册' });
     }
     
-    // 密码加密（实际项目应使用bcrypt）
-    // 这里简化处理，实际应该使用 bcrypt.hash(password, 10)
-    const hashedPassword = password;
-    
+    // 密码加密
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
     // 创建用户
     const { data: newUser, error: insertError } = await client
       .from('users')
@@ -146,22 +147,29 @@ router.post('/login', async (req, res) => {
     // 查询用户（支持手机号或用户名登录）
     const { data: userData, error } = await client
       .from('users')
-      .select('id, phone, username')
+      .select('id, phone, username, password')
       .or(`phone.eq.${username},username.eq.${username}`)
-      .eq('password', password)
       .limit(1);
-    
+
     if (error || !userData || userData.length === 0) {
       return res.json({ success: false, error: '用户名或密码错误' });
     }
-    
+
     const user = userData[0];
+
+    // 验证密码（兼容明文密码和加密密码）
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+      || user.password === password; // 兼容旧明文密码
+
+    if (!isPasswordValid) {
+      return res.json({ success: false, error: '用户名或密码错误' });
+    }
     
     // 生成token（简化版，实际应使用JWT）
     const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: '登录成功',
       token,
       user: { id: user.id, phone: user.phone, username: user.username }
