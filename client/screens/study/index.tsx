@@ -54,9 +54,13 @@ export default function StudyScreen() {
             >
               <Image source={regionAImg} style={styles.regionAStyle} resizeMode="stretch" />
             </TouchableOpacity>
-            <View style={styles.gridItem}>
+            <TouchableOpacity 
+              style={styles.gridItem} 
+              activeOpacity={0.9} 
+              onPress={() => router.push('/calendar')}
+            >
               <Image source={regionBImg} style={styles.regionAStyle} resizeMode="stretch" />
-            </View>
+            </TouchableOpacity>
           </View>
           {/* 下一行：区域四、区域五 */}
           <View style={styles.bottomRow}>
