@@ -5,6 +5,13 @@ const { withUniwindConfig } = require('uniwind/metro');
 
 const config = getDefaultConfig(__dirname);
 
+// Polyfill Node.js built-in modules for React Native
+const path = require('path');
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  buffer: path.resolve(__dirname, 'node_modules', 'buffer'),
+};
+
 // 安全地获取 Expo 的默认排除列表
 const existingBlockList = [].concat(config.resolver.blockList || []);
 
