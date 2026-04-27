@@ -122,9 +122,11 @@ export default function MyVocabularyPage() {
                   </View>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
-                  <Text style={styles.oldSchoolText}>old-school</Text>
-                </TouchableOpacity>
+                {index === 1 && (
+                  <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
+                    <Text style={styles.oldSchoolText}>old-school</Text>
+                  </TouchableOpacity>
+                )}
 
               </View>
             ))
