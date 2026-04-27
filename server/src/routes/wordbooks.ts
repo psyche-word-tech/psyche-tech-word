@@ -72,6 +72,8 @@ router.get('/stats', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 20;
     const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
     
     if (!validTables.includes(table)) {
@@ -83,7 +85,8 @@ router.get('/:table', async (req, res) => {
     const { data, error } = await client
       .from(table)
       .select('*')
-      .order('id');
+      .order('id')
+      .range(offset, offset + limit - 1);
 
     if (error) {
       res.status(500).json({ error: error.message });

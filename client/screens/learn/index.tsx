@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
@@ -31,8 +31,10 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 
 	const panResponder = useMemo(() =>
 		PanResponder.create({
-			onStartShouldSetPanResponder: () => true,
-			onMoveShouldSetPanResponder: () => true,
+			onStartShouldSetPanResponder: () => false,
+			onMoveShouldSetPanResponder: (_evt, gestureState) => {
+				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
+			},
 			onPanResponderGrant: () => {
 				setIsDragging(true);
 				pan.setOffset({
@@ -110,18 +112,22 @@ export default function LearnPage() {
 	const [allWords, setAllWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [error, setError] = useState<string | null>(null);
+	const [offset, setOffset] = useState(0);
+	const [hasMore, setHasMore] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const limit = 20;
 
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
 
-	const displayWords = allWords.slice(0, 3);
+	const displayWords = allWords;
 	const remainingCount = allWords.length;
 
-	const fetchData = useCallback(async () => {
+	const fetchWords = useCallback(async (currentOffset: number, append: boolean) => {
 		setError(null);
 		try {
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}?offset=${currentOffset}&limit=${limit}`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
@@ -132,7 +138,13 @@ export default function LearnPage() {
 			const yResult = await yRes.json();
 			const zResult = await zRes.json();
 
-			setAllWords(Array.isArray(wordsData) ? wordsData : []);
+			const newWords = Array.isArray(wordsData) ? wordsData : [];
+			if (append) {
+				setAllWords(prev => [...prev, ...newWords]);
+			} else {
+				setAllWords(newWords);
+			}
+			setHasMore(newWords.length === limit);
 			setCategoryCounts({
 				x: Array.isArray(xResult) ? xResult.length : 0,
 				y: Array.isArray(yResult) ? yResult.length : 0,
@@ -143,6 +155,11 @@ export default function LearnPage() {
 			setError(err?.message || '网络请求失败');
 		}
 	}, [table]);
+
+	const fetchData = useCallback(() => {
+		setOffset(0);
+		fetchWords(0, false);
+	}, [fetchWords]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -156,6 +173,24 @@ export default function LearnPage() {
 			fetchData();
 		}, [fetchData])
 	);
+
+	const loadMore = useCallback(() => {
+		if (!hasMore || loadingMore) return;
+		setLoadingMore(true);
+		const newOffset = offset + limit;
+		fetchWords(newOffset, true).finally(() => {
+			setOffset(newOffset);
+			setLoadingMore(false);
+		});
+	}, [hasMore, loadingMore, offset, fetchWords]);
+
+	const handleScroll = useCallback((event: any) => {
+		const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+		const isNearEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 50;
+		if (isNearEnd) {
+			loadMore();
+		}
+	}, [loadMore]);
 
 	const handleDrop = useCallback(async (wordId: number, categoryId: number) => {
 		const targetTableMap: Record<number, string> = {
@@ -204,79 +239,90 @@ export default function LearnPage() {
 
 	return (
 		<Screen>
-			<View style={styles.container}>
-				<View style={styles.header}>
-					<TouchableOpacity onPress={() => router.back()}>
-						<Text style={styles.backText}>back</Text>
-					</TouchableOpacity>
-					<Text style={styles.title}>词汇预览</Text>
-					<TouchableOpacity onPress={() => router.push('/calendar')}>
-							<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+			{/* scrollEnabled=false 阻止 Screen 自动包裹外层垂直滚动容器，避免干扰水平滚动 */}
+			<ScrollView scrollEnabled={false} contentContainerStyle={{ flexGrow: 1 }}>
+				<View style={styles.container}>
+					<View style={styles.header}>
+						<TouchableOpacity onPress={() => router.back()}>
+							<Text style={styles.backText}>back</Text>
 						</TouchableOpacity>
-				</View>
-
-				<View style={styles.centerContainer}>
-					<View style={styles.content}>
-						{error ? (
-							<View style={styles.emptyContainer}>
-								<Text style={styles.errorText}>加载失败: {error}</Text>
-								<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
-								<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-									<Text style={styles.retryButtonText}>重新加载</Text>
-								</TouchableOpacity>
-							</View>
-						) : (
-							<>
-								<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
-								{displayWords.length > 0 ? (
-									<View style={styles.wordRow}>
-										{displayWords.map((word) => (
-											<DraggableWordCard
-												key={word.id}
-												word={word}
-												onDrop={handleDrop}
-												onPress={() => handleWordPress(word)}
-											/>
-												))}
-									</View>
-								) : (
-									<View style={styles.emptyContainer}>
-										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
-										<Text style={styles.emptySubText}>若数据异常，请尝试刷新</Text>
-										<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-											<Text style={styles.retryButtonText}>重新加载</Text>
-										</TouchableOpacity>
-									</View>
-								)}
-							</>
-						)}
+						<Text style={styles.title}>词汇预览</Text>
+						<TouchableOpacity onPress={() => router.push('/calendar')}>
+								<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+							</TouchableOpacity>
 					</View>
 
-
-					<View style={styles.categorySection}>
-						<View style={styles.categoryRow}>
-							{[1, 2, 3].map((id) => {
-								const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
-								return (
-									<TouchableOpacity
-										key={id}
-										style={styles.categoryItem}
-										onPress={() => router.push('/word-list', { table: targetTable })}
-									>
-										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
-											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
-											<Text style={styles.categoryCount}>
-												({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
-											</Text>
-										</View>
+					<View style={styles.centerContainer}>
+						<View style={styles.content}>
+							{error ? (
+								<View style={styles.emptyContainer}>
+									<Text style={styles.errorText}>加载失败: {error}</Text>
+									<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
+									<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+										<Text style={styles.retryButtonText}>重新加载</Text>
 									</TouchableOpacity>
-								);
-							})}
+								</View>
+							) : (
+								<>
+									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
+									{displayWords.length > 0 ? (
+										<ScrollView
+											horizontal
+											showsHorizontalScrollIndicator={false}
+											snapToInterval={96}
+											decelerationRate="fast"
+											contentContainerStyle={styles.scrollContent}
+											onScroll={handleScroll}
+											scrollEventThrottle={200}
+										>
+											{displayWords.map((word) => (
+												<DraggableWordCard
+													key={word.id}
+													word={word}
+													onDrop={handleDrop}
+													onPress={() => handleWordPress(word)}
+												/>
+											))}
+										</ScrollView>
+									) : (
+										<View style={styles.emptyContainer}>
+											<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+											<Text style={styles.emptySubText}>若数据异常，请尝试刷新</Text>
+											<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+												<Text style={styles.retryButtonText}>重新加载</Text>
+											</TouchableOpacity>
+										</View>
+									)}
+								</>
+							)}
 						</View>
-						<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+
+
+						<View style={styles.categorySection}>
+							<View style={styles.categoryRow}>
+								{[1, 2, 3].map((id) => {
+									const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+									return (
+										<TouchableOpacity
+											key={id}
+											style={styles.categoryItem}
+											onPress={() => router.push('/word-list', { table: targetTable })}
+										>
+											<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+												<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+												<Text style={styles.categoryCount}>
+													({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+												</Text>
+											</View>
+										</TouchableOpacity>
+									);
+								})}
+							</View>
+							<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+						</View>
 					</View>
 				</View>
-			</View>
+			</ScrollView>
 		</Screen>
 	);
 }
@@ -320,10 +366,9 @@ const styles = StyleSheet.create({
 		color: '#999999',
 		marginBottom: 20,
 	},
-	wordRow: {
-		flexDirection: 'row',
+	scrollContent: {
 		gap: 28,
-		justifyContent: 'center',
+		paddingHorizontal: 20,
 	},
 	wordItemContainer: {
 		width: 68,
@@ -427,3 +472,4 @@ const styles = StyleSheet.create({
 		fontFamily: 'monospace',
 	},
 });
+
