@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, TouchableOpacity } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,99 +14,63 @@ interface Word {
   translation?: string | null;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const SWIPE_THRESHOLD = screenWidth * 0.25;
+const { width: screenWidth } = Dimensions.get('window');
+const CARD_WIDTH = screenWidth - 56;
+const CARD_MARGIN = 8;
+const ITEM_WIDTH = CARD_WIDTH + CARD_MARGIN;
 const LOAD_MORE_THRESHOLD = 5;
 const PAGE_SIZE = 20;
 
-interface SwipeCardProps {
+interface WordCardProps {
   word: Word;
-  onSwipeLeft: () => void;
-  onSwipeRight: () => void;
+  index: number;
+  currentIndex: number;
+  panX: Animated.Value;
 }
 
-// 可滑动单词卡片组件（定义在文件顶层）
-const SwipeCard = memo(function SwipeCard({ word, onSwipeLeft, onSwipeRight }: SwipeCardProps) {
-  const pan = useMemo(() => new Animated.ValueXY(), []);
-  const rotate = useMemo(() =>
-    pan.x.interpolate({
+// 单个单词卡片（纯展示，无手势）
+function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
+  const translateX = useMemo(() =>
+    panX.interpolate({
       inputRange: [-screenWidth, 0, screenWidth],
-      outputRange: ['-10deg', '0deg', '10deg'],
+      outputRange: [
+        (index - currentIndex) * ITEM_WIDTH - screenWidth,
+        (index - currentIndex) * ITEM_WIDTH,
+        (index - currentIndex) * ITEM_WIDTH + screenWidth,
+      ],
     }),
-  [pan]);
+  [panX, index, currentIndex]);
 
-  const panResponder = useMemo(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 5;
-      },
-      onPanResponderGrant: () => {
-        pan.setOffset({
-          x: (pan.x as any).__getValue ? (pan.x as any).__getValue() : 0,
-          y: 0,
-        });
-        pan.setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: pan.x }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: (_evt, gestureState) => {
-        pan.flattenOffset();
-
-        if (gestureState.dx > SWIPE_THRESHOLD) {
-          // 向右滑够距离 → 上一张
-          Animated.timing(pan, {
-            toValue: { x: screenWidth, y: 0 },
-            duration: 200,
-            useNativeDriver: false,
-          }).start(() => {
-            onSwipeRight();
-            pan.setValue({ x: -screenWidth, y: 0 });
-            Animated.timing(pan, {
-              toValue: { x: 0, y: 0 },
-              duration: 250,
-              useNativeDriver: false,
-            }).start();
-          });
-        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
-          // 向左滑够距离 → 下一张
-          Animated.timing(pan, {
-            toValue: { x: -screenWidth, y: 0 },
-            duration: 200,
-            useNativeDriver: false,
-          }).start(() => {
-            onSwipeLeft();
-            pan.setValue({ x: screenWidth, y: 0 });
-            Animated.timing(pan, {
-              toValue: { x: 0, y: 0 },
-              duration: 250,
-              useNativeDriver: false,
-            }).start();
-          });
-        } else {
-          // 没滑够 → 回弹
-          Animated.spring(pan, {
-            toValue: { x: 0, y: 0 },
-            friction: 5,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
+  const scale = useMemo(() =>
+    panX.interpolate({
+      inputRange: [-screenWidth, 0, screenWidth],
+      outputRange: [
+        index === currentIndex + 1 ? 1 : 0.92,
+        index === currentIndex ? 1 : 0.92,
+        index === currentIndex - 1 ? 1 : 0.92,
+      ],
     }),
-  [onSwipeLeft, onSwipeRight, pan]);
+  [panX, index, currentIndex]);
+
+  const opacity = useMemo(() =>
+    panX.interpolate({
+      inputRange: [-screenWidth, 0, screenWidth],
+      outputRange: [
+        index >= currentIndex - 1 && index <= currentIndex + 2 ? 1 : 0,
+        index >= currentIndex - 1 && index <= currentIndex + 2 ? 1 : 0,
+        index >= currentIndex - 2 && index <= currentIndex + 1 ? 1 : 0,
+      ],
+    }),
+  [panX, index, currentIndex]);
 
   return (
     <Animated.View
-      {...panResponder.panHandlers}
       style={[
         styles.card,
         {
-          transform: [
-            { translateX: pan.x },
-            { rotate: rotate as any },
-          ],
+          transform: [{ translateX }, { scale }],
+          opacity,
+          zIndex: 100 - Math.abs(index - currentIndex),
         },
       ]}
     >
@@ -127,7 +91,7 @@ const SwipeCard = memo(function SwipeCard({ word, onSwipeLeft, onSwipeRight }: S
       </View>
     </Animated.View>
   );
-});
+}
 
 export default function WordPreviewPage() {
   const [words, setWords] = useState<Word[]>([]);
@@ -138,6 +102,14 @@ export default function WordPreviewPage() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const offsetRef = useRef(0);
+
+  // 共享的位移值，控制整组卡片
+  const panX = useMemo(() => new Animated.Value(0), []);
+  const currentIndexRef = useRef(currentIndex);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   // 获取词汇列表（分页）
   const fetchWords = useCallback(async (append = false) => {
@@ -163,6 +135,7 @@ export default function WordPreviewPage() {
         } else {
           setWords(data);
           setCurrentIndex(0);
+          panX.setValue(0);
         }
         offsetRef.current = offset + data.length;
       } else {
@@ -175,7 +148,7 @@ export default function WordPreviewPage() {
       setIsLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [panX]);
 
   // 获取分类数量
   const fetchCategoryCounts = useCallback(async () => {
@@ -233,35 +206,74 @@ export default function WordPreviewPage() {
       // 从列表中移除并更新索引
       setWords(prev => {
         const newWords = prev.filter(w => w.id !== word.id);
-        if (currentIndex >= newWords.length && newWords.length > 0) {
-          setCurrentIndex(newWords.length - 1);
+        if (currentIndexRef.current >= newWords.length && newWords.length > 0) {
+          const newIdx = newWords.length - 1;
+          setCurrentIndex(newIdx);
+          panX.setValue(0);
         }
         return newWords;
       });
       offsetRef.current = Math.max(0, offsetRef.current - 1);
 
-      // 更新分类数量
       fetchCategoryCounts();
-
     } catch (error) {
       console.error('Failed to move word:', error);
       Alert.alert('错误', '移动失败，请重试');
     }
-  }, [currentIndex, fetchCategoryCounts]);
+  }, [fetchCategoryCounts, panX]);
 
-  // 下一张
-  const goNext = useCallback(() => {
-    if (currentIndex < words.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    }
-  }, [currentIndex, words.length]);
+  // 手势处理：控制整组卡片
+  const startXRef = useRef(0);
+  /* eslint-disable react-hooks/refs */
+  const panResponder = useMemo(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 5;
+      },
+      onPanResponderGrant: () => {
+        startXRef.current = -currentIndexRef.current * ITEM_WIDTH;
+        panX.setOffset(startXRef.current);
+        panX.setValue(0);
+      },
+      onPanResponderMove: (_evt, gestureState) => {
+        panX.setValue(gestureState.dx);
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        panX.flattenOffset();
+        const currentIdx = currentIndexRef.current;
+        const total = words.length;
 
-  // 上一张
-  const goPrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-    }
-  }, [currentIndex]);
+        if (gestureState.dx < -ITEM_WIDTH * 0.3 && currentIdx < total - 1) {
+          // 向左滑够 → 下一张
+          const newIdx = currentIdx + 1;
+          setCurrentIndex(newIdx);
+          Animated.timing(panX, {
+            toValue: -newIdx * ITEM_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+        } else if (gestureState.dx > ITEM_WIDTH * 0.3 && currentIdx > 0) {
+          // 向右滑够 → 上一张
+          const newIdx = currentIdx - 1;
+          setCurrentIndex(newIdx);
+          Animated.timing(panX, {
+            toValue: -newIdx * ITEM_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          // 回弹到当前位置
+          Animated.spring(panX, {
+            toValue: -currentIdx * ITEM_WIDTH,
+            friction: 8,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    }),
+  [panX, words.length]);
+  /* eslint-enable react-hooks/refs */
 
   // 自动加载更多
   useEffect(() => {
@@ -296,8 +308,8 @@ export default function WordPreviewPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Card Area */}
-        <View style={styles.cardArea}>
+        {/* Cards Area */}
+        <View style={styles.cardsArea} {...panResponder.panHandlers}>
           {isLoading ? (
             <View style={styles.centerBox}>
               <Text style={styles.emptyText}>加载中...</Text>
@@ -310,14 +322,19 @@ export default function WordPreviewPage() {
             <View style={styles.centerBox}>
               <Text style={styles.emptyText}>所有单词已分类完成！</Text>
             </View>
-          ) : currentWord ? (
-            <SwipeCard
-              key={currentWord.id}
-              word={currentWord}
-              onSwipeLeft={goNext}
-              onSwipeRight={goPrev}
-            />
-          ) : null}
+          ) : (
+            <>
+              {words.map((word, index) => (
+                <WordCard
+                  key={word.id}
+                  word={word}
+                  index={index}
+                  currentIndex={currentIndex}
+                  panX={panX}
+                />
+              ))}
+            </>
+          )}
 
           {loadingMore && (
             <View style={styles.loadingMoreBox}>
@@ -403,11 +420,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  cardArea: {
+  cardsArea: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    overflow: 'hidden',
   },
   centerBox: {
     alignItems: 'center',
@@ -415,7 +431,9 @@ const styles = StyleSheet.create({
     padding: 48,
   },
   card: {
-    width: screenWidth - 48,
+    position: 'absolute',
+    left: 24,
+    width: CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     shadowColor: '#000',
