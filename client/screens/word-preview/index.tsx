@@ -15,8 +15,8 @@ interface Word {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - 100;
-const CARD_GAP = 16;
+const CARD_WIDTH = 260;
+const CARD_GAP = 20;
 const ITEM_WIDTH = CARD_WIDTH + CARD_GAP;
 const LOAD_MORE_THRESHOLD = 5;
 const PAGE_SIZE = 20;
@@ -28,7 +28,6 @@ interface WordCardProps {
   panX: Animated.Value;
 }
 
-// 单个单词卡片（纯展示，无手势）
 function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
   const baseOffset = (index - currentIndex) * ITEM_WIDTH;
 
@@ -89,7 +88,6 @@ export default function WordPreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const offsetRef = useRef(0);
 
-  // panX 表示相对于当前位置的位移，初始为 0
   const panX = useMemo(() => new Animated.Value(0), []);
   const currentIndexRef = useRef(currentIndex);
 
@@ -97,7 +95,6 @@ export default function WordPreviewPage() {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  // 获取词汇列表（分页）
   const fetchWords = useCallback(async (append = false) => {
     if (append) {
       setLoadingMore(true);
@@ -136,7 +133,6 @@ export default function WordPreviewPage() {
     }
   }, [panX]);
 
-  // 获取分类数量
   const fetchCategoryCounts = useCallback(async () => {
     try {
       const [xRes, yRes, zRes] = await Promise.all([
@@ -155,7 +151,6 @@ export default function WordPreviewPage() {
     }
   }, []);
 
-  // 页面加载时获取数据
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchWords(false);
@@ -171,7 +166,6 @@ export default function WordPreviewPage() {
     }, [fetchWords, fetchCategoryCounts])
   );
 
-  // 移动单词到分类
   const handleMoveComplete = useCallback(async (word: Word, targetTable: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
@@ -207,7 +201,6 @@ export default function WordPreviewPage() {
     }
   }, [fetchCategoryCounts, panX]);
 
-  // 手势处理：控制整组卡片
   /* eslint-disable react-hooks/refs */
   const panResponder = useMemo(() =>
     PanResponder.create({
@@ -228,7 +221,6 @@ export default function WordPreviewPage() {
         const total = words.length;
 
         if (gestureState.dx < -ITEM_WIDTH * 0.3 && currentIdx < total - 1) {
-          // 向左滑够 → 下一张
           const newIdx = currentIdx + 1;
           Animated.timing(panX, {
             toValue: -ITEM_WIDTH,
@@ -239,7 +231,6 @@ export default function WordPreviewPage() {
             panX.setValue(0);
           });
         } else if (gestureState.dx > ITEM_WIDTH * 0.3 && currentIdx > 0) {
-          // 向右滑够 → 上一张
           const newIdx = currentIdx - 1;
           Animated.timing(panX, {
             toValue: ITEM_WIDTH,
@@ -250,7 +241,6 @@ export default function WordPreviewPage() {
             panX.setValue(0);
           });
         } else {
-          // 回弹到当前位置
           Animated.spring(panX, {
             toValue: 0,
             friction: 8,
@@ -262,7 +252,6 @@ export default function WordPreviewPage() {
   [panX, words.length]);
   /* eslint-enable react-hooks/refs */
 
-  // 自动加载更多
   useEffect(() => {
     if (
       words.length > 0 &&
@@ -296,7 +285,7 @@ export default function WordPreviewPage() {
         </View>
 
         {/* Cards Area */}
-        <View style={styles.cardsArea} {...panResponder.panHandlers}>
+        <View style={styles.cardsArea}>
           {isLoading ? (
             <View style={styles.centerBox}>
               <Text style={styles.emptyText}>加载中...</Text>
@@ -321,6 +310,11 @@ export default function WordPreviewPage() {
                 />
               ))}
             </>
+          )}
+
+          {/* 透明触摸层：确保手势被正确捕获 */}
+          {!isLoading && !error && total > 0 && (
+            <View style={styles.touchOverlay} {...panResponder.panHandlers} />
           )}
 
           {loadingMore && (
@@ -481,6 +475,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 18,
   },
+  touchOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 200,
+  },
   swipeHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -500,6 +502,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    zIndex: 300,
   },
   loadingMoreText: {
     color: '#FFFFFF',
