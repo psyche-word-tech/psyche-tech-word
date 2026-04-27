@@ -89,9 +89,7 @@ export default function MyVocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
-          <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
-            <Text style={styles.oldSchoolText}>old-school</Text>
-          </TouchableOpacity>
+          <View style={styles.placeholder} />
         </View>
 
         {/* Word Books Grid */}
@@ -124,6 +122,9 @@ export default function MyVocabularyPage() {
                   </View>
                 </TouchableOpacity>
                 
+                <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
+                  <Text style={styles.oldSchoolText}>old-school</Text>
+                </TouchableOpacity>
 
               </View>
             ))
@@ -181,6 +182,9 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontFamily: 'serif',
     fontWeight: '600',
+  },
+  placeholder: {
+    width: 50,
   },
   oldSchoolButton: {
     backgroundColor: '#4CAF50',
