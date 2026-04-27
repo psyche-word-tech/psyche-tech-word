@@ -221,6 +221,9 @@ export default function LearnPage() {
 							<View style={styles.emptyContainer}>
 								<Text style={styles.errorText}>加载失败: {error}</Text>
 								<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
+								<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+									<Text style={styles.retryButtonText}>重新加载</Text>
+								</TouchableOpacity>
 							</View>
 						) : (
 							<>
@@ -239,6 +242,10 @@ export default function LearnPage() {
 								) : (
 									<View style={styles.emptyContainer}>
 										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+										<Text style={styles.emptySubText}>若数据异常，请尝试刷新</Text>
+										<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+											<Text style={styles.retryButtonText}>重新加载</Text>
+										</TouchableOpacity>
 									</View>
 								)}
 							</>
@@ -388,6 +395,25 @@ const styles = StyleSheet.create({
 	errorSubText: {
 		fontSize: 12,
 		color: '#999999',
+		marginBottom: 12,
+	},
+	emptySubText: {
+		fontSize: 12,
+		color: '#999999',
+		marginTop: 8,
+		marginBottom: 12,
+	},
+	retryButton: {
+		backgroundColor: '#4CAF50',
+		paddingHorizontal: 20,
+		paddingVertical: 10,
+		borderRadius: 8,
+		marginTop: 8,
+	},
+	retryButtonText: {
+		fontSize: 14,
+		color: '#FFFFFF',
+		fontWeight: '600',
 	},
 	debugContainer: {
 		marginTop: 12,
