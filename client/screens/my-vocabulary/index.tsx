@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
@@ -89,7 +89,9 @@ export default function MyVocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
+            <Text style={styles.oldSchoolText}>old-school</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Word Books Grid */}
@@ -180,8 +182,17 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontWeight: '600',
   },
-  placeholder: {
-    width: 50,
+  oldSchoolButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  oldSchoolText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    fontWeight: '600',
   },
   gridContainer: {
     flex: 1,
