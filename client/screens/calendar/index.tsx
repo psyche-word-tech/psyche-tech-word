@@ -25,16 +25,27 @@ interface StatsData {
   unknown: number;
 }
 
-// 周一用真实数据，其余用虚构数据，保持风格一致
-const mockSegments: DaySegment[] = [
-  { day: '周一', known: 0, vague: 0, unknown: 0 }, // 真实数据会覆盖
-  { day: '周二', known: 5, vague: 2, unknown: 1 },
-  { day: '周三', known: 10, vague: 3, unknown: 2 },
-  { day: '周四', known: 14, vague: 4, unknown: 2 },
-  { day: '周五', known: 4, vague: 1, unknown: 1 },
-  { day: '周六', known: 12, vague: 4, unknown: 2 },
-  { day: '周日', known: 7, vague: 2, unknown: 1 },
-];
+function getLast7Days(): DaySegment[] {
+  const days: DaySegment[] = [];
+  const weekLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const month = d.getMonth() + 1;
+    const date = d.getDate();
+    const weekLabel = weekLabels[d.getDay()];
+    days.push({
+      day: `${month}/${date}`,
+      known: i === 0 ? 0 : Math.floor(Math.random() * 15) + 1,
+      vague: i === 0 ? 0 : Math.floor(Math.random() * 5) + 1,
+      unknown: i === 0 ? 0 : Math.floor(Math.random() * 4) + 1,
+    });
+  }
+  return days;
+}
+
+// 生成最近7天的数据，最后一天（今天）用真实数据覆盖
+const mockSegments: DaySegment[] = getLast7Days();
 
 const MAX_VALUE = 25;
 import { API_BASE_URL } from '@/utils/apiConfig';
@@ -107,9 +118,9 @@ export default function CalendarPage() {
   }, []);
 
   const getDaySegments = (index: number): DaySegment => {
-    if (index === 0 && stats) {
+    if (index === 6 && stats) {
       return {
-        day: '周一',
+        ...mockSegments[index],
         known: stats.known || 0,
         vague: stats.vague || 0,
         unknown: stats.unknown || 0,

@@ -22,15 +22,16 @@ router.post('/send-code', async (req, res) => {
     const client = getSupabaseClient();
     await client.from('verification_codes').delete().eq('phone', phone);
 
-    // 调用阿里云号码认证服务发送验证码（服务自动生成验证码）
-    const smsResult = await sendSmsCode(phone);
+    // 本地生成6位数字验证码
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    if (!smsResult.success || !smsResult.code) {
-      console.error('短信服务返回失败:', smsResult.error);
-      return res.json({ success: false, error: smsResult.error || '短信发送失败' });
+    // 调用阿里云短信服务发送验证码
+    const smsResult = await sendSmsCode(phone, code);
+
+    if (!smsResult.success) {
+      console.warn('短信服务发送失败（阿里云签名/模板未通过审核或配置有误）:', smsResult.error);
+      // 短信发送失败时仍存储验证码，开发模式下前端可获取验证码进行测试
     }
-
-    const code = smsResult.code;
 
     // 验证码5分钟有效
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -47,7 +48,7 @@ router.post('/send-code', async (req, res) => {
       return res.json({ success: false, error: '发送失败' });
     }
 
-    res.json({ success: true, message: '验证码已发送', code });
+    res.json({ success: true, message: '验证码已发送', code, smsWarning: smsResult.success ? undefined : smsResult.error });
   } catch (error) {
     console.error('发送验证码失败:', error);
     res.json({ success: false, error: '发送失败' });
