@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, Alert, TouchableOpacity } from 'react-native';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Alert, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -23,42 +23,11 @@ const PAGE_SIZE = 20;
 
 interface WordCardProps {
   word: Word;
-  index: number;
-  currentIndex: number;
-  panX: Animated.Value;
 }
 
-function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
-  const baseOffset = (index - currentIndex) * ITEM_WIDTH;
-
-  const translateX = useMemo(() =>
-    panX.interpolate({
-      inputRange: [-ITEM_WIDTH, 0, ITEM_WIDTH],
-      outputRange: [baseOffset - ITEM_WIDTH, baseOffset, baseOffset + ITEM_WIDTH],
-    }),
-  [panX, baseOffset]);
-
-  const scale = useMemo(() =>
-    panX.interpolate({
-      inputRange: [-ITEM_WIDTH, 0, ITEM_WIDTH],
-      outputRange: [
-        index === currentIndex + 1 ? 1 : 0.92,
-        index === currentIndex ? 1 : 0.92,
-        index === currentIndex - 1 ? 1 : 0.92,
-      ],
-    }),
-  [panX, index, currentIndex]);
-
+function WordCard({ word }: WordCardProps) {
   return (
-    <Animated.View
-      style={[
-        styles.card,
-        {
-          transform: [{ translateX }, { scale }],
-          zIndex: 100 - Math.abs(index - currentIndex),
-        },
-      ]}
-    >
+    <View style={styles.card}>
       <View style={styles.cardInner}>
         <Text style={styles.wordText}>{word.word}</Text>
         <Text style={styles.phoneticText}>{word.phonetic || ''}</Text>
@@ -74,11 +43,12 @@ function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
           </View>
         ) : null}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 export default function WordPreviewPage() {
+  const scrollViewRef = useRef<ScrollView>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
@@ -87,9 +57,7 @@ export default function WordPreviewPage() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const offsetRef = useRef(0);
-
-  const panX = useMemo(() => new Animated.Value(0), []);
-  const currentIndexRef = useRef(currentIndex);
+  const currentIndexRef = useRef(0);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -118,7 +86,7 @@ export default function WordPreviewPage() {
         } else {
           setWords(data);
           setCurrentIndex(0);
-          panX.setValue(0);
+          scrollViewRef.current?.scrollTo({ x: 0, animated: false });
         }
         offsetRef.current = offset + data.length;
       } else {
@@ -131,7 +99,7 @@ export default function WordPreviewPage() {
       setIsLoading(false);
       setLoadingMore(false);
     }
-  }, [panX]);
+  }, []);
 
   const fetchCategoryCounts = useCallback(async () => {
     try {
@@ -185,11 +153,11 @@ export default function WordPreviewPage() {
 
       setWords(prev => {
         const newWords = prev.filter(w => w.id !== word.id);
-        if (currentIndexRef.current >= newWords.length && newWords.length > 0) {
-          const newIdx = newWords.length - 1;
-          setCurrentIndex(newIdx);
-          panX.setValue(0);
-        }
+        const newIndex = Math.min(currentIndexRef.current, Math.max(0, newWords.length - 1));
+        setCurrentIndex(newIndex);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: false });
+        }, 50);
         return newWords;
       });
       offsetRef.current = Math.max(0, offsetRef.current - 1);
@@ -199,73 +167,38 @@ export default function WordPreviewPage() {
       console.error('Failed to move word:', error);
       Alert.alert('错误', '移动失败，请重试');
     }
-  }, [fetchCategoryCounts, panX]);
+  }, [fetchCategoryCounts]);
 
-  /* eslint-disable react-hooks/refs */
-  const panResponder = useMemo(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 5;
-      },
-      onPanResponderGrant: () => {
-        panX.setOffset(0);
-        panX.setValue(0);
-      },
-      onPanResponderMove: (_evt, gestureState) => {
-        panX.setValue(gestureState.dx);
-      },
-      onPanResponderRelease: (_evt, gestureState) => {
-        panX.flattenOffset();
-        const currentIdx = currentIndexRef.current;
-        const total = words.length;
+  const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / ITEM_WIDTH);
+    setCurrentIndex(Math.max(0, Math.min(newIndex, words.length - 1)));
+  }, [words.length]);
 
-        if (gestureState.dx < -ITEM_WIDTH * 0.3 && currentIdx < total - 1) {
-          const newIdx = currentIdx + 1;
-          Animated.timing(panX, {
-            toValue: -ITEM_WIDTH,
-            duration: 250,
-            useNativeDriver: false,
-          }).start(() => {
-            setCurrentIndex(newIdx);
-            panX.setValue(0);
-          });
-        } else if (gestureState.dx > ITEM_WIDTH * 0.3 && currentIdx > 0) {
-          const newIdx = currentIdx - 1;
-          Animated.timing(panX, {
-            toValue: ITEM_WIDTH,
-            duration: 250,
-            useNativeDriver: false,
-          }).start(() => {
-            setCurrentIndex(newIdx);
-            panX.setValue(0);
-          });
-        } else {
-          Animated.spring(panX, {
-            toValue: 0,
-            friction: 8,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
-    }),
-  [panX, words.length]);
-  /* eslint-enable react-hooks/refs */
-
-  useEffect(() => {
-    if (
-      words.length > 0 &&
-      currentIndex >= words.length - LOAD_MORE_THRESHOLD &&
-      hasMore &&
-      !loadingMore &&
-      !isLoading
-    ) {
-      const timer = setTimeout(() => {
-        fetchWords(true);
-      }, 0);
-      return () => clearTimeout(timer);
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const offsetX = contentOffset.x;
+    const maxOffset = contentSize.width - layoutMeasurement.width;
+    if (offsetX > maxOffset - 200 && hasMore && !loadingMore && !isLoading) {
+      fetchWords(true);
     }
-  }, [currentIndex, words.length, hasMore, loadingMore, isLoading, fetchWords]);
+  }, [hasMore, loadingMore, isLoading, fetchWords]);
+
+  const scrollToPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: true });
+      setCurrentIndex(newIndex);
+    }
+  }, [currentIndex]);
+
+  const scrollToNext = useCallback(() => {
+    if (currentIndex < words.length - 1) {
+      const newIndex = currentIndex + 1;
+      scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: true });
+      setCurrentIndex(newIndex);
+    }
+  }, [currentIndex, words.length]);
 
   const currentWord = words[currentIndex];
   const total = words.length;
@@ -284,8 +217,8 @@ export default function WordPreviewPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Cards Area */}
-        <View style={styles.cardsArea}>
+        {/* Cards ScrollView */}
+        <View style={styles.scrollWrapper}>
           {isLoading ? (
             <View style={styles.centerBox}>
               <Text style={styles.emptyText}>加载中...</Text>
@@ -299,22 +232,23 @@ export default function WordPreviewPage() {
               <Text style={styles.emptyText}>所有单词已分类完成！</Text>
             </View>
           ) : (
-            <>
-              {words.map((word, index) => (
-                <WordCard
-                  key={word.id}
-                  word={word}
-                  index={index}
-                  currentIndex={currentIndex}
-                  panX={panX}
-                />
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={ITEM_WIDTH}
+              decelerationRate="fast"
+              scrollEventThrottle={16}
+              onMomentumScrollEnd={handleScrollEnd}
+              onScroll={handleScroll}
+              contentContainerStyle={styles.scrollContent}
+            >
+              {words.map((word) => (
+                <View key={word.id} style={styles.cardWrapper}>
+                  <WordCard word={word} />
+                </View>
               ))}
-            </>
-          )}
-
-          {/* 透明触摸层：确保手势被正确捕获 */}
-          {!isLoading && !error && total > 0 && (
-            <View style={styles.touchOverlay} {...panResponder.panHandlers} />
+            </ScrollView>
           )}
 
           {loadingMore && (
@@ -324,11 +258,17 @@ export default function WordPreviewPage() {
           )}
         </View>
 
-        {/* Swipe hint */}
-        <View style={styles.swipeHintRow}>
-          <Ionicons name="chevron-back" size={16} color="#999" />
+        {/* Navigation buttons */}
+        <View style={styles.navRow}>
+          <TouchableOpacity style={styles.navButton} onPress={scrollToPrev} disabled={currentIndex <= 0}>
+            <Ionicons name="chevron-back" size={20} color={currentIndex <= 0 ? '#ccc' : '#666'} />
+            <Text style={[styles.navText, currentIndex <= 0 && styles.navTextDisabled]}>上一个</Text>
+          </TouchableOpacity>
           <Text style={styles.swipeHintText}>左右滑动切换单词</Text>
-          <Ionicons name="chevron-forward" size={16} color="#999" />
+          <TouchableOpacity style={styles.navButton} onPress={scrollToNext} disabled={currentIndex >= total - 1}>
+            <Text style={[styles.navText, currentIndex >= total - 1 && styles.navTextDisabled]}>下一个</Text>
+            <Ionicons name="chevron-forward" size={20} color={currentIndex >= total - 1 ? '#ccc' : '#666'} />
+          </TouchableOpacity>
         </View>
 
         {/* Category Buttons */}
@@ -401,19 +341,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  cardsArea: {
+  scrollWrapper: {
     flex: 1,
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  centerBox: {
+  scrollContent: {
+    paddingHorizontal: (screenWidth - CARD_WIDTH) / 2,
+    paddingVertical: 20,
+    gap: 0,
+  },
+  cardWrapper: {
+    width: ITEM_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 48,
   },
   card: {
-    position: 'absolute',
-    left: 28,
     width: CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -427,6 +369,11 @@ const styles = StyleSheet.create({
     padding: 24,
     minHeight: 280,
     justifyContent: 'center',
+  },
+  centerBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 48,
   },
   wordText: {
     fontSize: 32,
@@ -475,20 +422,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 18,
   },
-  touchOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 200,
-  },
-  swipeHintRow: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  navText: {
+    fontSize: 13,
+    color: '#666666',
+  },
+  navTextDisabled: {
+    color: '#CCCCCC',
   },
   swipeHintText: {
     fontSize: 13,
@@ -502,7 +455,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    zIndex: 300,
   },
   loadingMoreText: {
     color: '#FFFFFF',
