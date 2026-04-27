@@ -1,5 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Alert, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  Alert,
+  TouchableOpacity,
+  PanResponder,
+  useWindowDimensions,
+} from 'react-native';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -14,31 +24,26 @@ interface Word {
   translation?: string | null;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = 260;
-const CARD_GAP = 20;
+const CARD_WIDTH = 200;
+const CARD_GAP = 16;
 const ITEM_WIDTH = CARD_WIDTH + CARD_GAP;
 const LOAD_MORE_THRESHOLD = 5;
 const PAGE_SIZE = 20;
 
-interface WordCardProps {
-  word: Word;
-}
-
-function WordCard({ word }: WordCardProps) {
+function WordCard({ word }: { word: Word }) {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardInner}>
-        <Text style={styles.wordText}>{word.word}</Text>
-        <Text style={styles.phoneticText}>{word.phonetic || ''}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.meaningText}>{word.meaning}</Text>
+    <View style={cardStyles.card}>
+      <View style={cardStyles.cardInner}>
+        <Text style={cardStyles.wordText}>{word.word}</Text>
+        <Text style={cardStyles.phoneticText}>{word.phonetic || ''}</Text>
+        <View style={cardStyles.divider} />
+        <Text style={cardStyles.meaningText}>{word.meaning}</Text>
         {word.example ? (
-          <View style={styles.exampleBox}>
-            <Text style={styles.exampleLabel}>例句</Text>
-            <Text style={styles.exampleText}>{word.example}</Text>
+          <View style={cardStyles.exampleBox}>
+            <Text style={cardStyles.exampleLabel}>例句</Text>
+            <Text style={cardStyles.exampleText}>{word.example}</Text>
             {word.translation ? (
-              <Text style={styles.exampleTranslation}>{word.translation}</Text>
+              <Text style={cardStyles.exampleTranslation}>{word.translation}</Text>
             ) : null}
           </View>
         ) : null}
@@ -47,8 +52,12 @@ function WordCard({ word }: WordCardProps) {
   );
 }
 
+/* eslint-disable react-hooks/refs */
 export default function WordPreviewPage() {
-  const scrollViewRef = useRef<ScrollView>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const screenWidth = windowWidth || Dimensions.get('window').width || 393;
+  const CENTER_BASE = (screenWidth - CARD_WIDTH) / 2;
+
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
@@ -58,48 +67,109 @@ export default function WordPreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const offsetRef = useRef(0);
   const currentIndexRef = useRef(0);
+  const wordsRef = useRef<Word[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const setCurrentIndexRef = useRef<React.Dispatch<React.SetStateAction<number>>>((_v) => {});
+  const panX = useRef(new Animated.Value(0)).current;
+  const panResponderRef = useRef<ReturnType<typeof PanResponder.create> | null>(null);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  const fetchWords = useCallback(async (append = false) => {
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setIsLoading(true);
-      offsetRef.current = 0;
-    }
-    setError(null);
-    try {
-      const offset = append ? offsetRef.current : 0;
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/user-words/category/words_b?offset=${offset}&limit=${PAGE_SIZE}`
-      );
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        if (data.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
-        if (append) {
-          setWords(prev => [...prev, ...data]);
-        } else {
-          setWords(data);
-          setCurrentIndex(0);
-          scrollViewRef.current?.scrollTo({ x: 0, animated: false });
-        }
-        offsetRef.current = offset + data.length;
-      } else {
-        setError('返回数据格式错误');
-      }
-    } catch (err: any) {
-      console.error('Failed to fetch words:', err);
-      setError(err?.message || '网络请求失败');
-    } finally {
-      setIsLoading(false);
-      setLoadingMore(false);
-    }
+  useEffect(() => {
+    wordsRef.current = words;
+  }, [words]);
+
+  useEffect(() => {
+    setCurrentIndexRef.current = setCurrentIndex;
   }, []);
+
+  useEffect(() => {
+    panResponderRef.current = PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 5;
+      },
+      onPanResponderGrant: () => {
+        panX.stopAnimation();
+        panX.setValue(-currentIndexRef.current * ITEM_WIDTH);
+      },
+      onPanResponderMove: (_evt, gestureState) => {
+        panX.setValue(-currentIndexRef.current * ITEM_WIDTH + gestureState.dx);
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        const currentIdx = currentIndexRef.current;
+        const wordCount = wordsRef.current.length;
+
+        if (gestureState.dx < -ITEM_WIDTH * 0.25 && currentIdx < wordCount - 1) {
+          const newIdx = currentIdx + 1;
+          Animated.timing(panX, {
+            toValue: -newIdx * ITEM_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+          setCurrentIndexRef.current(newIdx);
+        } else if (gestureState.dx > ITEM_WIDTH * 0.25 && currentIdx > 0) {
+          const newIdx = currentIdx - 1;
+          Animated.timing(panX, {
+            toValue: -newIdx * ITEM_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+          setCurrentIndexRef.current(newIdx);
+        } else {
+          Animated.spring(panX, {
+            toValue: -currentIdx * ITEM_WIDTH,
+            friction: 8,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const panHandlers = panResponderRef.current?.panHandlers;
+
+  const fetchWords = useCallback(
+    async (append = false) => {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setIsLoading(true);
+        offsetRef.current = 0;
+      }
+      setError(null);
+      try {
+        const offset = append ? offsetRef.current : 0;
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/user-words/category/words_b?offset=${offset}&limit=${PAGE_SIZE}`
+        );
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          if (data.length < PAGE_SIZE) {
+            setHasMore(false);
+          }
+          if (append) {
+            setWords((prev) => [...prev, ...data]);
+          } else {
+            setWords(data);
+            setCurrentIndex(0);
+            panX.setValue(0);
+          }
+          offsetRef.current = offset + data.length;
+        } else {
+          setError('返回数据格式错误');
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch words:', err);
+        setError(err?.message || '网络请求失败');
+      } finally {
+        setIsLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [panX]
+  );
 
   const fetchCategoryCounts = useCallback(async () => {
     try {
@@ -108,7 +178,11 @@ export default function WordPreviewPage() {
         fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
         fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
       ]);
-      const [xData, yData, zData] = await Promise.all([xRes.json(), yRes.json(), zRes.json()]);
+      const [xData, yData, zData] = await Promise.all([
+        xRes.json(),
+        yRes.json(),
+        zRes.json(),
+      ]);
       setCategoryCounts({
         x: xData.count || 0,
         y: yData.count || 0,
@@ -134,71 +208,84 @@ export default function WordPreviewPage() {
     }, [fetchWords, fetchCategoryCounts])
   );
 
-  const handleMoveComplete = useCallback(async (word: Word, targetTable: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wordId: word.id,
-          targetTable: targetTable,
-        }),
-      });
+  // 自动加载更多
+  useEffect(() => {
+    if (
+      currentIndex >= words.length - LOAD_MORE_THRESHOLD &&
+      hasMore &&
+      !loadingMore &&
+      !isLoading
+    ) {
+      const timer = setTimeout(() => {
+        fetchWords(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, words.length, hasMore, loadingMore, isLoading, fetchWords]);
 
-      const result = await response.json();
+  const handleMoveComplete = useCallback(
+    async (word: Word, targetTable: string) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wordId: word.id,
+            targetTable: targetTable,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(result.error || '移动失败');
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || '移动失败');
+        }
+
+        setWords((prev) => {
+          const newWords = prev.filter((w) => w.id !== word.id);
+          const newIndex = Math.min(currentIndexRef.current, Math.max(0, newWords.length - 1));
+          setCurrentIndexRef.current(newIndex);
+          Animated.timing(panX, {
+            toValue: -newIndex * ITEM_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+          return newWords;
+        });
+        offsetRef.current = Math.max(0, offsetRef.current - 1);
+
+        fetchCategoryCounts();
+      } catch (error) {
+        console.error('Failed to move word:', error);
+        Alert.alert('错误', '移动失败，请重试');
       }
-
-      setWords(prev => {
-        const newWords = prev.filter(w => w.id !== word.id);
-        const newIndex = Math.min(currentIndexRef.current, Math.max(0, newWords.length - 1));
-        setCurrentIndex(newIndex);
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: false });
-        }, 50);
-        return newWords;
-      });
-      offsetRef.current = Math.max(0, offsetRef.current - 1);
-
-      fetchCategoryCounts();
-    } catch (error) {
-      console.error('Failed to move word:', error);
-      Alert.alert('错误', '移动失败，请重试');
-    }
-  }, [fetchCategoryCounts]);
-
-  const handleScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const newIndex = Math.round(offsetX / ITEM_WIDTH);
-    setCurrentIndex(Math.max(0, Math.min(newIndex, words.length - 1)));
-  }, [words.length]);
-
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const offsetX = contentOffset.x;
-    const maxOffset = contentSize.width - layoutMeasurement.width;
-    if (offsetX > maxOffset - 200 && hasMore && !loadingMore && !isLoading) {
-      fetchWords(true);
-    }
-  }, [hasMore, loadingMore, isLoading, fetchWords]);
+    },
+    [panX, fetchCategoryCounts]
+  );
 
   const scrollToPrev = useCallback(() => {
     if (currentIndex > 0) {
       const newIndex = currentIndex - 1;
-      scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: true });
+      Animated.timing(panX, {
+        toValue: -newIndex * ITEM_WIDTH,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
       setCurrentIndex(newIndex);
     }
-  }, [currentIndex]);
+  }, [currentIndex, panX]);
 
   const scrollToNext = useCallback(() => {
     if (currentIndex < words.length - 1) {
       const newIndex = currentIndex + 1;
-      scrollViewRef.current?.scrollTo({ x: newIndex * ITEM_WIDTH, animated: true });
+      Animated.timing(panX, {
+        toValue: -newIndex * ITEM_WIDTH,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
       setCurrentIndex(newIndex);
     }
-  }, [currentIndex, words.length]);
+  }, [currentIndex, words.length, panX]);
 
   const currentWord = words[currentIndex];
   const total = words.length;
@@ -217,8 +304,8 @@ export default function WordPreviewPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Cards ScrollView */}
-        <View style={styles.scrollWrapper}>
+        {/* Cards Area */}
+        <View style={styles.cardsArea}>
           {isLoading ? (
             <View style={styles.centerBox}>
               <Text style={styles.emptyText}>加载中...</Text>
@@ -232,23 +319,53 @@ export default function WordPreviewPage() {
               <Text style={styles.emptyText}>所有单词已分类完成！</Text>
             </View>
           ) : (
-            <ScrollView
-              ref={scrollViewRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={ITEM_WIDTH}
-              decelerationRate="fast"
-              scrollEventThrottle={16}
-              onMomentumScrollEnd={handleScrollEnd}
-              onScroll={handleScroll}
-              contentContainerStyle={styles.scrollContent}
-            >
-              {words.map((word) => (
-                <View key={word.id} style={styles.cardWrapper}>
-                  <WordCard word={word} />
-                </View>
-              ))}
-            </ScrollView>
+            <>
+              {/* Cards */}
+              {words.map((word, index) => {
+                const distance = Math.abs(index - currentIndex);
+                return (
+                  <Animated.View
+                    key={word.id}
+                    style={[
+                      cardStyles.card,
+                      {
+                        left: CENTER_BASE + index * ITEM_WIDTH,
+                        transform: [
+                          { translateX: panX },
+                          {
+                            scale: panX.interpolate({
+                              inputRange: [
+                                -(index + 1) * ITEM_WIDTH,
+                                -index * ITEM_WIDTH,
+                                -(index - 1) * ITEM_WIDTH,
+                              ],
+                              outputRange: [0.92, 1, 0.92],
+                              extrapolate: 'clamp',
+                            }),
+                          },
+                        ],
+                        opacity: panX.interpolate({
+                          inputRange: [
+                            -(index + 2) * ITEM_WIDTH,
+                            -(index + 1) * ITEM_WIDTH,
+                            -index * ITEM_WIDTH,
+                            -(index - 1) * ITEM_WIDTH,
+                            -(index - 2) * ITEM_WIDTH,
+                          ],
+                          outputRange: [0, 0.5, 1, 0.5, 0],
+                          extrapolate: 'clamp',
+                        }),
+                        zIndex: 100 - distance,
+                      },
+                    ]}
+                  >
+                    <WordCard word={word} />
+                  </Animated.View>
+                );
+              })}
+              {/* Transparent touch overlay to capture gestures */}
+              {panHandlers && <View style={styles.touchOverlay} {...panHandlers} />}
+            </>
           )}
 
           {loadingMore && (
@@ -265,8 +382,14 @@ export default function WordPreviewPage() {
             <Text style={[styles.navText, currentIndex <= 0 && styles.navTextDisabled]}>上一个</Text>
           </TouchableOpacity>
           <Text style={styles.swipeHintText}>左右滑动切换单词</Text>
-          <TouchableOpacity style={styles.navButton} onPress={scrollToNext} disabled={currentIndex >= total - 1}>
-            <Text style={[styles.navText, currentIndex >= total - 1 && styles.navTextDisabled]}>下一个</Text>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={scrollToNext}
+            disabled={currentIndex >= total - 1}
+          >
+            <Text style={[styles.navText, currentIndex >= total - 1 && styles.navTextDisabled]}>
+              下一个
+            </Text>
             <Ionicons name="chevron-forward" size={20} color={currentIndex >= total - 1 ? '#ccc' : '#666'} />
           </TouchableOpacity>
         </View>
@@ -341,21 +464,122 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  scrollWrapper: {
+  cardsArea: {
     flex: 1,
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  scrollContent: {
-    paddingHorizontal: (screenWidth - CARD_WIDTH) / 2,
-    paddingVertical: 20,
-    gap: 0,
+  touchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 200,
   },
-  cardWrapper: {
-    width: ITEM_WIDTH,
+  centerBox: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 48,
   },
+  emptyText: {
+    fontSize: 16,
+    color: '#999999',
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+  },
+  loadingMoreBox: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    fontSize: 12,
+    color: '#999999',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  navText: {
+    fontSize: 14,
+    color: '#666666',
+    marginHorizontal: 4,
+  },
+  navTextDisabled: {
+    color: '#CCCCCC',
+  },
+  swipeHintText: {
+    fontSize: 12,
+    color: '#AAAAAA',
+  },
+  categorySection: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  dropHint: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  categoryButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  knownButton: {
+    backgroundColor: '#DCFCE7',
+  },
+  vagueButton: {
+    backgroundColor: '#FEF9C3',
+  },
+  unknownButton: {
+    backgroundColor: '#FEE2E2',
+  },
+  categoryLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  categoryCount: {
+    fontSize: 12,
+    color: '#666666',
+    marginTop: 4,
+  },
+});
+
+const cardStyles = StyleSheet.create({
   card: {
+    position: 'absolute',
+    top: 20,
     width: CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -366,155 +590,54 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardInner: {
-    padding: 24,
+    padding: 20,
     minHeight: 280,
     justifyContent: 'center',
   },
-  centerBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 48,
-  },
   wordText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#1F2937',
     textAlign: 'center',
   },
   phoneticText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',
-    marginVertical: 16,
+    marginVertical: 14,
   },
   meaningText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   exampleBox: {
-    marginTop: 20,
+    marginTop: 14,
+    padding: 12,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
-    padding: 12,
   },
   exampleLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#9CA3AF',
     marginBottom: 6,
   },
   exampleText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#4B5563',
     lineHeight: 20,
-    fontStyle: 'italic',
   },
   exampleTranslation: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     marginTop: 6,
-    lineHeight: 18,
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  navText: {
-    fontSize: 13,
-    color: '#666666',
-  },
-  navTextDisabled: {
-    color: '#CCCCCC',
-  },
-  swipeHintText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
-  loadingMoreBox: {
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  loadingMoreText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-  },
-  categorySection: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  dropHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  categoryButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 16,
-  },
-  knownButton: {
-    backgroundColor: '#4CAF50',
-  },
-  vagueButton: {
-    backgroundColor: '#FF9800',
-  },
-  unknownButton: {
-    backgroundColor: '#F44336',
-  },
-  categoryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  categoryCount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginTop: 4,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#E53935',
+    fontStyle: 'italic',
   },
 });
