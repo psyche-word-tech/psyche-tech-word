@@ -157,9 +157,12 @@ router.post('/move', async (req, res) => {
 });
 
 // GET /api/v1/user-words/category/:table - 获取分类单词列表
+// Query: offset, limit (默认 offset=0, limit=50)
 router.get('/category/:table', async (req, res) => {
   try {
     const { table } = req.params;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
 
     // 验证表名
     const validTables = ['words_b', 'words_x', 'words_y', 'words_z'];
@@ -172,7 +175,8 @@ router.get('/category/:table', async (req, res) => {
     const { data, error } = await client
       .from(table)
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       res.status(500).json({ error: error.message });
