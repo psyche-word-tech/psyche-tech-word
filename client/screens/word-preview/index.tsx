@@ -15,9 +15,9 @@ interface Word {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - 56;
-const CARD_MARGIN = 8;
-const ITEM_WIDTH = CARD_WIDTH + CARD_MARGIN;
+const CARD_WIDTH = screenWidth - 100;
+const CARD_GAP = 16;
+const ITEM_WIDTH = CARD_WIDTH + CARD_GAP;
 const LOAD_MORE_THRESHOLD = 5;
 const PAGE_SIZE = 20;
 
@@ -30,35 +30,22 @@ interface WordCardProps {
 
 // 单个单词卡片（纯展示，无手势）
 function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
+  const baseOffset = (index - currentIndex) * ITEM_WIDTH;
+
   const translateX = useMemo(() =>
     panX.interpolate({
-      inputRange: [-screenWidth, 0, screenWidth],
-      outputRange: [
-        (index - currentIndex) * ITEM_WIDTH - screenWidth,
-        (index - currentIndex) * ITEM_WIDTH,
-        (index - currentIndex) * ITEM_WIDTH + screenWidth,
-      ],
+      inputRange: [-ITEM_WIDTH, 0, ITEM_WIDTH],
+      outputRange: [baseOffset - ITEM_WIDTH, baseOffset, baseOffset + ITEM_WIDTH],
     }),
-  [panX, index, currentIndex]);
+  [panX, baseOffset]);
 
   const scale = useMemo(() =>
     panX.interpolate({
-      inputRange: [-screenWidth, 0, screenWidth],
+      inputRange: [-ITEM_WIDTH, 0, ITEM_WIDTH],
       outputRange: [
         index === currentIndex + 1 ? 1 : 0.92,
         index === currentIndex ? 1 : 0.92,
         index === currentIndex - 1 ? 1 : 0.92,
-      ],
-    }),
-  [panX, index, currentIndex]);
-
-  const opacity = useMemo(() =>
-    panX.interpolate({
-      inputRange: [-screenWidth, 0, screenWidth],
-      outputRange: [
-        index >= currentIndex - 1 && index <= currentIndex + 2 ? 1 : 0,
-        index >= currentIndex - 1 && index <= currentIndex + 2 ? 1 : 0,
-        index >= currentIndex - 2 && index <= currentIndex + 1 ? 1 : 0,
       ],
     }),
   [panX, index, currentIndex]);
@@ -69,7 +56,6 @@ function WordCard({ word, index, currentIndex, panX }: WordCardProps) {
         styles.card,
         {
           transform: [{ translateX }, { scale }],
-          opacity,
           zIndex: 100 - Math.abs(index - currentIndex),
         },
       ]}
@@ -103,7 +89,7 @@ export default function WordPreviewPage() {
   const [error, setError] = useState<string | null>(null);
   const offsetRef = useRef(0);
 
-  // 共享的位移值，控制整组卡片
+  // panX 表示相对于当前位置的位移，初始为 0
   const panX = useMemo(() => new Animated.Value(0), []);
   const currentIndexRef = useRef(currentIndex);
 
@@ -203,7 +189,6 @@ export default function WordPreviewPage() {
         throw new Error(result.error || '移动失败');
       }
 
-      // 从列表中移除并更新索引
       setWords(prev => {
         const newWords = prev.filter(w => w.id !== word.id);
         if (currentIndexRef.current >= newWords.length && newWords.length > 0) {
@@ -223,7 +208,6 @@ export default function WordPreviewPage() {
   }, [fetchCategoryCounts, panX]);
 
   // 手势处理：控制整组卡片
-  const startXRef = useRef(0);
   /* eslint-disable react-hooks/refs */
   const panResponder = useMemo(() =>
     PanResponder.create({
@@ -232,8 +216,7 @@ export default function WordPreviewPage() {
         return Math.abs(gestureState.dx) > 5;
       },
       onPanResponderGrant: () => {
-        startXRef.current = -currentIndexRef.current * ITEM_WIDTH;
-        panX.setOffset(startXRef.current);
+        panX.setOffset(0);
         panX.setValue(0);
       },
       onPanResponderMove: (_evt, gestureState) => {
@@ -247,25 +230,29 @@ export default function WordPreviewPage() {
         if (gestureState.dx < -ITEM_WIDTH * 0.3 && currentIdx < total - 1) {
           // 向左滑够 → 下一张
           const newIdx = currentIdx + 1;
-          setCurrentIndex(newIdx);
           Animated.timing(panX, {
-            toValue: -newIdx * ITEM_WIDTH,
+            toValue: -ITEM_WIDTH,
             duration: 250,
             useNativeDriver: false,
-          }).start();
+          }).start(() => {
+            setCurrentIndex(newIdx);
+            panX.setValue(0);
+          });
         } else if (gestureState.dx > ITEM_WIDTH * 0.3 && currentIdx > 0) {
           // 向右滑够 → 上一张
           const newIdx = currentIdx - 1;
-          setCurrentIndex(newIdx);
           Animated.timing(panX, {
-            toValue: -newIdx * ITEM_WIDTH,
+            toValue: ITEM_WIDTH,
             duration: 250,
             useNativeDriver: false,
-          }).start();
+          }).start(() => {
+            setCurrentIndex(newIdx);
+            panX.setValue(0);
+          });
         } else {
           // 回弹到当前位置
           Animated.spring(panX, {
-            toValue: -currentIdx * ITEM_WIDTH,
+            toValue: 0,
             friction: 8,
             useNativeDriver: false,
           }).start();
@@ -432,7 +419,7 @@ const styles = StyleSheet.create({
   },
   card: {
     position: 'absolute',
-    left: 24,
+    left: 28,
     width: CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
