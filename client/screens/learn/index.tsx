@@ -250,7 +250,23 @@ export default function LearnPage() {
 				scrollX.setValue(0);
 			},
 			onPanResponderMove: (_, gestureState) => {
-				scrollX.setValue(gestureState.dx);
+				let dx = gestureState.dx;
+				const containerWidth = VIEWPORT_WIDTH;
+				const contentWidth = wordCountRef.current > 0
+					? wordCountRef.current * ITEM_WIDTH + (wordCountRef.current - 1) * ITEM_GAP + 16
+					: 16;
+				
+				if (contentWidth > containerWidth) {
+					const maxScroll = containerWidth - contentWidth;
+					const projectedX = currentScrollX.current + dx;
+					if (projectedX > 0) {
+						dx = dx * 0.3;
+					} else if (projectedX < maxScroll) {
+						dx = dx * 0.3;
+					}
+				}
+				
+				scrollX.setValue(dx);
 			},
 			onPanResponderRelease: (_, gestureState) => {
 				const containerWidth = VIEWPORT_WIDTH;
@@ -321,23 +337,26 @@ export default function LearnPage() {
 									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 									{displayWords.length > 0 ? (
 										<View style={styles.wordViewport}>
-											<Animated.View
-												{...listPanResponder.panHandlers}
-												pointerEvents="auto"
-												style={[
-													styles.wordRow,
-													{ transform: [{ translateX: scrollX }] },
-												]}
-											>
-												{displayWords.map((word) => (
-													<DraggableWordCard
-														key={word.id}
-														word={word}
-														onDrop={handleDrop}
-														onPress={() => handleWordPress(word)}
-													/>
-												))}
-											</Animated.View>
+											<View style={styles.wordRowClipper}>
+												<Animated.View
+													{...listPanResponder.panHandlers}
+													pointerEvents="auto"
+													style={[
+														styles.wordRow,
+														{ transform: [{ translateX: scrollX }] },
+													]}
+												>
+													{displayWords.map((word) => (
+														<DraggableWordCard
+															key={word.id}
+															word={word}
+															onDrop={handleDrop}
+															onPress={() => handleWordPress(word)}
+														/>
+													))}
+												</Animated.View>
+											</View>
+											<View style={styles.rightMask} pointerEvents="none" />
 										</View>
 									) : (
 										<View style={styles.emptyContainer}>
@@ -422,11 +441,17 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	wordViewport: {
-		width: 312,
+		width: 320,
 		overflow: 'hidden',
 		alignSelf: 'center',
-		borderRadius: 1,
-		borderColor: 'transparent',
+		position: 'relative',
+		height: 50,
+	},
+	wordRowClipper: {
+		width: 320,
+		overflow: 'hidden',
+		position: 'relative',
+		height: 50,
 	},
 	wordRow: {
 		flexDirection: 'row',
@@ -464,6 +489,14 @@ const styles = StyleSheet.create({
 		color: '#1A1A1A',
 		fontWeight: '700',
 		letterSpacing: 0.3,
+	},
+	rightMask: {
+		position: 'absolute',
+		right: -100,
+		top: 0,
+		bottom: 0,
+		width: 100,
+		backgroundColor: '#FFFFFF',
 	},
 	categorySection: {
 		paddingVertical: 10,
