@@ -405,9 +405,9 @@ const styles = StyleSheet.create({
 	},
 	wordItemContainer: {
 		width: 80,
-		backgroundColor: '#FFFFFF',
+		backgroundColor: '#F0F0F0',
 		borderRadius: 12,
-		paddingVertical: 12,
+		paddingVertical: 6,
 		paddingHorizontal: 8,
 		alignItems: 'center',
 		justifyContent: 'center',
