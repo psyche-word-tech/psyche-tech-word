@@ -337,26 +337,23 @@ export default function LearnPage() {
 									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 									{displayWords.length > 0 ? (
 										<View style={styles.wordViewport}>
-											<View style={styles.wordRowClipper}>
-												<Animated.View
-													{...listPanResponder.panHandlers}
-													pointerEvents="auto"
-													style={[
-														styles.wordRow,
-														{ transform: [{ translateX: scrollX }] },
-													]}
-												>
-													{displayWords.map((word) => (
-														<DraggableWordCard
-															key={word.id}
-															word={word}
-															onDrop={handleDrop}
-															onPress={() => handleWordPress(word)}
-														/>
-													))}
-												</Animated.View>
-											</View>
-											<View style={styles.rightMask} pointerEvents="none" />
+											<Animated.View
+												{...listPanResponder.panHandlers}
+												pointerEvents="auto"
+												style={[
+													styles.wordRow,
+													{ marginLeft: scrollX },
+												]}
+											>
+												{displayWords.map((word) => (
+													<DraggableWordCard
+														key={word.id}
+														word={word}
+														onDrop={handleDrop}
+														onPress={() => handleWordPress(word)}
+													/>
+												))}
+											</Animated.View>
 										</View>
 									) : (
 										<View style={styles.emptyContainer}>
@@ -449,14 +446,6 @@ const styles = StyleSheet.create({
 		position: 'relative',
 		height: 50,
 	},
-	wordRowClipper: {
-		width: 320,
-		maxWidth: 320,
-		minWidth: 0,
-		overflow: 'hidden',
-		position: 'relative',
-		height: 50,
-	},
 	wordRow: {
 		flexDirection: 'row',
 		gap: 28,
@@ -493,15 +482,6 @@ const styles = StyleSheet.create({
 		color: '#1A1A1A',
 		fontWeight: '700',
 		letterSpacing: 0.3,
-	},
-	rightMask: {
-		position: 'absolute',
-		right: -100,
-		top: 0,
-		bottom: 0,
-		width: 100,
-		backgroundColor: '#FFFFFF',
-		zIndex: 999,
 	},
 	categorySection: {
 		paddingVertical: 10,
