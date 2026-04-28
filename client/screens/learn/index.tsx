@@ -33,8 +33,9 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => false,
 			onMoveShouldSetPanResponder: (_evt, gestureState) => {
-				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
+				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.5 && Math.abs(gestureState.dy) > 15;
 			},
+			onPanResponderTerminationRequest: () => true,
 			onPanResponderGrant: () => {
 				setIsDragging(true);
 				pan.setOffset({
@@ -95,7 +96,9 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				},
 			]}
 		>
-			<Text onPress={onPress} style={styles.wordCardText}>{word.word}</Text>
+			<TouchableOpacity onPress={onPress} activeOpacity={0.9} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+				<Text style={styles.wordCardText}>{word.word}</Text>
+			</TouchableOpacity>
 		</Animated.View>
 	);
 }
@@ -270,7 +273,7 @@ export default function LearnPage() {
 	return (
 		<Screen>
 			{/* scrollEnabled=false 阻止 Screen 自动包裹外层垂直滚动容器，避免干扰水平滚动 */}
-			<ScrollView scrollEnabled={false} contentContainerStyle={{ flexGrow: 1 }}>
+			<ScrollView scrollEnabled={false} pointerEvents="none" contentContainerStyle={{ flexGrow: 1 }}>
 				<View style={styles.container}>
 					<View style={styles.header}>
 						<TouchableOpacity onPress={() => router.back()}>
