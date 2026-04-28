@@ -236,6 +236,8 @@ export default function LearnPage() {
 	const ITEM_WIDTH = 80;
 	const ITEM_GAP = 28;
 	const ITEM_TOTAL = ITEM_WIDTH + ITEM_GAP;
+	const VIEWPORT_WORDS = 3;
+	const VIEWPORT_WIDTH = VIEWPORT_WORDS * ITEM_WIDTH + (VIEWPORT_WORDS - 1) * ITEM_GAP + 16;
 
 	const listPanResponder = useRef(
 		PanResponder.create({
@@ -251,13 +253,22 @@ export default function LearnPage() {
 				scrollX.setValue(gestureState.dx);
 			},
 			onPanResponderRelease: (_, gestureState) => {
+				const containerWidth = VIEWPORT_WIDTH;
+				const contentWidth = wordCountRef.current > 0
+					? wordCountRef.current * ITEM_WIDTH + (wordCountRef.current - 1) * ITEM_GAP + 16
+					: 16;
 				const newX = currentScrollX.current + gestureState.dx;
-				currentScrollX.current = newX;
+				let finalX: number;
+				if (contentWidth <= containerWidth) {
+					finalX = 0;
+				} else {
+					const maxScroll = containerWidth - contentWidth;
+					finalX = Math.max(maxScroll, Math.min(0, newX));
+				}
+				currentScrollX.current = finalX;
 				scrollX.flattenOffset();
-				scrollX.setValue(newX);
-				const contentWidth = wordCountRef.current * ITEM_TOTAL + 40;
-				const containerWidth = SCREEN_WIDTH - 40;
-				if (Math.abs(newX) + containerWidth > contentWidth - 100 && hasMore && !loadingMore) {
+				scrollX.setValue(finalX);
+				if (Math.abs(finalX) + containerWidth > contentWidth - 100 && hasMore && !loadingMore) {
 					loadMore();
 				}
 			},
@@ -293,23 +304,25 @@ export default function LearnPage() {
 								<>
 									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 									{displayWords.length > 0 ? (
-										<Animated.View
-											{...listPanResponder.panHandlers}
-											pointerEvents="auto"
-											style={[
-												styles.wordRow,
-												{ transform: [{ translateX: scrollX }] },
-											]}
-										>
-											{displayWords.map((word) => (
-												<DraggableWordCard
-													key={word.id}
-													word={word}
-													onDrop={handleDrop}
-													onPress={() => handleWordPress(word)}
-												/>
-											))}
-										</Animated.View>
+										<View style={styles.wordViewport}>
+											<Animated.View
+												{...listPanResponder.panHandlers}
+												pointerEvents="auto"
+												style={[
+													styles.wordRow,
+													{ transform: [{ translateX: scrollX }] },
+												]}
+											>
+												{displayWords.map((word) => (
+													<DraggableWordCard
+														key={word.id}
+														word={word}
+														onDrop={handleDrop}
+														onPress={() => handleWordPress(word)}
+													/>
+												))}
+											</Animated.View>
+										</View>
 									) : (
 										<View style={styles.emptyContainer}>
 											<Text style={styles.emptyText}>所有单词已分类完成！</Text>
@@ -392,10 +405,15 @@ const styles = StyleSheet.create({
 		color: '#999999',
 		marginBottom: 20,
 	},
+	wordViewport: {
+		width: 312,
+		overflow: 'hidden',
+		alignSelf: 'center',
+	},
 	wordRow: {
 		flexDirection: 'row',
 		gap: 28,
-		paddingHorizontal: 20,
+		paddingHorizontal: 8,
 	},
 	scrollContent: {
 		gap: 28,
