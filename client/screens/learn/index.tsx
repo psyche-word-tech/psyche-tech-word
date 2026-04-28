@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
@@ -95,11 +95,11 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				},
 			]}
 		>
-			<TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+			<Pressable onPress={onPress} style={{ flex: 1 }}>
 				<View style={styles.wordCard}>
 					<Text style={styles.wordCardText}>{word.word}</Text>
 				</View>
-			</TouchableOpacity>
+			</Pressable>
 		</Animated.View>
 	);
 }
@@ -268,9 +268,8 @@ export default function LearnPage() {
 									{displayWords.length > 0 ? (
 										<ScrollView
 											horizontal
-											showsHorizontalScrollIndicator={false}
-											snapToInterval={96}
-											decelerationRate="fast"
+											showsHorizontalScrollIndicator={true}
+											style={{ width: '100%' }}
 											contentContainerStyle={styles.scrollContent}
 											onScroll={handleScroll}
 											scrollEventThrottle={200}
