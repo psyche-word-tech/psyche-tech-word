@@ -301,6 +301,7 @@ export default function LearnPage() {
 									{displayWords.length > 0 ? (
 										<Animated.View
 											{...listPanResponder.panHandlers}
+											pointerEvents="auto"
 											style={[
 												styles.wordRow,
 												{ transform: [{ translateX: scrollX }] },
