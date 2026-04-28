@@ -248,12 +248,12 @@ export default function LearnPage() {
 				scrollX.setValue(0);
 			},
 			onPanResponderMove: (_, gestureState) => {
-				scrollX.setValue(gestureState.dx);
+				scrollX.setValue(-gestureState.dx);
 			},
 			onPanResponderRelease: (_, gestureState) => {
 				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
-				const newX = currentScrollX.current + gestureState.dx;
-				let snapX = Math.round(newX / ITEM_TOTAL) * ITEM_TOTAL;
+				const newX = currentScrollX.current - gestureState.dx;
+				let snapX = newX;
 				snapX = Math.max(maxScroll, Math.min(0, snapX));
 				currentScrollX.current = snapX;
 				scrollX.flattenOffset();
