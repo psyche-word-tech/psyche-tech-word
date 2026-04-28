@@ -279,8 +279,8 @@ export default function LearnPage() {
 		<Screen>
 			{/* scrollEnabled=false 阻止 Screen 自动包裹外层垂直滚动容器，避免干扰水平滚动 */}
 			<ScrollView scrollEnabled={false} pointerEvents="none" contentContainerStyle={{ flexGrow: 1 }}>
-				<View style={styles.container}>
-					<View style={styles.header}>
+				<View style={styles.container} pointerEvents="auto">
+					<View style={styles.header} pointerEvents="auto">
 						<TouchableOpacity onPress={() => router.navigate('/my-vocabulary')}>
 							<Text style={styles.backText}>back</Text>
 						</TouchableOpacity>
