@@ -230,7 +230,7 @@ export default function LearnPage() {
 	const wordCountRef = useRef(displayWords.length);
 	wordCountRef.current = displayWords.length;
 
-	const ITEM_WIDTH = 68;
+	const ITEM_WIDTH = 80;
 	const ITEM_GAP = 28;
 	const ITEM_TOTAL = ITEM_WIDTH + ITEM_GAP;
 
@@ -245,15 +245,7 @@ export default function LearnPage() {
 				scrollX.setValue(0);
 			},
 			onPanResponderMove: (_, gestureState) => {
-				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
-				let rawX = gestureState.dx;
-				const totalX = currentScrollX.current + rawX;
-				if (totalX > 0) {
-					rawX = rawX * 0.3;
-				} else if (totalX < maxScroll) {
-					rawX = rawX * 0.3;
-				}
-				scrollX.setValue(rawX);
+				scrollX.setValue(gestureState.dx);
 			},
 			onPanResponderRelease: (_, gestureState) => {
 				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
@@ -412,7 +404,18 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 20,
 	},
 	wordItemContainer: {
-		width: 68,
+		width: 80,
+		backgroundColor: '#FFFFFF',
+		borderRadius: 12,
+		paddingVertical: 12,
+		paddingHorizontal: 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+		shadowColor: '#000000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.08,
+		shadowRadius: 8,
+		elevation: 4,
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
@@ -429,9 +432,10 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	wordCardText: {
-		fontSize: 12,
-		color: '#333333',
-		fontWeight: '600',
+		fontSize: 13,
+		color: '#1A1A1A',
+		fontWeight: '700',
+		letterSpacing: 0.3,
 	},
 	categorySection: {
 		paddingVertical: 10,
