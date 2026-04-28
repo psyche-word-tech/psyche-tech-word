@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
@@ -95,11 +95,7 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 				},
 			]}
 		>
-			<Pressable onPress={onPress} style={{ flex: 1 }}>
-				<View style={styles.wordCard}>
-					<Text style={styles.wordCardText}>{word.word}</Text>
-				</View>
-			</Pressable>
+			<Text onPress={onPress} style={styles.wordCardText}>{word.word}</Text>
 		</Animated.View>
 	);
 }
@@ -184,14 +180,6 @@ export default function LearnPage() {
 		});
 	}, [hasMore, loadingMore, offset, fetchWords]);
 
-	const handleScroll = useCallback((event: any) => {
-		const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-		const isNearEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 50;
-		if (isNearEnd) {
-			loadMore();
-		}
-	}, [loadMore]);
-
 	const handleDrop = useCallback(async (wordId: number, categoryId: number) => {
 		const targetTableMap: Record<number, string> = {
 			1: 'words_x',
@@ -237,6 +225,56 @@ export default function LearnPage() {
 		});
 	};
 
+	const scrollX = useRef(new Animated.Value(0)).current;
+	const currentScrollX = useRef(0);
+	const wordCountRef = useRef(displayWords.length);
+	wordCountRef.current = displayWords.length;
+
+	const ITEM_WIDTH = 68;
+	const ITEM_GAP = 28;
+	const ITEM_TOTAL = ITEM_WIDTH + ITEM_GAP;
+
+	const listPanResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => false,
+			onMoveShouldSetPanResponder: (_, gestureState) => {
+				return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 5;
+			},
+			onPanResponderGrant: () => {
+				scrollX.setOffset(currentScrollX.current);
+				scrollX.setValue(0);
+			},
+			onPanResponderMove: (_, gestureState) => {
+				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
+				let rawX = gestureState.dx;
+				const totalX = currentScrollX.current + rawX;
+				if (totalX > 0) {
+					rawX = rawX * 0.3;
+				} else if (totalX < maxScroll) {
+					rawX = rawX * 0.3;
+				}
+				scrollX.setValue(rawX);
+			},
+			onPanResponderRelease: (_, gestureState) => {
+				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
+				const newX = currentScrollX.current + gestureState.dx;
+				let snapX = Math.round(newX / ITEM_TOTAL) * ITEM_TOTAL;
+				snapX = Math.max(maxScroll, Math.min(0, snapX));
+				currentScrollX.current = snapX;
+				scrollX.flattenOffset();
+				Animated.spring(scrollX, {
+					toValue: snapX,
+					useNativeDriver: false,
+					friction: 8,
+					tension: 40,
+				}).start();
+				if (snapX <= maxScroll + 100 && hasMore && !loadingMore) {
+					loadMore();
+				}
+			},
+		})
+	).current;
+
 	return (
 		<Screen>
 			{/* scrollEnabled=false 阻止 Screen 自动包裹外层垂直滚动容器，避免干扰水平滚动 */}
@@ -266,13 +304,12 @@ export default function LearnPage() {
 								<>
 									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 									{displayWords.length > 0 ? (
-										<ScrollView
-											horizontal
-											showsHorizontalScrollIndicator={true}
-											style={{ width: '100%' }}
-											contentContainerStyle={styles.scrollContent}
-											onScroll={handleScroll}
-											scrollEventThrottle={200}
+										<Animated.View
+											{...listPanResponder.panHandlers}
+											style={[
+												styles.wordRow,
+												{ transform: [{ translateX: scrollX }] },
+											]}
 										>
 											{displayWords.map((word) => (
 												<DraggableWordCard
@@ -282,7 +319,7 @@ export default function LearnPage() {
 													onPress={() => handleWordPress(word)}
 												/>
 											))}
-										</ScrollView>
+										</Animated.View>
 									) : (
 										<View style={styles.emptyContainer}>
 											<Text style={styles.emptyText}>所有单词已分类完成！</Text>
@@ -364,6 +401,11 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: '#999999',
 		marginBottom: 20,
+	},
+	wordRow: {
+		flexDirection: 'row',
+		gap: 28,
+		paddingHorizontal: 20,
 	},
 	scrollContent: {
 		gap: 28,
