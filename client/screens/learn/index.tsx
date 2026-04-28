@@ -251,14 +251,13 @@ export default function LearnPage() {
 				scrollX.setValue(gestureState.dx);
 			},
 			onPanResponderRelease: (_, gestureState) => {
-				const maxScroll = Math.min(0, (SCREEN_WIDTH - 40) - (wordCountRef.current * ITEM_TOTAL + 40));
 				const newX = currentScrollX.current + gestureState.dx;
-				let snapX = newX;
-				snapX = Math.max(maxScroll, Math.min(0, snapX));
-				currentScrollX.current = snapX;
+				currentScrollX.current = newX;
 				scrollX.flattenOffset();
-				scrollX.setValue(snapX);
-				if (snapX <= maxScroll + 100 && hasMore && !loadingMore) {
+				scrollX.setValue(newX);
+				const contentWidth = wordCountRef.current * ITEM_TOTAL + 40;
+				const containerWidth = SCREEN_WIDTH - 40;
+				if (Math.abs(newX) + containerWidth > contentWidth - 100 && hasMore && !loadingMore) {
 					loadMore();
 				}
 			},
@@ -497,23 +496,10 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 8,
-		marginTop: 8,
 	},
 	retryButtonText: {
-		fontSize: 14,
 		color: '#FFFFFF',
+		fontSize: 14,
 		fontWeight: '600',
 	},
-	debugContainer: {
-		marginTop: 12,
-		padding: 10,
-		backgroundColor: '#FFFDE7',
-		borderRadius: 6,
-	},
-	debugText: {
-		fontSize: 10,
-		color: '#666666',
-		fontFamily: 'monospace',
-	},
 });
-
