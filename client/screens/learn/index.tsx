@@ -270,7 +270,7 @@ export default function LearnPage() {
 			<ScrollView scrollEnabled={false} pointerEvents="none" contentContainerStyle={{ flexGrow: 1 }}>
 				<View style={styles.container}>
 					<View style={styles.header}>
-						<TouchableOpacity onPress={() => router.back()}>
+						<TouchableOpacity onPress={() => router.navigate('/my-vocabulary')}>
 							<Text style={styles.backText}>back</Text>
 						</TouchableOpacity>
 						<Text style={styles.title}>词汇预览</Text>
