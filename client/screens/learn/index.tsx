@@ -258,16 +258,32 @@ export default function LearnPage() {
 					? wordCountRef.current * ITEM_WIDTH + (wordCountRef.current - 1) * ITEM_GAP + 16
 					: 16;
 				const newX = currentScrollX.current + gestureState.dx;
-				let finalX: number;
+				
+				// 分页吸附：每页3个单词
+				const pageWidth = VIEWPORT_WIDTH;
+				let targetPage = Math.round(-newX / pageWidth);
+				const maxPage = Math.max(0, Math.ceil(contentWidth / pageWidth) - 1);
+				targetPage = Math.max(0, Math.min(maxPage, targetPage));
+				let finalX = -targetPage * pageWidth;
+				
+				// 边界限制
 				if (contentWidth <= containerWidth) {
 					finalX = 0;
 				} else {
 					const maxScroll = containerWidth - contentWidth;
-					finalX = Math.max(maxScroll, Math.min(0, newX));
+					finalX = Math.max(maxScroll, Math.min(0, finalX));
 				}
+				
 				currentScrollX.current = finalX;
 				scrollX.flattenOffset();
-				scrollX.setValue(finalX);
+				
+				// 快速平滑过渡，不是弹簧回弹
+				Animated.timing(scrollX, {
+					toValue: finalX,
+					duration: 150,
+					useNativeDriver: false,
+				}).start();
+				
 				if (Math.abs(finalX) + containerWidth > contentWidth - 100 && hasMore && !loadingMore) {
 					loadMore();
 				}
@@ -409,6 +425,8 @@ const styles = StyleSheet.create({
 		width: 312,
 		overflow: 'hidden',
 		alignSelf: 'center',
+		borderRadius: 1,
+		borderColor: 'transparent',
 	},
 	wordRow: {
 		flexDirection: 'row',
@@ -427,11 +445,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 8,
 		alignItems: 'center',
 		justifyContent: 'center',
-		shadowColor: '#000000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 8,
-		elevation: 4,
+		borderWidth: 1,
+		borderColor: '#E0E0E0',
 	},
 	wordCard: {
 		backgroundColor: '#F0F0F0',
@@ -441,11 +456,8 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		minHeight: 44,
 		justifyContent: 'center',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
+		borderWidth: 1,
+		borderColor: '#E0E0E0',
 	},
 	wordCardText: {
 		fontSize: 13,
