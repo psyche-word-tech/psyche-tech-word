@@ -228,84 +228,66 @@ export default function LearnPage() {
 		});
 	};
 
-	const scrollX = useRef(new Animated.Value(0)).current;
-	const currentScrollX = useRef(0);
-	const wordCountRef = useRef(displayWords.length);
-	wordCountRef.current = displayWords.length;
-
 	const ITEM_WIDTH = 80;
 	const ITEM_GAP = 28;
-	const ITEM_TOTAL = ITEM_WIDTH + ITEM_GAP;
 	const VIEWPORT_WORDS = 3;
 	const VIEWPORT_WIDTH = VIEWPORT_WORDS * ITEM_WIDTH + (VIEWPORT_WORDS - 1) * ITEM_GAP + 16;
 
-	const listPanResponder = useRef(
+	const [currentPage, setCurrentPage] = useState(0);
+	const swipeX = useRef(new Animated.Value(0)).current;
+
+	const maxPage = Math.max(0, Math.ceil(displayWords.length / VIEWPORT_WORDS) - 1);
+
+	// 当单词被移除后，确保 currentPage 不超过最大页码
+	useEffect(() => {
+		const newMaxPage = Math.max(0, Math.ceil(displayWords.length / VIEWPORT_WORDS) - 1);
+		if (currentPage > newMaxPage) {
+			setCurrentPage(newMaxPage);
+		}
+	}, [displayWords.length, currentPage]);
+
+	// 接近最后一页时自动加载更多
+	useEffect(() => {
+		const totalPages = Math.ceil(displayWords.length / VIEWPORT_WORDS);
+		if (currentPage >= totalPages - 1 && hasMore && !loadingMore) {
+			loadMore();
+		}
+	}, [currentPage, displayWords.length, hasMore, loadingMore, loadMore]);
+
+	const swipePanResponder = useRef(
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => false,
 			onMoveShouldSetPanResponder: (_, gestureState) => {
 				return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 5;
 			},
 			onPanResponderGrant: () => {
-				scrollX.setOffset(currentScrollX.current);
-				scrollX.setValue(0);
+				swipeX.setValue(0);
 			},
 			onPanResponderMove: (_, gestureState) => {
-				let dx = gestureState.dx;
-				const containerWidth = VIEWPORT_WIDTH;
-				const contentWidth = wordCountRef.current > 0
-					? wordCountRef.current * ITEM_WIDTH + (wordCountRef.current - 1) * ITEM_GAP + 16
-					: 16;
-				
-				if (contentWidth > containerWidth) {
-					const maxScroll = containerWidth - contentWidth;
-					const projectedX = currentScrollX.current + dx;
-					if (projectedX > 0) {
-						dx = dx * 0.3;
-					} else if (projectedX < maxScroll) {
-						dx = dx * 0.3;
-					}
-				}
-				
-				scrollX.setValue(dx);
+				swipeX.setValue(gestureState.dx * 0.5);
 			},
 			onPanResponderRelease: (_, gestureState) => {
-				const containerWidth = VIEWPORT_WIDTH;
-				const contentWidth = wordCountRef.current > 0
-					? wordCountRef.current * ITEM_WIDTH + (wordCountRef.current - 1) * ITEM_GAP + 16
-					: 16;
-				const newX = currentScrollX.current + gestureState.dx;
+				const dx = gestureState.dx;
 				
-				// 分页吸附：每页3个单词
-				const pageWidth = VIEWPORT_WIDTH;
-				let targetPage = Math.round(-newX / pageWidth);
-				const maxPage = Math.max(0, Math.ceil(contentWidth / pageWidth) - 1);
-				targetPage = Math.max(0, Math.min(maxPage, targetPage));
-				let finalX = -targetPage * pageWidth;
-				
-				// 边界限制
-				if (contentWidth <= containerWidth) {
-					finalX = 0;
-				} else {
-					const maxScroll = containerWidth - contentWidth;
-					finalX = Math.max(maxScroll, Math.min(0, finalX));
-				}
-				
-				currentScrollX.current = finalX;
-				scrollX.flattenOffset();
-				
-				// 快速平滑过渡，不是弹簧回弹
-				Animated.timing(scrollX, {
-					toValue: finalX,
+				Animated.timing(swipeX, {
+					toValue: 0,
 					duration: 150,
 					useNativeDriver: false,
 				}).start();
 				
-				if (Math.abs(finalX) + containerWidth > contentWidth - 100 && hasMore && !loadingMore) {
-					loadMore();
+				if (dx < -80 && currentPage < maxPage) {
+					setCurrentPage(prev => prev + 1);
+				} else if (dx > 80 && currentPage > 0) {
+					setCurrentPage(prev => prev - 1);
 				}
 			},
 		})
 	).current;
+
+	const currentWords = displayWords.slice(
+		currentPage * VIEWPORT_WORDS,
+		currentPage * VIEWPORT_WORDS + VIEWPORT_WORDS
+	);
 
 	return (
 		<Screen>
@@ -336,16 +318,12 @@ export default function LearnPage() {
 								<>
 									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 									{displayWords.length > 0 ? (
-										<View style={styles.wordViewport}>
-											<Animated.View
-												{...listPanResponder.panHandlers}
-												pointerEvents="auto"
-												style={[
-													styles.wordRow,
-													{ marginLeft: scrollX },
-												]}
-											>
-												{displayWords.map((word) => (
+										<View style={styles.wordViewport} {...swipePanResponder.panHandlers}>
+											<Animated.View style={[
+												styles.wordRow,
+												{ transform: [{ translateX: swipeX }] },
+											]}>
+												{currentWords.map((word) => (
 													<DraggableWordCard
 														key={word.id}
 														word={word}
