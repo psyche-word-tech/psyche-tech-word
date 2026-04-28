@@ -442,6 +442,8 @@ const styles = StyleSheet.create({
 	},
 	wordViewport: {
 		width: 320,
+		maxWidth: 320,
+		minWidth: 0,
 		overflow: 'hidden',
 		alignSelf: 'center',
 		position: 'relative',
@@ -449,6 +451,8 @@ const styles = StyleSheet.create({
 	},
 	wordRowClipper: {
 		width: 320,
+		maxWidth: 320,
+		minWidth: 0,
 		overflow: 'hidden',
 		position: 'relative',
 		height: 50,
@@ -497,6 +501,7 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		width: 100,
 		backgroundColor: '#FFFFFF',
+		zIndex: 999,
 	},
 	categorySection: {
 		paddingVertical: 10,
