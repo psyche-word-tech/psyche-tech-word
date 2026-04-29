@@ -10,104 +10,84 @@ import { API_BASE_URL } from '@/utils/apiConfig';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Word {
-	id: number;
-	word: string;
-	meaning: string;
-	phonetic?: string;
-	example?: string;
-	example_translation?: string;
-	image_url?: string;
+	id: number; word: string; meaning: string;
+	phonetic?: string; example?: string; example_translation?: string; image_url?: string;
 }
 
-// ==================== 单词卡片组件 ====================
+// ==================== 单词卡片 ====================
 interface WordCardProps {
 	word: Word;
-	isSwipeMode: boolean; // 滑动模式下禁用拖动
-	onLongPress: () => void; // 长按回调
+	isSwipeMode: boolean;
+	onLongPress: () => void;
+	onPress: (word: Word) => void;
 	onDrop: (wordId: number, categoryId: number) => void;
-	onPress: (word: Word) => void; // 点击查看详情
 }
 
-function WordCard({ word, isSwipeMode, onLongPress, onDrop, onPress }: WordCardProps) {
+function WordCard({ word, isSwipeMode, onLongPress, onPress, onDrop }: WordCardProps) {
 	const pan = useRef(new Animated.ValueXY()).current;
 	const [isDragging, setIsDragging] = useState(false);
-	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const clearTimer = useCallback(() => {
-		if (longPressTimer.current) {
-			clearTimeout(longPressTimer.current);
-			longPressTimer.current = null;
-		}
-	}, []);
+	const clearLP = useCallback(() => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } }, []);
 
-	const panResponder = useMemo(() =>
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => true,
-			onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 3 || Math.abs(gs.dy) > 3,
-			onPanResponderTerminationRequest: () => true,
+	// 滑动模式下：只响应点击；默认模式下：响应点击 + 垂直拖动 + 长按
+	const pr = useMemo(() => PanResponder.create({
+		onStartShouldSetPanResponder: () => true,
+		onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 3 || Math.abs(gs.dy) > 3,
+		onPanResponderTerminationRequest: () => true,
 
-			onPanResponderGrant: () => {
-				if (isSwipeMode) return;
-				longPressTimer.current = setTimeout(onLongPress, 350); // 350ms = 长按
-				pan.setOffset({ x: (pan.x as any)._value || 0, y: (pan.y as any)._value || 0 });
-				pan.setValue({ x: 0, y: 0 });
-			},
+		onPanResponderGrant: () => {
+			if (isSwipeMode) return;
+			lpTimer.current = setTimeout(onLongPress, 350);
+			pan.setOffset({ x: (pan.x as any)._value || 0, y: (pan.y as any)._value || 0 });
+			pan.setValue({ x: 0, y: 0 });
+		},
 
-			onPanResponderMove: (_, gs) => {
-				if (isSwipeMode) return;
-				// 移动较大 → 取消长按，变为拖动
-				if (Math.abs(gs.dx) > 8 || Math.abs(gs.dy) > 8) clearTimer();
-				pan.setValue({ x: gs.dx, y: gs.dy });
-				if (Math.abs(gs.dy) > 15 && !isDragging) setIsDragging(true);
-			},
+		onPanResponderMove: (_, gs) => {
+			if (isSwipeMode) return;
+			if (Math.abs(gs.dx) > 8 || Math.abs(gs.dy) > 8) clearLP();
+			pan.setValue({ x: gs.dx, y: gs.dy });
+			if (Math.abs(gs.dy) > 15 && !isDragging) setIsDragging(true);
+		},
 
-			onPanResponderRelease: (_, gs) => {
-				if (isSwipeMode) return;
-				clearTimer();
+		onPanResponderRelease: (_, gs) => {
+			if (isSwipeMode) return;
+			clearLP();
 
-				// 小移动 → 点击
-				if (!isDragging && Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8) {
-					onPress(word); return;
-				}
+			// 小移动 → 点击进详情（两种模式都支持）
+			if (!isDragging && Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8) { onPress(word); return; }
 
-				setIsDragging(false);
-				pan.flattenOffset();
-				if (gs.dy > 80) {
-					let cat = 3;
-					if (gs.moveX < SCREEN_WIDTH / 3) cat = 1;
-					else if (gs.moveX < SCREEN_WIDTH * 2 / 3) cat = 2;
-					onDrop(word.id, cat);
-				}
-				Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-			},
+			setIsDragging(false);
+			pan.flattenOffset();
+			if (gs.dy > 80) {
+				let cat = 3;
+				if (gs.moveX < SCREEN_WIDTH / 3) cat = 1;
+				else if (gs.moveX < SCREEN_WIDTH * 2 / 3) cat = 2;
+				onDrop(word.id, cat);
+			}
+			Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+		},
 
-			onPanResponderTerminate: () => {
-				if (isSwipeMode) return;
-				clearTimer();
-				setIsDragging(false);
-				pan.flattenOffset();
-				Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-			},
-		}),
-		[isSwipeMode, onLongPress, onPress, onDrop, word.id, word, pan, isDragging, clearTimer]
-	);
+		onPanResponderTerminate: () => {
+			if (isSwipeMode) return;
+			clearLP(); setIsDragging(false);
+			pan.flattenOffset();
+			Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+		},
+	}), [isSwipeMode, onLongPress, onPress, onDrop, word, pan, isDragging, clearLP]);
 
-	useEffect(() => () => { clearTimer(); }, [clearTimer]);
+	useEffect(() => () => clearLP(), [clearLP]);
 
 	return (
-		<Animated.View
-			{...panResponder.panHandlers}
-			style={[
-				styles.wordItemContainer,
-				{
-					transform: [{ translateX: pan.x }, { translateY: pan.y }],
-					opacity: isDragging ? 0.7 : 1,
-					zIndex: isDragging ? 100 : 1,
-					borderColor: isSwipeMode ? '#4CAF50' : '#E0E0E0',
-					borderWidth: isSwipeMode ? 2 : 1,
-				},
-			]}
-		>
+		<Animated.View {...pr.panHandlers} style={[
+			styles.wordItemContainer,
+			{
+				transform: [{ translateX: pan.x }, { translateY: pan.y }],
+				opacity: isDragging ? 0.7 : 1, zIndex: isDragging ? 100 : 1,
+				borderColor: isSwipeMode ? '#4CAF50' : '#E0E0E0',
+				borderWidth: isSwipeMode ? 2 : 1,
+			},
+		]}>
 			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 				<Text style={styles.wordCardText}>{word.word}</Text>
 			</View>
@@ -129,13 +109,11 @@ export default function LearnPage() {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const limit = 20;
 
-	// 滑动模式状态
 	const [isSwipeMode, setIsSwipeMode] = useState(false);
-	const swipeAnimX = useRef(new Animated.Value(0)).current;
+	const swipeX = useRef(new Animated.Value(0)).current;
 
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
-
 	const ITEM_W = 80, ITEM_G = 28, VISIBLE_N = 3, PADDING = 8;
 	const VIEWPORT_W = VISIBLE_N * ITEM_W + (VISIBLE_N - 1) * ITEM_G + PADDING * 2; // 320
 
@@ -154,8 +132,8 @@ export default function LearnPage() {
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`),
 			]);
-				const wordsData = await wRes.json();
-				const words = Array.isArray(wordsData) ? wordsData : [];
+			const wordsData = await wRes.json();
+			const words = Array.isArray(wordsData) ? wordsData : [];
 			const xData = await xRes.json(), yData = await yRes.json(), zData = await zRes.json();
 			setAllWords(append ? prev => [...prev, ...words] : words);
 			setHasMore(words.length === limit);
@@ -168,7 +146,6 @@ export default function LearnPage() {
 	}, [table]);
 
 	const fetchData = useCallback(() => { setOffset(0); fetchWords(0, false); }, [fetchWords]);
-
 	useEffect(() => { const t = setTimeout(fetchData, 0); return () => clearTimeout(t); }, [fetchData]);
 	useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
 
@@ -182,7 +159,7 @@ export default function LearnPage() {
 	// 分类
 	const handleDrop = useCallback(async (wid: number, cid: number) => {
 		const map: Record<number, string> = { 1: 'words_x', 2: 'words_y', 3: 'words_z' };
-		/** POST /api/v1/wordbooks/move  body: sourceTable,targetTable,wordId */
+		/** POST /api/v1/wordbooks/move body: sourceTable,targetTable,wordId */
 		try { await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, { method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ sourceTable: table, targetTable: map[cid], wordId: wid }),
@@ -191,40 +168,31 @@ export default function LearnPage() {
 		setCategoryCounts(p => { const k = ['x','y','z'][cid-1] as 'x'|'y'|'z'; return {...p,[k]:p[k]+1}; });
 	}, [table]);
 
-	// 点击详情
+	// 点击 → 详情页
 	const goDetail = (w: Word) => router.push('/word-detail', {
 		word: JSON.stringify({ id:w.id, word:w.word, phonetic:w.phonetic||'', meaning:w.meaning,
 			example:w.example||'', example_translation:w.example_translation||'', image_url:w.image_url||'' }),
 		table });
 
-	// 长按 → 激活滑动模式
-	const enterSwipeMode = useCallback(() => { setIsSwipeMode(true); swipeAnimX.setValue(0); }, []);
-	const exitSwipeMode = useCallback(() => { setIsSwipeMode(false);
-		Animated.timing(swipeAnimX, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-	}, []);
+	// 长按 → 进入滑动模式
+	const enterSwipe = useCallback(() => { setIsSwipeMode(true); swipeX.setValue(0); }, []);
 
-	// 滑动模式的水平 PanResponder
+	// 外层水平滑动 PanResponder（仅在滑动模式下生效）
 	const swipePR = useRef(PanResponder.create({
 		onStartShouldSetPanResponder: () => isSwipeMode,
 		onMoveShouldSetPanResponder: (_, gs) => isSwipeMode && Math.abs(gs.dx) > 5,
 		onPanResponderTerminationRequest: () => true,
-		onPanResponderGrant: () => { swipeAnimX.setOffset((swipeAnimX as any)._value || 0); swipeAnimX.setValue(0); },
-		onPanResponderMove: (_, gs) => { swipeAnimX.setValue(gs.dx); },
+		onPanResponderGrant: () => { swipeX.setOffset((swipeX as any)._value || 0); swipeX.setValue(0); },
+		onPanResponderMove: (_, gs) => { swipeX.setValue(gs.dx); },
 		onPanResponderRelease: (_, gs) => {
-			swipeAnimX.flattenOffset();
+			swipeX.flattenOffset();
 			const dx = gs.dx;
-			if (Math.abs(dx) < 10) { exitSwipeMode(); return; }
-
-			// 滑到末尾加载更多
 			if (dx < -60 && hasMore && !loadingMore) loadMore();
-
-			// 复位动画
-			Animated.timing(swipeAnimX, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+			Animated.timing(swipeX, { toValue: 0, duration: 200, useNativeDriver: false }).start();
 		},
-		onPanResponderTerminate: () => exitSwipeMode(),
 	})).current;
 
-	// 可见单词：滑动模式下显示全部（用于滑动），默认只显示前3个
+	// 默认显示3个，滑动模式显示全部
 	const visibleWords = isSwipeMode ? allWords : allWords.slice(0, VISIBLE_N);
 
 	return (
@@ -253,33 +221,22 @@ export default function LearnPage() {
 							</View>
 						) : (
 							<>
-								{/* 顶部信息栏 */}
-								<View style={styles.topBar}>
-									<Text style={styles.remainingText}>剩余 {allWords.length} 个单词</Text>
-									{isSwipeMode && (
-										<TouchableOpacity style={styles.exitBtn} onPress={exitSwipeMode}>
-											<Text style={styles.exitBtnText}>完成</Text>
-										</TouchableOpacity>
-									)}
-								</View>
-
-								<Text style={[styles.hintText, isSwipeMode && styles.hintActive]}>
-									{isSwipeMode ? '← 左右滑动切换单词 →' : '长按任意单词进入滑动浏览'}
+								{/* 提示信息 */}
+								<Text style={styles.remainingText}>剩余 {allWords.length} 个单词</Text>
+								<Text style={[styles.hint, isSwipeMode && styles.hintActive]}>
+									{isSwipeMode ? '← 左右滑动浏览 →' : '长按单词可滑动浏览'}
 								</Text>
 
 								{allWords.length > 0 ? (
-									/* 视口容器：固定宽度 + overflow:hidden */
-									<View style={[styles.wordViewport, { width: VIEWPORT_W }]}>
+									/* 固定宽度视口，overflow:hidden 裁切 */
+									<View style={[styles.viewport, { width: VIEWPORT_W }]}>
 										<Animated.View
-											style={[
-												styles.wordRow,
-												isSwipeMode && { transform: [{ translateX: swipeAnimX }] },
-											]}
+											style={[styles.wordRow, isSwipeMode && { transform: [{ translateX: swipeX }] }]}
 											{...(isSwipeMode ? swipePR.panHandlers : {})}
 										>
 											{visibleWords.map(w => (
 												<WordCard key={w.id} word={w} isSwipeMode={isSwipeMode}
-													onLongPress={enterSwipeMode} onDrop={handleDrop} onPress={goDetail}
+													onLongPress={enterSwipe} onPress={goDetail} onDrop={handleDrop}
 												/>
 											))}
 										</Animated.View>
@@ -297,8 +254,8 @@ export default function LearnPage() {
 					</View>
 
 					{/* 分类区域 */}
-					<View style={styles.categorySection}>
-						<View style={styles.categoryRow}>
+					<View style={styles.catSection}>
+						<View style={styles.catRow}>
 							{[1,2,3].map(id => {
 								const t = id===1?'words_x':id===2?'words_y':'words_z';
 								return (<TouchableOpacity key={id} style={styles.catItem}
@@ -310,7 +267,7 @@ export default function LearnPage() {
 								</TouchableOpacity>);
 							})}
 						</View>
-						<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+						<Text style={styles.instruction}>拖动单词到上方分类区域</Text>
 					</View>
 				</View>
 			</View>
@@ -325,29 +282,27 @@ const styles = StyleSheet.create({
 	title: { fontSize:16, color:'#333', fontWeight:'600' },
 	centerContainer: { flex:1, justifyContent:'center', paddingHorizontal:20 },
 	content: { paddingVertical:16, alignItems:'center', transform:[{translateY:-100}] },
-	topBar: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', width:'100%', marginBottom:4 },
-	remainingText: { fontSize:14, color:'#999' },
-	hintText: { fontSize:12, color:'#AAA', marginBottom:8, textAlign:'center' },
+	remainingText: { fontSize:14, color:'#999', marginBottom:2 },
+	hint: { fontSize:12, color:'#AAA', marginBottom:10, textAlign:'center' },
 	hintActive: { color:'#4CAF50', fontWeight:'600' },
-	exitBtn: { backgroundColor:'#4CAF50', paddingHorizontal:14, paddingVertical:5, borderRadius:14 },
-	exitBtnText: { color:'#FFF', fontSize:12, fontWeight:'600' },
 
-	wordViewport: { height:52, overflow:'hidden', alignSelf:'center' },
+	viewport: { height:52, overflow:'hidden', alignSelf:'center' },
 	wordRow: { flexDirection:'row', gap:28, paddingHorizontal:8 },
 
 	wordItemContainer: {
-		width:80, backgroundColor:'#F0F0F0', borderRadius:12, paddingVertical:6, paddingHorizontal:8,
-		alignItems:'center', justifyContent:'center', borderWidth:1, borderColor:'#E0E0E0',
+		width:80, backgroundColor:'#F0F0F0', borderRadius:12,
+		paddingVertical:6, paddingHorizontal:8, alignItems:'center', justifyContent:'center',
+		borderWidth:1, borderColor:'#E0E0E0',
 	},
 	wordCardText: { fontSize:13, color:'#1A1A1A', fontWeight:'700', letterSpacing:0.3 },
 
-	categorySection: { paddingVertical:10, backgroundColor:'#FFF' },
-	categoryRow: { flexDirection:'row', gap:10 },
+	catSection: { paddingVertical:10, backgroundColor:'#FFF' },
+	catRow: { flexDirection:'row', gap:10 },
 	catItem: { flex:1 },
 	catCard: { paddingVertical:10, borderRadius:10, alignItems:'center' },
 	catName: { fontSize:13, color:'#FFF', fontWeight:'600' },
 	catCount: { fontSize:11, color:'rgba(255,255,255,0.8)', marginTop:2 },
-	instructionText: { fontSize:11, color:'#999', textAlign:'center', marginTop:6 },
+	instruction: { fontSize:11, color:'#999', textAlign:'center', marginTop:6 },
 
 	emptyContainer: { padding:48, alignItems:'center' },
 	emptyText: { fontSize:16, color:'#999' },
