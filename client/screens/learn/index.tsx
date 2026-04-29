@@ -154,7 +154,8 @@ export default function LearnPage() {
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`),
 			]);
-			const words = Array.isArray(await wRes.json()) ? await wRes.json() : [];
+				const wordsData = await wRes.json();
+				const words = Array.isArray(wordsData) ? wordsData : [];
 			const xData = await xRes.json(), yData = await yRes.json(), zData = await zRes.json();
 			setAllWords(append ? prev => [...prev, ...words] : words);
 			setHasMore(words.length === limit);
