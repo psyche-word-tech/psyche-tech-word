@@ -13,9 +13,22 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIEWPORT_WIDTH = Math.min(320, SCREEN_WIDTH - 40);
 
+// ===================== Types =====================
+interface WordItem {
+  id: number;
+  word: string;
+  phonetic?: string;
+  meaning?: string;
+  created_at?: string;
+  example?: string;
+  translation?: string;
+  example_translation?: string;
+  image_uri?: string;
+}
+
 // ===================== WordCard =====================
 interface WordCardProps {
-  word: string;
+  word: WordItem;
   onPress?: () => void;
 }
 
@@ -23,7 +36,7 @@ function WordCard({ word, onPress }: WordCardProps) {
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
       <View style={styles.wordCardContent}>
-        <Text style={styles.wordText} numberOfLines={1}>{word}</Text>
+        <Text style={styles.wordText} numberOfLines={1}>{word.word}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -33,7 +46,7 @@ function WordCard({ word, onPress }: WordCardProps) {
 export default function LearnPage() {
   const router = useSafeRouter();
   const { table = 'words_b' } = useSafeSearchParams<{ table?: string }>();
-  const [words, setWords] = useState<string[]>([]);
+  const [words, setWords] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [categories, setCategories] = useState<{ known: string[]; vague: string[]; unknown: string[] }>({
@@ -63,7 +76,7 @@ export default function LearnPage() {
         `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${offsetRef.current}&limit=20`
       );
       const wordsData = await wRes.json();
-      const newWords: string[] = Array.isArray(wordsData) ? wordsData : [];
+      const newWords: WordItem[] = Array.isArray(wordsData) ? wordsData : [];
 
       if (append) {
         setWords(prev => [...prev, ...newWords]);
@@ -104,11 +117,11 @@ export default function LearnPage() {
   };
 
   // 分类操作
-  const handleCategorize = useCallback((word: string, category: string) => {
-    setWords(prev => prev.filter(w => w !== word));
+  const handleCategorize = useCallback((word: WordItem, category: string) => {
+    setWords(prev => prev.filter(w => w.id !== word.id));
     setCategories(prev => ({
       ...prev,
-      [category]: [...prev[category as keyof typeof prev], word],
+      [category]: [...prev[category as keyof typeof prev], word.word],
     }));
   }, []);
 
@@ -120,8 +133,8 @@ export default function LearnPage() {
   };
 
   // 渲染单个单词卡片
-  const renderWordItem = (item: string, index: number) => (
-    <View key={`${item}-${index}`} style={styles.wordScrollItem}>
+  const renderWordItem = (item: WordItem, index: number) => (
+    <View key={`${item.id}-${index}`} style={styles.wordScrollItem}>
       <WordCard
         word={item}
         onPress={() => router.push('/word-detail', { word: item })}
