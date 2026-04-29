@@ -32,7 +32,6 @@ function DraggableWordCard({ word, onDrop }: DraggableWordCardProps) {
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => false,
 			onMoveShouldSetPanResponder: (_evt, gestureState) => {
-				// 只响应用明显的垂直拖动（dy > dx * 1.5 且 dy > 12）
 				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.5 && Math.abs(gestureState.dy) > 12;
 			},
 			onPanResponderTerminationRequest: () => true,
@@ -107,7 +106,7 @@ export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
 	const table = params.table || 'words_b';
-	
+
 	const [allWords, setAllWords] = useState<Word[]>([]);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [error, setError] = useState<string | null>(null);
@@ -125,9 +124,9 @@ export default function LearnPage() {
 	// 单词卡片的尺寸常量
 	const ITEM_WIDTH = 80;
 	const ITEM_GAP = 28;
-	const WORDS_PER_PAGE = 3; // 每页显示3个单词
-	const PAGE_PADDING = 8; // 页面左右内边距
-	const PAGE_WIDTH = WORDS_PER_PAGE * ITEM_WIDTH + (WORDS_PER_PAGE - 1) * ITEM_GAP + PAGE_PADDING * 2; // = 320
+	const WORDS_PER_PAGE = 3;
+	const PAGE_PADDING = 8;
+	const PAGE_WIDTH = WORDS_PER_PAGE * ITEM_WIDTH + (WORDS_PER_PAGE - 1) * ITEM_GAP + PAGE_PADDING * 2;
 
 	const scrollViewRef = useRef<ScrollView>(null);
 
@@ -225,7 +224,7 @@ export default function LearnPage() {
 		}
 
 		setAllWords(prev => prev.filter(w => w.id !== wordId));
-		
+
 		setCategoryCounts(prev => {
 			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
 			return { ...prev, [key]: prev[key] + 1 };
@@ -233,7 +232,7 @@ export default function LearnPage() {
 	}, [table]);
 
 	const handleWordPress = (word: Word) => {
-		router.push('/word-detail', { 
+		router.push('/word-detail', {
 			word: JSON.stringify({
 				id: word.id,
 				word: word.word,
@@ -260,122 +259,118 @@ export default function LearnPage() {
 	const handleScrollEndDrag = useCallback(({ nativeEvent }: { nativeEvent: { contentOffset: { x: number }; contentSize: { width: number }; layoutMeasurement: { width: number } } }) => {
 		const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
 		const distanceToEnd = contentSize.width - (contentOffset.x + layoutMeasurement.width);
-		
-		// 距离末尾不到一页宽度时加载更多
+
 		if (distanceToEnd < PAGE_WIDTH && hasMore && !loadingMore) {
 			loadMore();
 		}
 	}, [hasMore, loadingMore, loadMore]);
 
-	// 调试信息：显示当前渲染状态
+	// 调试信息
 	const debugInfo = `共${displayWords.length}词 ${wordPages.length}页`;
 
 	return (
 		<Screen>
-			<ScrollView 
-				scrollEnabled={false} 
-				pointerEvents="none" 
-				contentContainerStyle={{ flexGrow: 1 }}
-			>
-				<View style={styles.container} pointerEvents="auto">
-					<View style={styles.header} pointerEvents="auto">
-						<TouchableOpacity onPress={() => router.navigate('/my-vocabulary')}>
-							<Text style={styles.backText}>back</Text>
-						</TouchableOpacity>
-						<Text style={styles.title}>词汇预览</Text>
-						<TouchableOpacity onPress={() => router.push('/calendar')}>
-							<FontAwesome6 name="calendar-days" size={22} color="#333333" />
-						</TouchableOpacity>
+			<View style={styles.container}>
+				{/* Header */}
+				<View style={styles.header}>
+					<TouchableOpacity onPress={() => router.navigate('/my-vocabulary')}>
+						<Text style={styles.backText}>back</Text>
+					</TouchableOpacity>
+					<Text style={styles.title}>词汇预览</Text>
+					<TouchableOpacity onPress={() => router.push('/calendar')}>
+						<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+					</TouchableOpacity>
+				</View>
+
+				{/* 内容区域 */}
+				<View style={styles.centerContainer}>
+					<View style={styles.content}>
+						{error ? (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.errorText}>加载失败: {error}</Text>
+								<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+									<Text style={styles.retryButtonText}>重新加载</Text>
+								</TouchableOpacity>
+							</View>
+						) : (
+							<>
+								<Text style={styles.remainingText}>
+									剩余 {remainingCount} 个单词
+									<Text style={styles.debugText}> | {debugInfo}</Text>
+								</Text>
+
+								{displayWords.length > 0 ? (
+									/* 固定宽度视口容器，overflow:hidden 裁切溢出 */
+									<View style={[styles.wordViewport, { width: PAGE_WIDTH }]}>
+										<ScrollView
+											ref={scrollViewRef}
+											horizontal
+											showsHorizontalScrollIndicator={false}
+											snapToInterval={PAGE_WIDTH}
+											decelerationRate="fast"
+											onScrollEndDrag={handleScrollEndDrag}
+											contentContainerStyle={styles.scrollContent}
+										>
+											{wordPages.map((pageWords, pageIndex) => (
+												<View
+													key={pageIndex}
+													style={[styles.wordPage, { width: PAGE_WIDTH }]}
+												>
+													{pageWords.map((word) => (
+														<DraggableWordCard
+															key={word.id}
+															word={word}
+															onDrop={handleDrop}
+														/>
+													))}
+													{/* 填充空白保持布局稳定 */}
+													{Array.from({ length: WORDS_PER_PAGE - pageWords.length }).map((_, emptyIdx) => (
+														<View
+															key={`empty-${pageIndex}-${emptyIdx}`}
+															style={styles.wordItemContainer}
+														/>
+													))}
+												</View>
+											))}
+										</ScrollView>
+									</View>
+								) : (
+									<View style={styles.emptyContainer}>
+										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+										<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+											<Text style={styles.retryButtonText}>重新加载</Text>
+										</TouchableOpacity>
+									</View>
+								)}
+							</>
+						)}
 					</View>
 
-					<View style={styles.centerContainer}>
-						<View style={styles.content}>
-							{error ? (
-								<View style={styles.emptyContainer}>
-									<Text style={styles.errorText}>加载失败: {error}</Text>
-									<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-										<Text style={styles.retryButtonText}>重新加载</Text>
+					{/* 分类区域 */}
+					<View style={styles.categorySection}>
+						<View style={styles.categoryRow}>
+							{[1, 2, 3].map((id) => {
+								const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+								return (
+									<TouchableOpacity
+										key={id}
+										style={styles.categoryItem}
+										onPress={() => router.push('/word-list', { table: targetTable })}
+									>
+										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+											<Text style={styles.categoryCount}>
+												({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+											</Text>
+										</View>
 									</TouchableOpacity>
-								</View>
-							) : (
-								<>
-									<Text style={styles.remainingText}>
-										剩余 {remainingCount} 个单词
-										<Text style={styles.debugText}> | {debugInfo}</Text>
-									</Text>
-									
-									{displayWords.length > 0 ? (
-										// 固定宽度的视口容器，严格裁切溢出
-										<View style={[styles.wordViewport, { width: PAGE_WIDTH }]}>
-											<ScrollView
-												ref={scrollViewRef}
-												horizontal
-												showsHorizontalScrollIndicator={false}
-												snapToInterval={PAGE_WIDTH} // 按页宽度吸附
-												decelerationRate="fast"
-												onScrollEndDrag={handleScrollEndDrag}
-												contentContainerStyle={styles.scrollContent}
-											>
-												{wordPages.map((pageWords, pageIndex) => (
-													<View 
-														key={pageIndex} 
-														style={[styles.wordPage, { width: PAGE_WIDTH }]}
-													>
-														{pageWords.map((word) => (
-															<DraggableWordCard
-																key={word.id}
-																word={word}
-																onDrop={handleDrop}
-															/>
-														))}
-														{/* 填充空白位置保持布局稳定 */}
-														{Array.from({ length: WORDS_PER_PAGE - pageWords.length }).map((_, emptyIdx) => (
-															<View 
-																key={`empty-${pageIndex}-${emptyIdx}`} 
-																style={styles.wordItemContainer} 
-															/>
-														))}
-													</View>
-												))}
-											</ScrollView>
-										</View>
-									) : (
-										<View style={styles.emptyContainer}>
-											<Text style={styles.emptyText}>所有单词已分类完成！</Text>
-											<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-												<Text style={styles.retryButtonText}>重新加载</Text>
-											</TouchableOpacity>
-										</View>
-									)}
-								</>
-							)}
+								);
+							})}
 						</View>
-
-						<View style={styles.categorySection}>
-							<View style={styles.categoryRow}>
-								{[1, 2, 3].map((id) => {
-									const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
-									return (
-										<TouchableOpacity
-											key={id}
-											style={styles.categoryItem}
-											onPress={() => router.push('/word-list', { table: targetTable })}
-										>
-											<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
-												<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
-												<Text style={styles.categoryCount}>
-													({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
-												</Text>
-											</View>
-										</TouchableOpacity>
-									);
-								})}
-							</View>
-							<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
-						</View>
+						<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
 					</View>
 				</View>
-			</ScrollView>
+			</View>
 		</Screen>
 	);
 }
@@ -401,9 +396,6 @@ const styles = StyleSheet.create({
 		color: '#333333',
 		fontWeight: '600',
 	},
-	placeholder: {
-		width: 50,
-	},
 	centerContainer: {
 		flex: 1,
 		justifyContent: 'center',
@@ -424,18 +416,16 @@ const styles = StyleSheet.create({
 		color: '#CCCCCC',
 		fontWeight: '400',
 	},
-	// 关键：视口容器 - 固定宽度 + overflow hidden 裁切
+	/* 视口容器：固定宽度 + overflow:hidden */
 	wordViewport: {
 		height: 52,
 		overflow: 'hidden',
 		alignSelf: 'center',
-		backgroundColor: 'transparent',
 	},
-	// ScrollView 内容容器
 	scrollContent: {
 		flexDirection: 'row',
 	},
-	// 每一页的容器 - 固定宽度
+	/* 每页容器：固定宽度 */
 	wordPage: {
 		flexDirection: 'row',
 		gap: 28,
