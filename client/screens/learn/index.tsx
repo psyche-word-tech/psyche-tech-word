@@ -15,77 +15,96 @@ interface Word {
 }
 
 // ==================== 单词卡片 ====================
+// 三种手势：水平滑动浏览 / 垂直拖动分类 / 点击进详情
 interface WordCardProps {
 	word: Word;
-	isSwipeMode: boolean;
-	onLongPress: () => void;
 	onPress: (word: Word) => void;
 	onDrop: (wordId: number, categoryId: number) => void;
+	onHorizontalDrag: (dx: number) => void; // 水平拖动时通知父组件
 }
 
-function WordCard({ word, isSwipeMode, onLongPress, onPress, onDrop }: WordCardProps) {
+function WordCard({ word, onPress, onDrop, onHorizontalDrag }: WordCardProps) {
 	const pan = useRef(new Animated.ValueXY()).current;
 	const [isDragging, setIsDragging] = useState(false);
-	const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const dragType = useRef<'horizontal' | 'vertical' | null>(null);
 
-	const clearLP = useCallback(() => { if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; } }, []);
-
-	// 滑动模式下：只响应点击；默认模式下：响应点击 + 垂直拖动 + 长按
 	const pr = useMemo(() => PanResponder.create({
 		onStartShouldSetPanResponder: () => true,
-		onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 3 || Math.abs(gs.dy) > 3,
+		onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 2 || Math.abs(gs.dy) > 2,
 		onPanResponderTerminationRequest: () => true,
 
 		onPanResponderGrant: () => {
-			if (isSwipeMode) return;
-			lpTimer.current = setTimeout(onLongPress, 350);
+			dragType.current = null;
+			setIsDragging(false);
 			pan.setOffset({ x: (pan.x as any)._value || 0, y: (pan.y as any)._value || 0 });
 			pan.setValue({ x: 0, y: 0 });
 		},
 
 		onPanResponderMove: (_, gs) => {
-			if (isSwipeMode) return;
-			if (Math.abs(gs.dx) > 8 || Math.abs(gs.dy) > 8) clearLP();
-			pan.setValue({ x: gs.dx, y: gs.dy });
-			if (Math.abs(gs.dy) > 15 && !isDragging) setIsDragging(true);
+			const adx = Math.abs(gs.dx), ady = Math.abs(gs.dy);
+
+			// 首次判定方向：水平优先
+			if (!dragType.current) {
+				if (adx > 8 && adx > ady * 0.6) {
+					dragType.current = 'horizontal'; // 水平滑动
+				} else if (ady > 20) {
+					dragType.current = 'vertical'; // 垂直拖动分类
+				}
+			}
+
+			if (dragType.current === 'horizontal') {
+				// 水平滑动 → 通知父组件移动整行
+				pan.setValue({ x: 0, y: 0 }); // 卡片本身不移动
+				onHorizontalDrag(gs.dx);
+			} else if (dragType.current === 'vertical') {
+				// 垂直拖动分类
+				pan.setValue({ x: gs.dx, y: gs.dy });
+				if (ady > 15 && !isDragging) setIsDragging(true);
+			} else {
+				// 未确定方向时轻微跟随
+				pan.setValue({ x: gs.dx * 0.3, y: gs.dy * 0.3 });
+			}
 		},
 
 		onPanResponderRelease: (_, gs) => {
-			if (isSwipeMode) return;
-			clearLP();
-
-			// 小移动 → 点击进详情（两种模式都支持）
-			if (!isDragging && Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8) { onPress(word); return; }
-
-			setIsDragging(false);
-			pan.flattenOffset();
-			if (gs.dy > 80) {
-				let cat = 3;
-				if (gs.moveX < SCREEN_WIDTH / 3) cat = 1;
-				else if (gs.moveX < SCREEN_WIDTH * 2 / 3) cat = 2;
-				onDrop(word.id, cat);
+			if (dragType.current === 'horizontal') {
+				// 水平释放 → 由父组件处理吸附逻辑（onHorizontalEnd）
+				onHorizontalDrag(999); // 特殊值标记结束
+			} else if (dragType.current === 'vertical') {
+				// 垂直释放
+				setIsDragging(false);
+				pan.flattenOffset();
+				if (gs.dy > 80) {
+					let cat = 3;
+					if (gs.moveX < SCREEN_WIDTH / 3) cat = 1;
+					else if (gs.moveX < SCREEN_WIDTH * 2 / 3) cat = 2;
+					onDrop(word.id, cat);
+				}
+				Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+			} else {
+				// 小移动 → 视为点击
+				pan.flattenOffset();
+				Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+				onPress(word);
 			}
-			Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+			dragType.current = null;
 		},
 
 		onPanResponderTerminate: () => {
-			if (isSwipeMode) return;
-			clearLP(); setIsDragging(false);
+			dragType.current = null;
+			setIsDragging(false);
 			pan.flattenOffset();
 			Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
 		},
-	}), [isSwipeMode, onLongPress, onPress, onDrop, word, pan, isDragging, clearLP]);
-
-	useEffect(() => () => clearLP(), [clearLP]);
+	}), [word, onPress, onDrop, onHorizontalDrag]);
 
 	return (
 		<Animated.View {...pr.panHandlers} style={[
 			styles.wordItemContainer,
 			{
 				transform: [{ translateX: pan.x }, { translateY: pan.y }],
-				opacity: isDragging ? 0.7 : 1, zIndex: isDragging ? 100 : 1,
-				borderColor: isSwipeMode ? '#4CAF50' : '#E0E0E0',
-				borderWidth: isSwipeMode ? 2 : 1,
+				opacity: isDragging ? 0.7 : 1,
+				zIndex: isDragging ? 100 : 1,
 			},
 		]}>
 			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -109,8 +128,9 @@ export default function LearnPage() {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const limit = 20;
 
-	const [isSwipeMode, setIsSwipeMode] = useState(false);
-	const swipeX = useRef(new Animated.Value(0)).current;
+	// 整行水平位移控制
+	const scrollX = useRef(new Animated.Value(0)).current;
+	const maxScrollX = useRef(0);
 
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
@@ -174,26 +194,24 @@ export default function LearnPage() {
 			example:w.example||'', example_translation:w.example_translation||'', image_url:w.image_url||'' }),
 		table });
 
-	// 长按 → 进入滑动模式
-	const enterSwipe = useCallback(() => { setIsSwipeMode(true); swipeX.setValue(0); }, []);
+	// 计算最大可滚动距离
+	useEffect(() => {
+		if (allWords.length <= VISIBLE_N) { maxScrollX.current = 0; return; }
+		const totalW = allWords.length * ITEM_W + (allWords.length - 1) * ITEM_G + PADDING * 2;
+		maxScrollX.current = Math.max(0, totalW - VIEWPORT_W);
+	}, [allWords.length]);
 
-	// 外层水平滑动 PanResponder（仅在滑动模式下生效）
-	const swipePR = useRef(PanResponder.create({
-		onStartShouldSetPanResponder: () => isSwipeMode,
-		onMoveShouldSetPanResponder: (_, gs) => isSwipeMode && Math.abs(gs.dx) > 5,
-		onPanResponderTerminationRequest: () => true,
-		onPanResponderGrant: () => { swipeX.setOffset((swipeX as any)._value || 0); swipeX.setValue(0); },
-		onPanResponderMove: (_, gs) => { swipeX.setValue(gs.dx); },
-		onPanResponderRelease: (_, gs) => {
-			swipeX.flattenOffset();
-			const dx = gs.dx;
-			if (dx < -60 && hasMore && !loadingMore) loadMore();
-			Animated.timing(swipeX, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-		},
-	})).current;
-
-	// 默认显示3个，滑动模式显示全部
-	const visibleWords = isSwipeMode ? allWords : allWords.slice(0, VISIBLE_N);
+	// 子卡片水平拖动回调
+	const handleHorizontalDrag = useCallback((dx: number) => {
+		const currentX = (scrollX as any)._value || 0;
+		if (dx === 999) {
+			// 结束标记 → 吸附回当前页
+			Animated.timing(scrollX, { toValue: currentX, duration: 150, useNativeDriver: false }).start();
+			return;
+		}
+		const newX = currentX + dx;
+		scrollX.setValue(Math.max(-maxScrollX.current, Math.min(0, newX)));
+	}, [scrollX]);
 
 	return (
 		<Screen>
@@ -201,7 +219,7 @@ export default function LearnPage() {
 				{/* Header */}
 				<View style={styles.header}>
 					<TouchableOpacity onPress={() => router.navigate('/my-vocabulary')}>
-						<Text style={styles.backText}>back</Text>
+						<Text style={styles.backText}>Back</Text>
 					</TouchableOpacity>
 					<Text style={styles.title}>词汇预览</Text>
 					<TouchableOpacity onPress={() => router.push('/calendar')}>
@@ -223,20 +241,14 @@ export default function LearnPage() {
 							<>
 								{/* 提示信息 */}
 								<Text style={styles.remainingText}>剩余 {allWords.length} 个单词</Text>
-								<Text style={[styles.hint, isSwipeMode && styles.hintActive]}>
-									{isSwipeMode ? '← 左右滑动浏览 →' : '长按单词可滑动浏览'}
-								</Text>
+								<Text style={styles.hint}>按住左右滑动 · 点击查看详情 · 下拉分类</Text>
 
 								{allWords.length > 0 ? (
-									/* 固定宽度视口，overflow:hidden 裁切 */
 									<View style={[styles.viewport, { width: VIEWPORT_W }]}>
-										<Animated.View
-											style={[styles.wordRow, isSwipeMode && { transform: [{ translateX: swipeX }] }]}
-											{...(isSwipeMode ? swipePR.panHandlers : {})}
-										>
-											{visibleWords.map(w => (
-												<WordCard key={w.id} word={w} isSwipeMode={isSwipeMode}
-													onLongPress={enterSwipe} onPress={goDetail} onDrop={handleDrop}
+										<Animated.View style={[styles.wordRow, { transform: [{ translateX: scrollX }] }]}>
+											{allWords.map(w => (
+												<WordCard key={w.id} word={w}
+													onPress={goDetail} onDrop={handleDrop} onHorizontalDrag={handleHorizontalDrag}
 												/>
 											))}
 										</Animated.View>
@@ -284,7 +296,6 @@ const styles = StyleSheet.create({
 	content: { paddingVertical:16, alignItems:'center', transform:[{translateY:-100}] },
 	remainingText: { fontSize:14, color:'#999', marginBottom:2 },
 	hint: { fontSize:12, color:'#AAA', marginBottom:10, textAlign:'center' },
-	hintActive: { color:'#4CAF50', fontWeight:'600' },
 
 	viewport: { height:52, overflow:'hidden', alignSelf:'center' },
 	wordRow: { flexDirection:'row', gap:28, paddingHorizontal:8 },
