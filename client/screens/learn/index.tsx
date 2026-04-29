@@ -1,13 +1,18 @@
 /* eslint-disable react-hooks/refs */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// 卡片尺寸常量
+const CARD_WIDTH = 160;
+const CARD_GAP = 16;
+const VISIBLE_CARDS = 3; // 左中右各显示一个
 
 interface Word {
 	id: number;
@@ -19,86 +24,51 @@ interface Word {
 	image_url?: string;
 }
 
-interface DraggableWordCardProps {
+// 单个单词卡片（纯展示，无手势）
+interface SwipeableWordCardProps {
 	word: Word;
-	onDrop: (wordId: number, categoryId: number) => void;
+	index: number;
+	currentIndex: number;
+	panX: Animated.Value;
 	onPress: () => void;
 }
 
-function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
-	const pan = useRef(new Animated.ValueXY()).current;
-	const [isDragging, setIsDragging] = useState(false);
-
-	const panResponder = useMemo(() =>
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => false,
-			onMoveShouldSetPanResponder: (_evt, gestureState) => {
-				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
-			},
-			onPanResponderGrant: () => {
-				setIsDragging(true);
-				pan.setOffset({
-					x: (pan.x as any)._value || 0,
-					y: (pan.y as any)._value || 0,
-				});
-				pan.setValue({ x: 0, y: 0 });
-			},
-			onPanResponderMove: (evt, gestureState) => {
-				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
-			},
-			onPanResponderRelease: (evt, gestureState) => {
-				setIsDragging(false);
-				pan.flattenOffset();
-
-				const dy = gestureState.dy;
-				const absoluteX = gestureState.moveX;
-
-				if (dy > 80) {
-					let targetCategory = 3;
-					if (absoluteX < SCREEN_WIDTH / 3) {
-						targetCategory = 1;
-					} else if (absoluteX < (SCREEN_WIDTH / 3) * 2) {
-						targetCategory = 2;
-					}
-					onDrop(word.id, targetCategory);
-				}
-
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-				}).start();
-			},
-			onPanResponderTerminate: () => {
-				setIsDragging(false);
-				pan.flattenOffset();
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-				}).start();
-			},
-		}),
-		[onDrop, word.id, pan]
+function SwipeableWordCard({ word, index, currentIndex, panX, onPress }: SwipeableWordCardProps) {
+	// 每张卡片的基准位置 = (index - currentIndex) * (CARD_WIDTH + CARD_GAP)
+	// 加上 panX 的偏移量，实现整体联动滑动
+	const translateX = Animated.add(
+		panX,
+		new Animated.Value((index - 1) * (CARD_WIDTH + CARD_GAP))
 	);
+
+	// 根据距离中心的距离计算缩放和透明度
+	const distanceFromCenter = Math.abs(index - 1);
+	const scale = distanceFromCenter === 1 ? 0.85 : 1;
+	const opacity = distanceFromCenter >= 2 ? 0 : distanceFromCenter === 1 ? 0.5 : 1;
 
 	return (
 		<Animated.View
-			{...panResponder.panHandlers}
 			style={[
-				styles.wordItemContainer,
+				styles.swipeCard,
 				{
 					transform: [
-						{ translateX: pan.x },
-						{ translateY: pan.y },
+						{ translateX },
+						{ scale },
 					],
-					opacity: isDragging ? 0.8 : 1,
-					zIndex: isDragging ? 100 : 1,
+					opacity,
 				},
 			]}
 		>
-			<TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-				<View style={styles.wordCard}>
-					<Text style={styles.wordCardText}>{word.word}</Text>
-				</View>
+			<TouchableOpacity
+				activeOpacity={0.8}
+				style={styles.swipeCardInner}
+				onPress={onPress}
+			>
+				<Text style={styles.wordText}>{word.word}</Text>
+				{word.phonetic && <Text style={styles.phoneticText}>{word.phonetic}</Text>}
+				{word.meaning && (
+					<Text style={styles.meaningText} numberOfLines={2}>{word.meaning}</Text>
+				)}
 			</TouchableOpacity>
 		</Animated.View>
 	);
@@ -108,8 +78,9 @@ export default function LearnPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ table?: string }>();
 	const table = params.table || 'words_b';
-	
+
 	const [allWords, setAllWords] = useState<Word[]>([]);
+	const [currentIndex, setCurrentIndex] = useState(0);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [error, setError] = useState<string | null>(null);
 	const [offset, setOffset] = useState(0);
@@ -117,15 +88,35 @@ export default function LearnPage() {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const limit = 20;
 
+	// 共享的 panX，所有卡片共用同一个偏移值
+	const panX = useRef(new Animated.Value(0)).current;
+	const currentIndexRef = useRef(0);
+	const isDraggingRef = useRef(false);
+
 	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
 	const categoryNames = ['已会', '模糊', '不会'];
 
-	const displayWords = allWords;
+	// 获取当前可见范围内的卡片（当前索引前后各一张）
+	const visibleRange = useMemo(() => {
+		const start = Math.max(0, currentIndex - 1);
+		const end = Math.min(allWords.length, currentIndex + 2);
+		return allWords.slice(start, end).map((word, i) => ({
+			word,
+			actualIndex: start + i,
+			displayIndex: i,
+		}));
+	}, [allWords, currentIndex]);
+
 	const remainingCount = allWords.length;
 
 	const fetchWords = useCallback(async (currentOffset: number, append: boolean) => {
 		setError(null);
 		try {
+			/**
+			 * 服务端文件：server/src/routes/wordbooks.ts
+			 * 接口：GET /api/v1/wordbooks/:table
+			 * Query 参数：offset: number, limit: number
+			 */
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}?offset=${currentOffset}&limit=${limit}`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
@@ -143,6 +134,10 @@ export default function LearnPage() {
 				setAllWords(prev => [...prev, ...newWords]);
 			} else {
 				setAllWords(newWords);
+				if (newWords.length > 0) {
+					setCurrentIndex(0);
+					currentIndexRef.current = 0;
+				}
 			}
 			setHasMore(newWords.length === limit);
 			setCategoryCounts({
@@ -162,18 +157,15 @@ export default function LearnPage() {
 	}, [fetchWords]);
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			fetchData();
-		}, 0);
+		const timer = setTimeout(() => fetchData(), 0);
 		return () => clearTimeout(timer);
 	}, [fetchData]);
 
 	useFocusEffect(
-		useCallback(() => {
-			fetchData();
-		}, [fetchData])
+		useCallback(() => fetchData(), [fetchData])
 	);
 
+	// 加载更多
 	const loadMore = useCallback(() => {
 		if (!hasMore || loadingMore) return;
 		setLoadingMore(true);
@@ -184,15 +176,85 @@ export default function LearnPage() {
 		});
 	}, [hasMore, loadingMore, offset, fetchWords]);
 
-	const handleScroll = useCallback((event: any) => {
-		const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-		const isNearEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 50;
-		if (isNearEnd) {
-			loadMore();
-		}
-	}, [loadMore]);
+	// PanResponder：按住拖拽左右滑动切换单词
+	const panResponder = useMemo(() =>
+		PanResponder.create({
+			// 按下时立即响应（不需要移动阈值）
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: (_evt, gestureState) => {
+				// 水平方向移动超过阈值才响应
+				return Math.abs(gestureState.dx) > 5;
+			},
+			onPanResponderGrant: () => {
+				isDraggingRef.current = true;
+				// 记录当前位置作为偏移起点
+				panX.setOffset((panX as any)._value || 0);
+				panX.setValue(0);
+			},
+			onPanResponderMove: (_evt, gestureState) => {
+				// 只处理水平方向
+				panX.setValue(gestureState.dx);
+			},
+			onPanResponderRelease: (_evt, gestureState) => {
+				isDraggingRef.current = false;
+				panX.flattenOffset();
 
-	const handleDrop = useCallback(async (wordId: number, categoryId: number) => {
+				const dx = gestureState.dx;
+				const stepWidth = CARD_WIDTH + CARD_GAP;
+
+				// 判断滑动方向：超过半张卡片的距离就切换
+				let newIndex = currentIndexRef.current;
+				if (dx < -stepWidth * 0.35) {
+					// 向左滑 → 下一个
+					newIndex = Math.min(currentIndexRef.current + 1, allWords.length - 1);
+				} else if (dx > stepWidth * 0.35) {
+					// 向右滑 → 上一个
+					newIndex = Math.max(currentIndexRef.current - 1, 0);
+				}
+
+				// 计算目标位置偏移量（相对于当前 panX 值）
+				const targetOffset = -(newIndex - currentIndexRef.current) * stepWidth;
+
+				Animated.spring(panX, {
+					toValue: targetOffset,
+					useNativeDriver: true,
+					friction: 8,
+					tension: 100,
+				}).start(({ finished }) => {
+					if (finished) {
+						// 动画结束后重置 panX 为 0，并更新 currentIndex
+						panX.setValue(0);
+						panX.setOffset(0);
+						currentIndexRef.current = newIndex;
+						setCurrentIndex(newIndex);
+
+						// 接近末尾时加载更多
+						if (newIndex >= allWords.length - 3) {
+							loadMore();
+						}
+					}
+				});
+			},
+			onPanResponderTerminate: () => {
+				isDraggingRef.current = false;
+				panX.flattenOffset();
+				Animated.spring(panX, {
+					toValue: 0,
+					useNativeDriver: true,
+				}).start(() => {
+					panX.setValue(0);
+					panX.setOffset(0);
+				});
+			},
+		}),
+		[allWords.length, loadMore, panX]
+	);
+
+	// 垂直拖动分类的处理
+	const handleDrop = useCallback(async (categoryId: number) => {
+		const currentWord = allWords[currentIndex];
+		if (!currentWord) return;
+
 		const targetTableMap: Record<number, string> = {
 			1: 'words_x',
 			2: 'words_y',
@@ -207,23 +269,27 @@ export default function LearnPage() {
 				body: JSON.stringify({
 					sourceTable: table,
 					targetTable: targetTable,
-					wordId: wordId
+					wordId: currentWord.id
 				}),
 			});
 		} catch (error) {
 			console.error('Failed to move word:', error);
 		}
 
-		setAllWords(prev => prev.filter(w => w.id !== wordId));
-		
+		// 移除当前单词并切换到下一个
+		const nextIndex = Math.min(currentIndex, allWords.length - 2);
+		setAllWords(prev => prev.filter(w => w.id !== currentWord.id));
+		currentIndexRef.current = nextIndex;
+		setCurrentIndex(nextIndex);
+
 		setCategoryCounts(prev => {
 			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
 			return { ...prev, [key]: prev[key] + 1 };
 		});
-	}, [table]);
+	}, [table, allWords, currentIndex]);
 
 	const handleWordPress = (word: Word) => {
-		router.push('/word-detail', { 
+		router.push('/word-detail', {
 			word: JSON.stringify({
 				id: word.id,
 				word: word.word,
@@ -237,92 +303,121 @@ export default function LearnPage() {
 		});
 	};
 
+	// 当前单词
+	const currentWord = allWords[currentIndex];
+
 	return (
 		<Screen>
-			{/* scrollEnabled=false 阻止 Screen 自动包裹外层垂直滚动容器，避免干扰水平滚动 */}
-			<ScrollView scrollEnabled={false} contentContainerStyle={{ flexGrow: 1 }}>
-				<View style={styles.container}>
-					<View style={styles.header}>
-						<TouchableOpacity onPress={() => router.back()}>
-							<Text style={styles.backText}>back</Text>
-						</TouchableOpacity>
-						<Text style={styles.title}>词汇预览</Text>
-						<TouchableOpacity onPress={() => router.push('/calendar')}>
-								<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+			<View style={styles.container}>
+				{/* 头部 */}
+				<View style={styles.header}>
+					<TouchableOpacity onPress={() => router.back()}>
+						<Text style={styles.backText}>back</Text>
+					</TouchableOpacity>
+					<Text style={styles.title}>词汇预览</Text>
+					<TouchableOpacity onPress={() => router.push('/calendar')}>
+						<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+					</TouchableOpacity>
+				</View>
+
+				<View style={styles.centerContainer}>
+					{error ? (
+						<View style={styles.emptyContainer}>
+							<Text style={styles.errorText}>加载失败: {error}</Text>
+							<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+								<Text style={styles.retryButtonText}>重新加载</Text>
 							</TouchableOpacity>
-					</View>
+						</View>
+					) : allWords.length === 0 ? (
+						<View style={styles.emptyContainer}>
+							<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+							<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+								<Text style={styles.retryButtonText}>重新加载</Text>
+							</TouchableOpacity>
+						</View>
+					) : (
+						<>
+							{/* 剩余数量 */}
+							<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
 
-					<View style={styles.centerContainer}>
-						<View style={styles.content}>
-							{error ? (
-								<View style={styles.emptyContainer}>
-									<Text style={styles.errorText}>加载失败: {error}</Text>
-									<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
-									<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-										<Text style={styles.retryButtonText}>重新加载</Text>
-									</TouchableOpacity>
+							{/* 可滑动的单词区域 */}
+							<View
+								{...panResponder.panHandlers}
+								style={styles.swipeArea}
+							>
+								{/* 左右两侧的指示器 */}
+								{currentIndex > 0 && (
+									<View style={styles.leftIndicator}>
+										<Text style={styles.indicatorText}>←</Text>
+									</View>
+								)}
+								{currentIndex < allWords.length - 1 && (
+									<View style={styles.rightIndicator}>
+										<Text style={styles.indicatorText}>→</Text>
+									</View>
+								)}
+
+								{/* 卡片容器 */}
+								<View style={styles.cardContainer}>
+									{visibleRange.map(({ word, actualIndex, displayIndex }) => (
+										<SwipeableWordCard
+											key={word.id || actualIndex}
+											word={word}
+											index={displayIndex}
+											currentIndex={currentIndex - (visibleRange[0]?.actualIndex || currentIndex)}
+											panX={panX}
+											onPress={() => handleWordPress(word)}
+										/>
+									))}
 								</View>
-							) : (
-								<>
-									<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
-									{displayWords.length > 0 ? (
-										<ScrollView
-											horizontal
-											showsHorizontalScrollIndicator={false}
-											snapToInterval={96}
-											decelerationRate="fast"
-											contentContainerStyle={styles.scrollContent}
-											onScroll={handleScroll}
-											scrollEventThrottle={200}
-										>
-											{displayWords.map((word) => (
-												<DraggableWordCard
-													key={word.id}
-													word={word}
-													onDrop={handleDrop}
-													onPress={() => handleWordPress(word)}
+
+								{/* 当前位置指示器 */}
+								<View style={styles.dotContainer}>
+										{visibleRange.map((_, i) => {
+											const dotIndex = (currentIndexRef.current - 1) + i;
+											const isActive = dotIndex === currentIndex;
+											return (
+												<View
+													key={`dot-${dotIndex}-${i}`}
+													style={[
+														styles.dot,
+														isActive && styles.dotActive,
+													]}
 												/>
-											))}
-										</ScrollView>
-									) : (
-										<View style={styles.emptyContainer}>
-											<Text style={styles.emptyText}>所有单词已分类完成！</Text>
-											<Text style={styles.emptySubText}>若数据异常，请尝试刷新</Text>
-											<TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-												<Text style={styles.retryButtonText}>重新加载</Text>
-											</TouchableOpacity>
-										</View>
-									)}
-								</>
-							)}
-						</View>
+											);
+										})}
+								</View>
 
-
-						<View style={styles.categorySection}>
-							<View style={styles.categoryRow}>
-								{[1, 2, 3].map((id) => {
-									const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
-									return (
-										<TouchableOpacity
-											key={id}
-											style={styles.categoryItem}
-											onPress={() => router.push('/word-list', { table: targetTable })}
-										>
-											<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
-												<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
-												<Text style={styles.categoryCount}>
-													({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
-												</Text>
-											</View>
-										</TouchableOpacity>
-									);
-								})}
+								<Text style={styles.hintText}>← 按住左右滑动切换单词 →</Text>
 							</View>
-							<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+						</>
+					)}
+
+					{/* 底部分类按钮 */}
+					<View style={styles.categorySection}>
+						<View style={styles.categoryRow}>
+							{[1, 2, 3].map((id) => {
+								const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+								return (
+									<TouchableOpacity
+										key={id}
+										style={styles.categoryItem}
+										onPress={() => handleDrop(id)}
+									>
+										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+											<Text style={styles.categoryCount}>
+												({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+											</Text>
+										</View>
+									</TouchableOpacity>
+								);
+							})}
 						</View>
+						<Text style={styles.instructionText}>点击分类按钮将当前单词归类</Text>
 					</View>
 				</View>
-			</ScrollView>
+			</View>
 		</Screen>
 	);
 }
@@ -348,110 +443,172 @@ const styles = StyleSheet.create({
 		color: '#333333',
 		fontWeight: '600',
 	},
-	placeholder: {
-		width: 50,
-	},
 	centerContainer: {
 		flex: 1,
 		justifyContent: 'center',
 		paddingHorizontal: 20,
 	},
-	content: {
-		paddingVertical: 16,
-		alignItems: 'center',
-		transform: [{ translateY: -100 }],
-	},
 	remainingText: {
 		fontSize: 14,
 		color: '#999999',
-		marginBottom: 20,
+		marginBottom: 24,
+		textAlign: 'center',
 	},
-	scrollContent: {
-		gap: 28,
-		paddingHorizontal: 20,
-	},
-	wordItemContainer: {
-		width: 68,
-	},
-	wordCard: {
-		backgroundColor: '#F0F0F0',
-		paddingHorizontal: 6,
-		paddingVertical: 8,
-		borderRadius: 8,
+	// 滑动区域
+	swipeArea: {
 		alignItems: 'center',
-		minHeight: 44,
 		justifyContent: 'center',
+		minHeight: 260,
+		position: 'relative',
+	},
+	leftIndicator: {
+		position: 'absolute',
+		left: -10,
+		top: '50%',
+		marginTop: -15,
+		zIndex: 10,
+	},
+	rightIndicator: {
+		position: 'absolute',
+		right: -10,
+		top: '50%',
+		marginTop: -15,
+		zIndex: 10,
+	},
+	indicatorText: {
+		fontSize: 28,
+		color: '#CCCCCC',
+	},
+	// 卡片容器
+	cardContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		width: SCREEN_WIDTH,
+		overflow: 'hidden',
+	},
+	// 单张卡片
+	swipeCard: {
+		width: CARD_WIDTH,
+		position: 'absolute',
+		alignItems: 'center',
+	},
+	swipeCardInner: {
+		width: CARD_WIDTH,
+		height: 180,
+		borderRadius: 20,
+		backgroundColor: '#F5F5F5',
+		alignItems: 'center',
+		justifyContent: 'center',
+		padding: 16,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.12,
+		shadowRadius: 12,
+		elevation: 6,
 	},
-	wordCardText: {
+	wordText: {
+		fontSize: 26,
+		color: '#222222',
+		fontWeight: '700',
+		textTransform: 'lowercase',
+	},
+	phoneticText: {
+		fontSize: 13,
+		color: '#888888',
+		marginTop: 6,
+	},
+	meaningText: {
 		fontSize: 12,
-		color: '#333333',
-		fontWeight: '600',
+		color: '#666666',
+		marginTop: 10,
+		textAlign: 'center',
+		lineHeight: 18,
 	},
+	// 圆点指示器
+	dotContainer: {
+		flexDirection: 'row',
+		gap: 6,
+		marginTop: 20,
+		height: 10,
+	},
+	dot: {
+		width: 6,
+		height: 6,
+		borderRadius: 3,
+		backgroundColor: '#D0D0D0',
+	},
+	dotActive: {
+		width: 18,
+		backgroundColor: '#4A90D9',
+	},
+	hintText: {
+		fontSize: 11,
+		color: '#BBBBBB',
+		marginTop: 14,
+		textAlign: 'center',
+	},
+	// 分类区域
 	categorySection: {
-		paddingVertical: 10,
-		backgroundColor: '#FFFFFF',
+		paddingVertical: 16,
+		marginTop: 20,
 	},
 	categoryRow: {
 		flexDirection: 'row',
-		gap: 10,
+		gap: 12,
 	},
 	categoryItem: {
 		flex: 1,
 	},
 	categoryCard: {
-		paddingVertical: 10,
-		borderRadius: 10,
+		paddingVertical: 14,
+		borderRadius: 12,
 		alignItems: 'center',
 	},
 	categoryName: {
-		fontSize: 13,
+		fontSize: 14,
 		color: '#FFFFFF',
 		fontWeight: '600',
 	},
 	categoryCount: {
 		fontSize: 11,
-		color: 'rgba(255,255,255,0.8)',
+		color: 'rgba(255,255,255,0.75)',
 		marginTop: 2,
 	},
 	instructionText: {
 		fontSize: 11,
 		color: '#999999',
 		textAlign: 'center',
-		marginTop: 6,
+		marginTop: 8,
 	},
 	emptyContainer: {
 		padding: 48,
 		alignItems: 'center',
 	},
-	emptyText: {
-		fontSize: 16,
-		color: '#999999',
-	},
 	errorText: {
 		fontSize: 14,
-		color: '#E53935',
+		color: '#F44336',
 		marginBottom: 8,
 	},
 	errorSubText: {
 		fontSize: 12,
 		color: '#999999',
+		marginBottom: 16,
+	},
+	emptyText: {
+		fontSize: 15,
+		color: '#666666',
 		marginBottom: 12,
 	},
 	emptySubText: {
 		fontSize: 12,
 		color: '#999999',
-		marginTop: 8,
-		marginBottom: 12,
+		marginBottom: 16,
 	},
 	retryButton: {
-		backgroundColor: '#4CAF50',
-		paddingHorizontal: 20,
+		paddingHorizontal: 24,
 		paddingVertical: 10,
+		backgroundColor: '#4A90D9',
 		borderRadius: 8,
 		marginTop: 8,
 	},
@@ -459,17 +616,6 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: '#FFFFFF',
 		fontWeight: '600',
-	},
-	debugContainer: {
-		marginTop: 12,
-		padding: 10,
-		backgroundColor: '#FFFDE7',
-		borderRadius: 6,
-	},
-	debugText: {
-		fontSize: 10,
-		color: '#666666',
-		fontFamily: 'monospace',
 	},
 });
 
