@@ -14,6 +14,9 @@ const CARD_WIDTH = 160;
 const CARD_GAP = 16;
 const VISIBLE_CARDS = 3; // 左中右各显示一个
 
+// 中心卡片在屏幕中的水平偏移（让中心卡片居中）
+const CENTER_OFFSET = (SCREEN_WIDTH - CARD_WIDTH) / 2;
+
 interface Word {
 	id: number;
 	word: string;
@@ -34,11 +37,12 @@ interface SwipeableWordCardProps {
 }
 
 function SwipeableWordCard({ word, index, currentIndex, panX, onPress }: SwipeableWordCardProps) {
-	// 每张卡片的基准位置 = (index - currentIndex) * (CARD_WIDTH + CARD_GAP)
+	// 每张卡片的基准位置 = CENTER_OFFSET + (index - 1) * (CARD_WIDTH + CARD_GAP)
+	// index=0(左卡): CENTER_OFFSET - step, index=1(中卡): CENTER_OFFSET, index=2(右卡): CENTER_OFFSET + step
 	// 加上 panX 的偏移量，实现整体联动滑动
 	const translateX = Animated.add(
 		panX,
-		new Animated.Value((index - 1) * (CARD_WIDTH + CARD_GAP))
+		new Animated.Value(CENTER_OFFSET + (index - 1) * (CARD_WIDTH + CARD_GAP))
 	);
 
 	// 根据距离中心的距离计算缩放和透明度
@@ -618,4 +622,5 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 	},
 });
+
 
