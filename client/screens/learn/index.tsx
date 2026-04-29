@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Screen } from '@/components/Screen';
-import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIEWPORT_WIDTH = Math.min(320, SCREEN_WIDTH - 40);
@@ -32,6 +32,7 @@ function WordCard({ word, onPress }: WordCardProps) {
 // ===================== Main Page =====================
 export default function LearnPage() {
   const router = useSafeRouter();
+  const { table = 'words_b' } = useSafeSearchParams<{ table?: string }>();
   const [words, setWords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,7 +60,7 @@ export default function LearnPage() {
        * Query 参数：offset?: number, limit?: number
        */
       const wRes = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/user_words?offset=${offsetRef.current}&limit=20`
+        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${offsetRef.current}&limit=20`
       );
       const wordsData = await wRes.json();
       const newWords: string[] = Array.isArray(wordsData) ? wordsData : [];
