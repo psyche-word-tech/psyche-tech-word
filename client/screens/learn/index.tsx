@@ -18,6 +18,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = 110;
 const CARD_HEIGHT = 56;
 const CARD_GAP = 12;
+const ROW_PADDING_LEFT = 16; // wordRow 的 paddingHorizontal
 
 interface Word {
   id: number;
@@ -32,27 +33,6 @@ const CATEGORIES = [
   { key: 'fuzzy', label: '模糊', color: '#F59E0B' },
   { key: 'unknown', label: '不会', color: '#EF4444' },
 ];
-
-// ─── 单词卡片组件（独立处理点击）─────────────────────
-function WordCard({
-  word,
-  index,
-  onPress,
-}: {
-  word: Word;
-  index: number;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      style={styles.card}
-      onPress={onPress}
-    >
-      <Text style={styles.cardText}>{word.word}</Text>
-    </TouchableOpacity>
-  );
-}
 
 // ─── 主页面 ───────────────────────────────────────
 export default function LearnPage() {
@@ -72,20 +52,20 @@ export default function LearnPage() {
   const dragTy = useRef(new Animated.Value(0)).current;
   const dragScale = useRef(new Animated.Value(1)).current;
 
-  // 滚动偏移量追踪
-  const scrollBaseRef = useRef(0);
-
   // 分类按钮位置
   const catBtnLayouts = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({}).current;
 
-  // 当前拖拽的单词信息
+  // 当前拖拽的单词 + 初始位置
   const draggingWordRef = useRef<Word | null>(null);
+  const dragOriginRef = useRef({ x: 0, y: 0 });
+
+  // ScrollView 引用
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // ── fetchCategoryStats ──
   /**
    * 服务端文件：server/src/routes/wordbooks.ts
    * 接口：GET /api/v1/wordbooks/stats
-   * 返回：{ learning: number, known: number, vague: number, unknown: number }
    */
   const fetchCatStats = useCallback(async () => {
     try {
@@ -157,7 +137,26 @@ export default function LearnPage() {
     }
   }, [router, words]);
 
-  // ── 拖拽分类：将单词从 words_b 复制到目标表并删除 ──
+  // ── 开始拖拽（由长按触发）──
+  const startDrag = useCallback((idx: number) => {
+    if (idx < 0 || idx >= words.length) return;
+    const word = words[idx];
+    draggingWordRef.current = word;
+
+    // 基于索引计算卡片在 scrollContainer 内的相对 x 位置
+    const cardX = ROW_PADDING_LEFT + idx * (CARD_WIDTH + CARD_GAP);
+    const cardY = 8; // scrollContainer 内垂直居中偏移
+
+    dragOriginRef.current = { x: cardX, y: cardY };
+    setClassifyingId(word.id);
+    setDraggingIdx(idx);
+    dragTx.setValue(0);
+    dragTy.setValue(0);
+    dragScale.setValue(1);
+    Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
+  }, [words, dragTx, dragTy, dragScale]);
+
+  // ── 拖拽分类 ──
   const handleClassify = useCallback(async (wordId: number, category: string) => {
     try {
       /**
@@ -184,10 +183,24 @@ export default function LearnPage() {
     } catch (e) {
       console.error('classify error:', e);
     }
+    // 直接重置拖拽状态
     setClassifyingId(null);
     setDraggingIdx(-1);
     draggingWordRef.current = null;
   }, [fetchCatStats]);
+
+  // ── 取消拖拽回弹 ──
+  const cancelDrag = useCallback(() => {
+    Animated.parallel([
+      Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
+      Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
+      Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
+    ]).start(() => {
+      setClassifyingId(null);
+      setDraggingIdx(-1);
+      draggingWordRef.current = null;
+    });
+  }, [dragTx, dragTy, dragScale]);
 
   // ── loadMore ──
   const loadMore = useCallback(() => {
@@ -196,81 +209,56 @@ export default function LearnPage() {
     fetchWords(newOff);
   }, [offset, words.length, fetchWords]);
 
-  // ── handleCategoryPress ──
+  // ── 分类按钮点击 ──
   const handleCategoryPress = useCallback((category: string) => {
     if (classifyingId !== null) {
       handleClassify(classifyingId, category);
     }
   }, [classifyingId, handleClassify]);
 
-  // ── 单个卡片的拖拽 PanResponder（仅用于拖拽分类，不影响点击）──
+  // ── 浮动卡片拖拽 PanResponder（绑定在浮动卡片上，不影响 ScrollView）──
   /* eslint-disable react-hooks/purity */
-  const createDragResponder = useCallback((idx: number) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => {
-        // 只有向下移动超过阈值才激活（区分于水平滚动）
-        return Math.abs(gs.dy) > 20 && gs.dy > 15 && Math.abs(gs.dy) > Math.abs(gs.dx) * 0.5;
-      },
+  const floatingDragResponder = useCallback(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
 
-      onPanResponderGrant(_, gs) {
-        if (idx < 0 || idx >= words.length) return;
-        const word = words[idx];
-        setClassifyingId(word.id);
-        setDraggingIdx(idx);
-        draggingWordRef.current = word;
-        dragTx.setValue(0);
-        dragTy.setValue(0);
-        dragScale.setValue(1);
-        Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
-      },
+        onPanResponderGrant() {
+          dragTx.setValue(0);
+          dragTy.setValue(0);
+        },
 
-      onPanResponderMove(_, gs) {
-        dragTx.setValue(gs.dx);
-        dragTy.setValue(gs.dy);
-      },
+        onPanResponderMove(_, gs) {
+          dragTx.setValue(gs.dx);
+          dragTy.setValue(gs.dy);
+        },
 
-      onPanResponderRelease(_, gs) {
-        const my = gs.moveY;
-        const droppedCategory = Object.keys(catBtnLayouts).find((key) => {
-          const b = catBtnLayouts[key];
-          return b && my >= b.y && my <= b.y + b.h;
-        });
-
-        if (droppedCategory && classifyingId !== null) {
-          handleClassify(classifyingId, droppedCategory);
-        } else {
-          // 回弹
-          Animated.parallel([
-            Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
-            Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
-            Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
-          ]).start(() => {
-            setClassifyingId(null);
-            setDraggingIdx(-1);
-            draggingWordRef.current = null;
+        onPanResponderRelease(_, gs) {
+          const my = gs.moveY;
+          const droppedCategory = Object.keys(catBtnLayouts).find((key) => {
+            const b = catBtnLayouts[key];
+            return b && my >= b.y && my <= b.y + b.h;
           });
-        }
-      },
+          if (droppedCategory && classifyingId !== null) {
+            handleClassify(classifyingId, droppedCategory);
+          } else {
+            cancelDrag();
+          }
+        },
 
-      onPanResponderTerminate: () => {
-        Animated.parallel([
-          Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
-        ]).start(() => {
-          setClassifyingId(null);
-          setDraggingIdx(-1);
-          draggingWordRef.current = null;
-        });
-      },
-    })
-  , [words, classifyingId, dragTx, dragTy, dragScale, handleClassify]);
+        onPanResponderTerminate: () => cancelDrag(),
+      }),
+    [dragTx, dragTy, classifyingId, handleClassify, cancelDrag]
+  );
+  // 实例化（useCallback 返回工厂函数，调用一次得到 responder）
+  const dragResponderInstance = useRef(floatingDragResponder()).current;
   /* eslint-enable react-hooks/purity */
 
   // ── 渲染 ──
   const remaining = words.length;
   const rowWidth = words.length * (CARD_WIDTH + CARD_GAP);
+  const origin = dragOriginRef.current;
 
   return (
     <Screen>
@@ -288,57 +276,58 @@ export default function LearnPage() {
       {/* 剩余数量 */}
       <Text style={styles.remainingText}>剩余 {remaining} 个单词</Text>
 
-      {/* 单词卡片行 — 用 ScrollView 实现原生水平滚动 */}
+      {/* 单词卡片行 — ScrollView 原生水平滚动（内部零手势冲突） */}
       <View style={styles.scrollContainer}>
         <ScrollView
+          ref={scrollViewRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={[
             styles.wordRow,
-            { width: Math.max(rowWidth + 24, SCREEN_WIDTH) },
+            { width: Math.max(rowWidth + ROW_PADDING_LEFT * 2, SCREEN_WIDTH) },
           ]}
           decelerationRate="fast"
           snapToInterval={CARD_WIDTH + CARD_GAP}
           onMomentumScrollEnd={(e) => {
-            const offsetX = e.nativeEvent.contentOffset.x;
-            scrollBaseRef.current = offsetX;
-            // 接近末尾自动加载更多
-            const visibleEnd = offsetX + SCREEN_WIDTH;
+            const visibleEnd = e.nativeEvent.contentOffset.x + SCREEN_WIDTH;
             const totalContent = words.length * (CARD_WIDTH + CARD_GAP);
             if (totalContent - visibleEnd < CARD_WIDTH * 3 && !loading) {
               loadMore();
             }
           }}
         >
-          {words.map((word, index) => {
-            // 被拖拽中的位置显示占位
-            if (classifyingId === word.id && index === draggingIdx && draggingWordRef.current) {
-              return <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />;
-            }
-
-            const responder = createDragResponder(index);
-
-            return (
-              <View key={word.id} {...responder.panHandlers}>
-                <WordCard word={word} index={index} onPress={() => handleTapWord(index)} />
-              </View>
-            );
-          })}
+          {words.map((word, index) =>
+            classifyingId === word.id && index === draggingIdx ? (
+              <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />
+            ) : (
+              <TouchableOpacity
+                key={word.id}
+                activeOpacity={0.8}
+                style={styles.card}
+                onPress={() => handleTapWord(index)}
+                onLongPress={() => startDrag(index)}
+                delayLongPress={350}
+              >
+                <Text style={styles.cardText}>{word.word}</Text>
+              </TouchableOpacity>
+            )
+          )}
         </ScrollView>
 
-        {/* 拖拽中浮动的卡片 */}
+        {/* 拖拽中浮动的卡片（绝对定位在 scrollContainer 内，不在 ScrollView 中） */}
         {classifyingId != null && draggingWordRef.current && (
           <Animated.View
             style={[
               styles.card,
               styles.draggingCard,
               {
+                position: 'absolute',
+                left: origin.x,
+                top: origin.y,
                 transform: [{ translateX: dragTx }, { translateY: dragTy }, { scale: dragScale }],
-                position: 'absolute' as const,
-                left: 16,
-                top: 8,
               },
             ]}
+            {...dragResponderInstance.panHandlers}
           >
             <Text style={styles.cardText}>{draggingWordRef.current.word}</Text>
           </Animated.View>
@@ -367,7 +356,7 @@ export default function LearnPage() {
           ))}
         </View>
         <Text style={styles.catHint}>
-          {classifyingId != null ? '松手即可归类' : '单击卡片查看详情，长按向下拖拽可分类'}
+          {classifyingId != null ? '松手即可归类' : '单击查看详情 · 长按拖拽可分类'}
         </Text>
       </View>
 
@@ -392,16 +381,15 @@ const styles = StyleSheet.create({
   titleText: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   remainingText: { textAlign: 'center', color: '#6B7280', fontSize: 14, marginTop: 16, marginBottom: 24 },
 
-  // 滚动容器：固定高度，用于定位浮动卡片
   scrollContainer: {
-    height: CARD_HEIGHT + 32,
+    height: CARD_HEIGHT + 28,
     justifyContent: 'center',
     marginHorizontal: 8,
   },
   wordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: ROW_PADDING_LEFT,
     gap: CARD_GAP,
   },
 
@@ -420,15 +408,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  cardPlaceholder: { opacity: 0, borderWidth: 0, elevation: 0, shadowOpacity: 0 },
+  cardPlaceholder: {
+    opacity: 0.15,
+    borderWidth: 1.5,
+    borderColor: '#4F46E5',
+    borderStyle: 'dashed',
+  },
   cardText: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
   draggingCard: {
     zIndex: 100,
     elevation: 20,
     borderColor: '#4F46E5',
+    borderWidth: 2,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
   },
 
