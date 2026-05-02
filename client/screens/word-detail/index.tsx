@@ -1,1595 +1,207 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
-import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
-import * as FileSystem from 'expo-file-system/legacy';
-import Slider from '@react-native-community/slider';
-import { API_BASE_URL } from '@/utils/apiConfig';
-import { createFormDataFile } from '@/utils/createFormDataFile';
 
-interface Word {
-	id: number;
-	word: string;
-	phonetic: string;
-	meaning: string;
-	example?: string;
-	example_translation?: string;
-	image_url?: string;
-}
-
-interface Comment {
-	id: number;
-	word_id: number;
-	word_text: string;
-	user_name: string;
-	content: string;
-	created_at: string;
-}
-
-interface GrammarIssue {
-	message: string;
-	shortMessage: string;
-	replacements: string[];
-}
-
-interface GrammarResult {
-	success: boolean;
-	text: string;
-	totalIssues: number;
-	isCorrect: boolean;
-	issues: GrammarIssue[];
-}
-
-interface EvaluationResult {
-	success: boolean;
-	transcription: string;
-	accuracy: number;
-	fluency: number;
-	pronunciation: number;
-	overall: number;
-	feedback: string;
-	wordCorrect: boolean;
+interface WordDetail {
+  id: number;
+  word: string;
+  phonetic: string | null;
+  meaning: string | null;
+  example_sentence: string | null;
 }
 
 export default function WordDetailPage() {
-	const router = useSafeRouter();
-	const params = useSafeSearchParams<{ word: string; table?: string }>();
-	
-	const [word, setWord] = useState<Word>(() => {
-		if (params.word) {
-			return JSON.parse(params.word);
-		}
-		return { id: 0, word: '', phonetic: '', meaning: '' };
-	});
-	const [currentIndex, setCurrentIndex] = useState(0);
-	const [wordsList, setWordsList] = useState<Word[]>([]);
-	const [isPlaying, setIsPlaying] = useState(false);
-	const [familiarity, setFamiliarity] = useState(50);
-	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
-	const fetchCategoryCountsRef = useRef<() => void>(() => { /* noop */ });
+  const router = useSafeRouter();
+  const { id } = useSafeSearchParams<{ id: number }>();
 
-	// 评论相关状态
-	const [comments, setComments] = useState<Comment[]>([]);
-	const [commentText, setCommentText] = useState('');
-	const [isLoadingComments, setIsLoadingComments] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+  const [detail, setDetail] = useState<WordDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-	// 语法检测相关状态
-	const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
-	const [grammarResult, setGrammarResult] = useState<GrammarResult | null>(null);
-	const [showResultModal, setShowResultModal] = useState(false);
+  useEffect(() => {
+    if (!id) return;
 
-	// 录音评分相关状态
-	const [isRecording, setIsRecording] = useState(false);
-	const [isEvaluating, setIsEvaluating] = useState(false);
-	const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
-	const [showEvalModal, setShowEvalModal] = useState(false);
-	const recordingRef = useRef<Audio.Recording | null>(null);
-	const [recordingVolume, setRecordingVolume] = useState<number[]>(new Array(20).fill(0));
-	const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    let cancelled = false;
 
-	const sourceTable = params.table || 'words_b';
-	const isInitialized = useRef(false);
-	const soundRef = useRef<Audio.Sound | null>(null);
+    /**
+     * 服务端文件：server/src/routes/user-words.ts 或 wordbooks.ts
+     * 接口：GET /api/v1/wordbooks/:table/:id （获取单个单词详情）
+     */
+    const fetchDetail = async () => {
+      // 先尝试从 words_b 表获取
+      try {
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/words_b/${id}`
+        );
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setDetail(data);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        if (!cancelled) console.error('fetchWordDetail error:', e);
+      }
 
-	// 移动单词到目标分类，并自动显示当前表中的下一个单词
-	const handleDrop = useCallback(async (targetTable: string, status: string) => {
-		console.log('handleDrop called:', targetTable, status);
-		console.log('Current word:', word.id, word.word, 'sourceTable:', sourceTable);
-		if (!word.id || word.id === 0) {
-			console.log('Word ID is invalid, skipping');
-			return;
-		}
+      // 如果失败，尝试 user-words 接口
+      try {
+        const res2 = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/${id}`
+        );
+        if (!cancelled && res2.ok) {
+          const data = await res2.json();
+          setDetail(data);
+        }
+      } catch (e) {
+        if (!cancelled) console.error('fetchWordDetail error:', e);
+      }
+      if (!cancelled) setLoading(false);
+    };
 
-		try {
-			/**
-			 * 服务端文件：server/src/routes/wordbooks.ts
-			 * 接口：POST /api/v1/wordbooks/move
-			 * Body参数：sourceTable: string, targetTable: string, wordId: number
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					sourceTable: sourceTable,
-					targetTable: targetTable,
-					wordId: word.id,
-				})
-			});
+    fetchDetail();
 
-			const result = await response.json();
-			console.log('Move API response:', response.status, result);
+    return () => { cancelled = true; };
+  }, [id]);
 
-			if (!response.ok) {
-				throw new Error(result.error || '移动失败');
-			}
+  return (
+    <Screen>
+      {/* 头部 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+          <Text style={styles.backText}>← 返回</Text>
+        </TouchableOpacity>
+        <Text style={styles.titleText}>单词详情</Text>
+        <View style={{ width: 60 }} />
+      </View>
 
-			// 更新分类数量
-			fetchCategoryCountsRef.current();
+      {/* 内容 */}
+      {loading ? (
+        <View style={styles.centerArea}>
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      ) : detail ? (
+        <View style={styles.content}>
+          {/* 单词大卡片 */}
+          <View style={styles.wordCard}>
+            <Text style={styles.wordText}>{detail.word}</Text>
+            {detail.phonetic ? (
+              <Text style={styles.phoneticText}>{detail.phonetic}</Text>
+            ) : null}
+          </View>
 
-			// 从当前源表重新加载单词列表，并自动显示下一个单词
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${sourceTable}`);
-			const data = await listResponse.json();
-			if (Array.isArray(data) && data.length > 0) {
-				// 移除已移动的单词，显示下一个
-				const nextWords = data.filter((w: Word) => w.id !== word.id);
-				setWordsList(nextWords);
-				if (nextWords.length > 0) {
-					setCurrentIndex(0);
-					setWord(nextWords[0]);
-				} else {
-					setWord({ id: 0, word: '', phonetic: '', meaning: '' });
-				}
-				setCommentText('');
-			} else {
-				setWordsList([]);
-				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
-			}
-		} catch (error) {
-			console.error('Failed to move word:', error);
-			Alert.alert('错误', '操作失败');
-		}
-	}, [word.id, word.word, sourceTable]);
+          {/* 释义 */}
+          {detail.meaning ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>释义</Text>
+              <Text style={styles.sectionContent}>{detail.meaning}</Text>
+            </View>
+          ) : null}
 
-	// 获取分类数量
-	const fetchCategoryCounts = useCallback(async () => {
-		try {
-			const [xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_x/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
-			]);
-			const [xData, yData, zData] = await Promise.all([xRes.json(), yRes.json(), zRes.json()]);
-			setCategoryCounts({
-				x: xData.count || 0,
-				y: yData.count || 0,
-				z: zData.count || 0,
-			});
-		} catch (error) {
-			console.error('Failed to fetch category counts:', error);
-		}
-	}, []);
-
-	// 将 fetchCategoryCounts 赋值给 ref
-	useEffect(() => {
-		fetchCategoryCountsRef.current = fetchCategoryCounts;
-	}, [fetchCategoryCounts]);
-
-	// 页面加载时获取单词列表和分类数量
-	useFocusEffect(
-		useCallback(() => {
-			const fetchWordsList = async () => {
-				try {
-					/**
-					 * 服务端文件：server/src/routes/wordbooks.ts
-					 * 接口：GET /api/v1/wordbooks/:table
-					 */
-					const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
-					const data = await response.json();
-					if (Array.isArray(data) && data.length > 0 && !isInitialized.current) {
-						setWordsList(data);
-						isInitialized.current = true;
-					}
-				} catch (error) {
-					console.error('Failed to fetch words:', error);
-				}
-			};
-			fetchWordsList();
-			fetchCategoryCountsRef.current();
-		}, [sourceTable])
-	);
-
-	// 获取评论列表
-	const fetchComments = useCallback(async (wordId: number) => {
-		if (!wordId) return;
-		setIsLoadingComments(true);
-		try {
-			/**
-			 * 服务端文件：server/src/routes/comments.ts
-			 * 接口：GET /api/v1/comments/:wordId
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/comments/${wordId}`);
-			const data = await response.json();
-			setComments(Array.isArray(data) ? data : []);
-		} catch (error) {
-			console.error('Failed to fetch comments:', error);
-			setComments([]);
-		} finally {
-			setIsLoadingComments(false);
-		}
-	}, []);
-
-	// 语法检测函数
-	const checkGrammar = useCallback(async () => {
-		if (!commentText.trim()) {
-			Alert.alert('提示', '请输入句子');
-			return;
-		}
-
-		setIsCheckingGrammar(true);
-		try {
-			/**
-			 * 服务端文件：server/src/routes/grammar-check.ts
-			 * 接口：POST /api/v1/grammar-check
-			 * Body参数：text: string, language?: string
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/grammar-check`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					text: commentText.trim(),
-					language: 'en-US'
-				})
-			});
-
-			const result = await response.json();
-			
-			if (!response.ok) {
-				throw new Error(result.error || '检测失败');
-			}
-
-			// 语法正确时直接发布，不弹窗
-			if (result.isCorrect) {
-				// 直接发布
-				setIsSubmitting(true);
-				try {
-					const publishResponse = await fetch(`${API_BASE_URL}/api/v1/comments`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							wordId: word.id,
-							wordText: word.word,
-							userName: '用户',
-							content: commentText.trim()
-						})
-					});
-					
-					if (!publishResponse.ok) throw new Error('提交失败');
-					
-					setCommentText('');
-					fetchComments(word.id);
-					Alert.alert('成功', '笔记已发布');
-				} catch (error) {
-					console.error('Failed to submit comment:', error);
-					Alert.alert('错误', '发布失败');
-				} finally {
-					setIsSubmitting(false);
-				}
-			} else {
-				// 有错误时显示弹窗
-				setGrammarResult(result);
-				setShowResultModal(true);
-			}
-		} catch (error: any) {
-			console.error('Grammar check error:', error);
-			Alert.alert('错误', error.message || '语法检测失败，请稍后重试');
-		} finally {
-			setIsCheckingGrammar(false);
-		}
-	}, [commentText]);
-
-	// 发布评论
-	const submitComment = useCallback(async () => {
-		if (!commentText.trim() || !word.id) {
-			return;
-		}
-		
-		setIsSubmitting(true);
-		try {
-			/**
-			 * 服务端文件：server/src/routes/comments.ts
-			 * 接口：POST /api/v1/comments
-			 * Body参数：wordId: number, wordText: string, userName: string, content: string
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/comments`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					wordId: word.id,
-					wordText: word.word,
-					userName: '用户',
-					content: commentText.trim()
-				})
-			});
-			
-			if (!response.ok) throw new Error('提交失败');
-			
-			setCommentText('');
-			setShowResultModal(false);
-			setGrammarResult(null);
-			fetchComments(word.id);
-			Alert.alert('成功', '笔记已发布');
-		} catch (error) {
-			console.error('Failed to submit comment:', error);
-			Alert.alert('错误', '发布失败');
-		} finally {
-			setIsSubmitting(false);
-		}
-	}, [commentText, word.id, word.word, fetchComments]);
-
-	// 取消发布
-	const cancelPublish = useCallback(() => {
-		setShowResultModal(false);
-		setGrammarResult(null);
-	}, []);
-
-	// 当单词变化时获取评论
-	useEffect(() => {
-		if (!word.id) return;
-		setIsLoadingComments(true);
-		fetch(`${API_BASE_URL}/api/v1/comments/${word.id}`)
-			.then(response => response.json())
-			.then(data => {
-				setComments(Array.isArray(data) ? data : []);
-			})
-			.catch(error => {
-				console.error('Failed to fetch comments:', error);
-				setComments([]);
-			})
-			.finally(() => {
-				setIsLoadingComments(false);
-			});
-	}, [word.id]);
-
-	// 清理音频资源
-	useEffect(() => {
-		return () => {
-			if (soundRef.current) {
-				soundRef.current.unloadAsync();
-			}
-		};
-	}, []);
-
-	// 发音功能
-	const playPronunciation = async (text?: string) => {
-		const playText = text || word?.word || '';
-		if (!playText) return;
-
-		if (Platform.OS === 'web') {
-			// Web 端使用 Web Speech API
-			try {
-				const utterance = new (globalThis as any).SpeechSynthesisUtterance(playText);
-				utterance.lang = 'en-US';
-				utterance.rate = 0.9;
-				setIsPlaying(true);
-				utterance.onend = () => setIsPlaying(false);
-				utterance.onerror = () => {
-					setIsPlaying(false);
-					console.error('Speech synthesis error');
-				};
-				(globalThis as any).speechSynthesis.speak(utterance);
-			} catch {
-				setIsPlaying(false);
-			}
-		} else {
-			// 移动端：尝试系统 TTS，失败则尝试下载播放
-			setIsPlaying(true);
-			try {
-				// 先尝试系统 TTS（最可靠的方式）
-				Speech.speak(playText, {
-					language: 'en-US',
-					rate: 0.9,
-					onDone: () => setIsPlaying(false),
-					onError: (err) => {
-						console.error('expo-speech error:', err);
-						setIsPlaying(false);
-						// fallback: 下载在线音频
-						playDownloadedTTS(playText);
-					},
-				});
-			} catch {
-				setIsPlaying(false);
-				playDownloadedTTS(playText);
-			}
-		}
-	};
-
-	// 下载在线音频并播放
-	const playDownloadedTTS = async (text: string) => {
-		setIsPlaying(true);
-		try {
-			if (soundRef.current) {
-				await soundRef.current.unloadAsync();
-			}
-			await Audio.setAudioModeAsync({
-				playsInSilentModeIOS: true,
-				staysActiveInBackground: false,
-				shouldDuckAndroid: true,
-			});
-			const encoded = encodeURIComponent(text);
-			const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
-
-			const response = await fetch(audioUrl);
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}`);
-			}
-			const arrayBuffer = await response.arrayBuffer();
-			const bytes = new Uint8Array(arrayBuffer);
-			let binary = '';
-			for (let i = 0; i < bytes.byteLength; i++) {
-				binary += String.fromCharCode(bytes[i]);
-			}
-			const base64 = btoa(binary);
-
-			const localUri = (FileSystem as any).cacheDirectory + 'tts.mp3';
-			await (FileSystem as any).writeAsStringAsync(localUri, base64, {
-				encoding: 'base64',
-			});
-
-			const { sound } = await Audio.Sound.createAsync(
-				{ uri: localUri },
-				{ shouldPlay: true },
-				undefined,
-				true
-			);
-			soundRef.current = sound;
-			sound.setOnPlaybackStatusUpdate((status) => {
-				if (status.isLoaded && status.didJustFinish) {
-					setIsPlaying(false);
-				}
-			});
-		} catch (error: any) {
-			console.error('Downloaded TTS error:', error);
-			setIsPlaying(false);
-			Alert.alert('发音提示', `发音失败: ${error?.message || '网络错误'}`);
-		}
-	};
-
-	// 录音评分功能
-	const startRecording = async () => {
-		try {
-			const { status } = await Audio.requestPermissionsAsync();
-			if (status !== 'granted') {
-				Alert.alert('权限不足', '需要麦克风权限才能录音');
-				return;
-			}
-			await Audio.setAudioModeAsync({
-				allowsRecordingIOS: true,
-				playsInSilentModeIOS: true,
-			});
-			const { recording } = await Audio.Recording.createAsync(
-				Audio.RecordingOptionsPresets.HIGH_QUALITY
-			);
-			recordingRef.current = recording;
-			setIsRecording(true);
-
-			// 启动音量监测
-			setRecordingVolume(new Array(20).fill(0));
-			meteringIntervalRef.current = setInterval(async () => {
-				if (recordingRef.current) {
-					const status = await recordingRef.current.getStatusAsync();
-					if (status.isRecording && status.metering !== undefined) {
-						// metering 范围通常是 -160 ~ 0，映射到 0 ~ 1
-						const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
-						setRecordingVolume(prev => {
-							const next = [...prev.slice(1), normalized];
-							return next;
-						});
-					}
-				}
-			}, 100);
-		} catch (error) {
-			console.error('Failed to start recording:', error);
-			Alert.alert('错误', '无法启动录音');
-		}
-	};
-
-	const stopRecording = async () => {
-		try {
-			setIsRecording(false);
-			// 清除音量监测定时器
-			if (meteringIntervalRef.current) {
-				clearInterval(meteringIntervalRef.current);
-				meteringIntervalRef.current = null;
-			}
-			if (!recordingRef.current) return;
-
-			await recordingRef.current.stopAndUnloadAsync();
-			const uri = recordingRef.current.getURI();
-			recordingRef.current = null;
-
-			if (!uri || !word.example) return;
-
-			setIsEvaluating(true);
-
-			// 上传音频到后端进行评分
-			const formData = new FormData();
-			formData.append('audio', createFormDataFile(uri, 'recording.m4a', 'audio/m4a'));
-			formData.append('originalText', word.example);
-
-			/**
-			 * 服务端文件：server/src/routes/speech-eval.ts
-			 * 接口：POST /api/v1/speech-eval
-			 * Body参数：audio: File, originalText: string
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
-				method: 'POST',
-				body: formData,
-			});
-
-			const result = await response.json();
-			if (!response.ok) {
-				throw new Error(result.error || '评分失败');
-			}
-
-			setEvaluationResult(result);
-			setShowEvalModal(true);
-		} catch (error: any) {
-			console.error('Evaluation error:', error);
-			Alert.alert('评分失败', error.message || '无法完成评分，请重试');
-		} finally {
-			setIsEvaluating(false);
-		}
-	};
-
-	// 切换单词
-	const switchWord = async (direction: 'prev' | 'next') => {
-		const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
-		if (newIndex >= 0 && newIndex < wordsList.length) {
-			setCurrentIndex(newIndex);
-			setWord(wordsList[newIndex]);
-			setCommentText('');
-		}
-	};
-
-	// 处理单词状态变化 - 移动单词到对应分类
-	const handleStatusChange = async (table: string, status: string) => {
-		try {
-			/**
-			 * 服务端文件：server/src/routes/user-words.ts
-			 * 接口：POST /api/v1/user-words/move
-			 * Body参数：wordId: number, targetTable: string
-			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					wordId: word.id,
-					targetTable: table
-				})
-			});
-
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.error || '移动失败');
-			}
-
-			// 从 words_b 重新加载单词列表（移除已移动的单词）
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
-			const data = await listResponse.json();
-				
-			if (Array.isArray(data) && data.length > 0) {
-				setWordsList(data);
-				setCurrentIndex(0);
-				setWord(data[0]);
-				setCommentText('');
-			} else {
-				setWordsList([]);
-				setWord({ id: 0, word: '', phonetic: '', meaning: '' });
-			}
-
-			Alert.alert('成功', `单词已移动到"${status}"分类`, [
-				{
-					text: '确定',
-					onPress: () => {
-						fetchCategoryCounts();
-						// 返回到词汇预览列表
-						router.back();
-					}
-				}
-			]);
-		} catch (error) {
-			console.error('Failed to move word:', error);
-			Alert.alert('错误', '移动失败，请重试');
-		}
-	};
-
-	return (
-		<Screen>
-			<View style={styles.container}>
-				{/* Header */}
-				<View style={styles.header}>
-					<TouchableOpacity onPress={() => router.back()}>
-						<Text style={styles.backText}>← 返回</Text>
-					</TouchableOpacity>
-					<Text style={styles.headerTitle}>每日单词</Text>
-					<View style={styles.placeholder} />
-				</View>
-
-				{/* Content */}
-				<ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-					{/* Word Card */}
-					<View style={styles.wordCard}>
-						<View style={styles.wordRow}>
-							<Text style={styles.wordText}>{word.word}</Text>
-							<TouchableOpacity 
-								style={styles.speakerIcon}
-								onPress={() => playPronunciation()}
-								disabled={isPlaying}
-							>
-								<Ionicons 
-									name={isPlaying ? "volume-high" : "volume-medium-outline"} 
-									size={28} 
-									color="#4F46E5" 
-								/>
-							</TouchableOpacity>
-						</View>
-						<Text style={styles.phoneticText}>{word.phonetic}</Text>
-					</View>
-
-
-					{/* Meaning */}
-					<View style={styles.section}>
-						<Text style={styles.sectionLabel}>词义</Text>
-						<Text style={styles.meaningText}>{word.meaning}</Text>
-					</View>
-
-					{/* Example */}
-					{word.example && (
-						<View style={styles.section}>
-							<View style={styles.divider} />
-							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
-							{/* 录音音波 */}
-							{isRecording && (
-								<View style={styles.waveformContainer}>
-									{recordingVolume.map((vol, idx) => (
-										<View
-											key={idx}
-											style={[
-												styles.waveformBar,
-												{
-													height: Math.max(4, vol * 36),
-													backgroundColor: vol > 0.5 ? '#EF4444' : '#F87171',
-												}
-											]}
-										/>
-									))}
-								</View>
-							)}
-							<View style={styles.exampleRow}>
-								<Text style={styles.exampleText}>{word.example}</Text>
-								<View style={styles.exampleActions}>
-									<TouchableOpacity
-										style={styles.exampleSpeakerIcon}
-										onPress={() => playPronunciation(word.example)}
-										disabled={isPlaying}
-									>
-										<Ionicons
-											name={isPlaying ? "volume-high" : "volume-medium-outline"}
-											size={20}
-											color="#4F46E5"
-										/>
-									</TouchableOpacity>
-									<TouchableOpacity
-										style={[
-											styles.recordButton,
-											isRecording && styles.recordButtonActive
-										]}
-										onPressIn={startRecording}
-										onPressOut={stopRecording}
-										disabled={isEvaluating}
-									>
-										{isEvaluating ? (
-											<ActivityIndicator size="small" color="#FFF" />
-										) : (
-											<Ionicons
-												name={isRecording ? "mic" : "mic-outline"}
-												size={20}
-												color={isRecording ? "#FFF" : "#EF4444"}
-											/>
-										)}
-									</TouchableOpacity>
-								</View>
-							</View>
-							{word.example_translation && (
-								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
-							)}
-							{word.image_url && (
-								<View style={styles.exampleImageContainer}>
-									<Image 
-										source={{ uri: word.image_url }} 
-										style={styles.exampleImage}
-										resizeMode="cover"
-									/>
-								</View>
-							)}
-						</View>
-					)}
-
-					{/* Drop Zones */}
-					<View style={styles.dropZonesContainer}>
-						<View style={styles.dropZones}>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneX]} 
-								onPress={() => handleDrop('words_x', '已会')}
-							>
-								<Text style={styles.dropZoneText}>已会</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.x})</Text>
-							</TouchableOpacity>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneY]} 
-								onPress={() => handleDrop('words_y', '模糊')}
-							>
-								<Text style={styles.dropZoneText}>模糊</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.y})</Text>
-							</TouchableOpacity>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneZ]} 
-								onPress={() => handleDrop('words_z', '不会')}
-							>
-								<Text style={styles.dropZoneText}>不会</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.z})</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
-
-					{/* Familiarity Slider */}
-					<View style={styles.sliderSection}>
-						<Text style={styles.sliderLabel}>熟悉度：{familiarity}%</Text>
-						<View style={styles.sliderLabels}>
-							<Text style={styles.sliderMinText}>最不熟悉</Text>
-							<Text style={styles.sliderMaxText}>最熟悉</Text>
-						</View>
-						<Slider
-							style={styles.slider}
-							minimumValue={0}
-							maximumValue={100}
-							value={familiarity}
-							onValueChange={(value) => setFamiliarity(Math.round(value))}
-							minimumTrackTintColor="#4CAF50"
-							maximumTrackTintColor="#E0E0E0"
-							thumbTintColor="#4CAF50"
-						/>
-					</View>
-
-					{/* Comments Section */}
-					<View style={styles.commentsSection}>
-						<Text style={styles.commentsLabel}>写作&笔记 ({comments.length})</Text>
-						
-						{/* 句子输入框 */}
-						<View style={styles.commentInputContainer}>
-							<TextInput
-								style={styles.commentInput}
-								placeholder="写下你的句子..."
-								placeholderTextColor="#999"
-								value={commentText}
-								onChangeText={setCommentText}
-								multiline
-								maxLength={500}
-							/>
-							<TouchableOpacity 
-								style={[styles.submitButton, isCheckingGrammar && styles.submitButtonDisabled]} 
-								onPress={checkGrammar}
-								disabled={isCheckingGrammar}
-							>
-								{isCheckingGrammar ? (
-									<ActivityIndicator size="small" color="#FFF" />
-								) : (
-									<Text style={styles.submitButtonText}>语法检测</Text>
-								)}
-							</TouchableOpacity>
-						</View>
-						
-						{/* 评论列表 */}
-						{isLoadingComments ? (
-							<ActivityIndicator size="small" color="#4F46E5" style={styles.commentsLoading} />
-						) : comments.length === 0 ? (
-							<Text style={styles.noComments}>暂无笔记，来写点什么吧</Text>
-						) : (
-							<ScrollView style={styles.commentsList} showsVerticalScrollIndicator={false}>
-								{comments.map((comment) => (
-									<View key={comment.id} style={styles.commentItem}>
-										<View style={styles.commentHeader}>
-											<Text style={styles.commentUserName}>{comment.user_name}</Text>
-											<Text style={styles.commentDate}>
-												{new Date(comment.created_at).toLocaleDateString('zh-CN')}
-											</Text>
-										</View>
-										<Text style={styles.commentContent}>{comment.content}</Text>
-									</View>
-								))}
-							</ScrollView>
-						)}
-					</View>
-				</ScrollView>
-
-				{/* 语法检测结果弹窗 */}
-				<Modal
-					visible={showResultModal}
-					transparent
-					animationType="slide"
-					onRequestClose={cancelPublish}
-				>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContent}>
-							{/* 弹窗标题 */}
-							<View style={styles.modalHeader}>
-								<Text style={styles.modalTitle}>语法检测结果</Text>
-								<TouchableOpacity onPress={cancelPublish}>
-									<Ionicons name="close" size={24} color="#666" />
-								</TouchableOpacity>
-							</View>
-
-							{/* 检测结果内容 */}
-							<ScrollView style={styles.resultScrollView}>
-								{/* 原句 */}
-								<View style={styles.resultSection}>
-									<Text style={styles.resultLabel}>你的句子</Text>
-									<Text style={styles.originalText}>{grammarResult?.text}</Text>
-								</View>
-
-								{/* 状态 */}
-								<View style={styles.resultSection}>
-									{grammarResult?.isCorrect ? (
-										<View style={styles.statusCorrect}>
-											<Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-											<Text style={styles.statusCorrectText}>语法正确，没有问题！</Text>
-										</View>
-									) : (
-										<View style={styles.statusIncorrect}>
-											<Ionicons name="alert-circle" size={24} color="#FF9800" />
-											<Text style={styles.statusIncorrectText}>
-												发现 {grammarResult?.totalIssues} 个问题
-											</Text>
-										</View>
-									)}
-								</View>
-
-								{/* 问题列表 */}
-								{grammarResult?.issues && grammarResult.issues.length > 0 && (
-									<View style={styles.resultSection}>
-										<Text style={styles.resultLabel}>问题详情</Text>
-										{grammarResult.issues.map((issue: any, index: number) => (
-											<View key={index} style={styles.issueItem}>
-												<View style={styles.issueTitleRow}>
-													<Text style={styles.issueTitle}>{issue.title}</Text>
-												</View>
-												<Text style={styles.issueMessage}>{issue.message}</Text>
-												{issue.replacements.length > 0 && (
-													<View style={styles.replacementContainer}>
-														<Text style={styles.replacementLabel}>建议修正：</Text>
-														{issue.replacements.map((rep: any, repIndex: number) => (
-															<Text key={repIndex} style={styles.replacementText}>
-																• {typeof rep === 'string' ? rep : rep.value}
-															</Text>
-														))}
-													</View>
-												)}
-											</View>
-										))}
-									</View>
-								)}
-							</ScrollView>
-
-							{/* 操作按钮 */}
-							<View style={styles.modalFooter}>
-								<TouchableOpacity 
-									style={[styles.modalButton, styles.cancelButton]} 
-									onPress={cancelPublish}
-								>
-									<Text style={styles.cancelButtonText}>取消发布</Text>
-								</TouchableOpacity>
-								<TouchableOpacity 
-									style={[styles.modalButton, styles.publishButton]} 
-									onPress={submitComment}
-									disabled={isSubmitting}
-								>
-									{isSubmitting ? (
-										<ActivityIndicator size="small" color="#FFF" />
-									) : (
-										<Text style={styles.publishButtonText}>发布</Text>
-									)}
-								</TouchableOpacity>
-							</View>
-						</View>
-					</View>
-				</Modal>
-
-				{/* 发音评分弹窗 */}
-				<Modal
-					visible={showEvalModal}
-					transparent
-					animationType="slide"
-					onRequestClose={() => setShowEvalModal(false)}
-				>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContent}>
-							<View style={styles.modalHeader}>
-								<Text style={styles.modalTitle}>发音评分</Text>
-								<TouchableOpacity onPress={() => setShowEvalModal(false)}>
-									<Ionicons name="close" size={24} color="#666" />
-								</TouchableOpacity>
-							</View>
-
-							<ScrollView style={styles.resultScrollView}>
-								{/* 识别文本 */}
-								<View style={styles.resultSection}>
-									<Text style={styles.resultLabel}>识别结果</Text>
-									<Text style={styles.originalText}>{evaluationResult?.transcription || '-'}</Text>
-								</View>
-
-								{/* 总分 */}
-								<View style={styles.resultSection}>
-									<View style={styles.scoreContainer}>
-										<Text style={styles.scoreValue}>{evaluationResult?.overall || 0}</Text>
-										<Text style={styles.scoreLabel}>总分</Text>
-									</View>
-								</View>
-
-								{/* 分项得分 */}
-								<View style={styles.resultSection}>
-									<Text style={styles.resultLabel}>分项得分</Text>
-									<View style={styles.scoreRow}>
-										<View style={styles.scoreItem}>
-											<Text style={styles.scoreItemValue}>{evaluationResult?.accuracy || 0}</Text>
-											<Text style={styles.scoreItemLabel}>准确度</Text>
-										</View>
-										<View style={styles.scoreItem}>
-											<Text style={styles.scoreItemValue}>{evaluationResult?.fluency || 0}</Text>
-											<Text style={styles.scoreItemLabel}>流利度</Text>
-										</View>
-										<View style={styles.scoreItem}>
-											<Text style={styles.scoreItemValue}>{evaluationResult?.pronunciation || 0}</Text>
-											<Text style={styles.scoreItemLabel}>发音</Text>
-										</View>
-									</View>
-								</View>
-
-								{/* 反馈 */}
-								<View style={styles.resultSection}>
-									<Text style={styles.resultLabel}>评语</Text>
-									<Text style={styles.feedbackText}>{evaluationResult?.feedback || '-'}</Text>
-								</View>
-							</ScrollView>
-
-							<View style={styles.modalFooter}>
-								<TouchableOpacity
-									style={[styles.modalButton, styles.publishButton]}
-									onPress={() => setShowEvalModal(false)}
-								>
-									<Text style={styles.publishButtonText}>确定</Text>
-								</TouchableOpacity>
-							</View>
-						</View>
-					</View>
-				</Modal>
-			</View>
-		</Screen>
-	);
+          {/* 例句 */}
+          {detail.example_sentence ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>例句</Text>
+              <Text style={styles.exampleText}>{detail.example_sentence}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.centerArea}>
+          <Text style={styles.loadingText}>未找到单词信息</Text>
+        </View>
+      )}
+    </Screen>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: '#FFFFFF',
-	},
-	header: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		padding: 20,
-		backgroundColor: '#F5F5F5',
-	},
-	backText: {
-		fontSize: 14,
-		color: '#666666',
-		fontFamily: 'serif',
-	},
-	headerTitle: {
-		fontSize: 16,
-		color: '#333333',
-		fontFamily: 'serif',
-		fontWeight: '600',
-	},
-	placeholder: {
-		width: 50,
-	},
-	content: {
-		flex: 1,
-	},
-	wordSection: {
-		alignItems: 'center',
-		paddingVertical: 40,
-		backgroundColor: '#FAFAFA',
-	},
-	wordRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 12,
-		marginLeft: 40,
-	},
-	wordText: {
-		fontSize: 28,
-		fontWeight: '700',
-		color: '#333333',
-		fontFamily: 'Times New Roman',
-		textAlign: 'center',
-	},
-	speakerIcon: {
-		padding: 8,
-	},
-	phoneticText: {
-		fontSize: 18,
-		color: '#666666',
-		fontFamily: 'Times New Roman',
-		marginTop: 8,
-		textAlign: 'center',
-	},
-	navSection: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		paddingVertical: 12,
-		paddingHorizontal: 20,
-		backgroundColor: '#FFFFFF',
-		borderBottomWidth: 1,
-		borderBottomColor: '#EEEEEE',
-	},
-	navButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		padding: 8,
-	},
-	navButtonDisabled: {
-		opacity: 0.5,
-	},
-	navText: {
-		fontSize: 14,
-		color: '#4F46E5',
-		fontFamily: 'serif',
-	},
-	navTextDisabled: {
-		color: '#CCC',
-	},
-	navIndex: {
-		fontSize: 14,
-		color: '#666',
-		fontFamily: 'serif',
-	},
-	section: {
-		paddingHorizontal: 20,
-		paddingVertical: 16,
-	},
-	sectionLabel: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#333333',
-		fontFamily: 'serif',
-		marginBottom: 8,
-	},
-	meaningText: {
-		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'serif',
-		lineHeight: 22,
-	},
-	divider: {
-		height: 1,
-		backgroundColor: '#EEEEEE',
-	},
-	exampleRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-	},
-	exampleText: {
-		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'Times New Roman',
-		flex: 1,
-	},
-	exampleSpeakerIcon: {
-		padding: 8,
-		marginLeft: 8,
-		backgroundColor: '#EEF2FF',
-		borderRadius: 8,
-	},
-	exampleTranslation: {
-		fontSize: 13,
-		color: '#666666',
-		fontFamily: 'serif',
-		marginTop: 8,
-		paddingLeft: 4,
-	},
-	exampleImageContainer: {
-		marginTop: 12,
-		borderRadius: 12,
-		overflow: 'hidden',
-		backgroundColor: '#F5F5F5',
-	},
-	exampleImage: {
-		width: '100%',
-		height: 200,
-	},
-	statusSection: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		paddingVertical: 20,
-		paddingHorizontal: 20,
-	},
-	statusButton: {
-		paddingHorizontal: 20,
-		paddingVertical: 12,
-		borderRadius: 8,
-		minWidth: 90,
-		alignItems: 'center',
-	},
-	knownButton: {
-		backgroundColor: '#4CAF50',
-	},
-	vagueButton: {
-		backgroundColor: '#FF9800',
-	},
-	unknownButton: {
-		backgroundColor: '#F44336',
-	},
-	statusText: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#FFFFFF',
-		fontFamily: 'serif',
-	},
-	sliderSection: {
-		paddingHorizontal: 20,
-		paddingVertical: 16,
-	},
-	sliderLabel: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#333333',
-		fontFamily: 'serif',
-		marginBottom: 8,
-	},
-	sliderLabels: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginBottom: 4,
-	},
-	sliderMinText: {
-		fontSize: 12,
-		color: '#999999',
-		fontFamily: 'serif',
-	},
-	sliderMaxText: {
-		fontSize: 12,
-		color: '#999999',
-		fontFamily: 'serif',
-	},
-	slider: {
-		width: '100%',
-		height: 40,
-	},
-	commentsSection: {
-		paddingHorizontal: 20,
-		paddingVertical: 16,
-	},
-	commentsLabel: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#333333',
-		fontFamily: 'serif',
-		marginBottom: 12,
-	},
-	commentInputContainer: {
-		backgroundColor: '#F5F5F5',
-		borderRadius: 8,
-		padding: 12,
-		marginBottom: 16,
-	},
-	commentInput: {
-		fontSize: 14,
-		color: '#333333',
-		fontFamily: 'serif',
-		minHeight: 60,
-		textAlignVertical: 'top',
-	},
-	submitButton: {
-		backgroundColor: '#4F46E5',
-		borderRadius: 6,
-		paddingVertical: 10,
-		paddingHorizontal: 20,
-		alignSelf: 'flex-end',
-		marginTop: 10,
-	},
-	submitButtonDisabled: {
-		backgroundColor: '#A5A5A5',
-	},
-	submitButtonText: {
-		color: '#FFF',
-		fontSize: 14,
-		fontWeight: '600',
-		fontFamily: 'serif',
-	},
-	commentsLoading: {
-		marginVertical: 20,
-	},
-	noComments: {
-		fontSize: 14,
-		color: '#999',
-		fontFamily: 'serif',
-		textAlign: 'center',
-		marginVertical: 20,
-	},
-	commentsList: {
-		maxHeight: 300,
-	},
-	commentItem: {
-		backgroundColor: '#F9F9F9',
-		borderRadius: 8,
-		padding: 12,
-		marginBottom: 12,
-	},
-	commentHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginBottom: 6,
-	},
-	commentUserName: {
-		fontSize: 13,
-		fontWeight: '600',
-		color: '#4F46E5',
-		fontFamily: 'serif',
-	},
-	commentDate: {
-		fontSize: 12,
-		color: '#999',
-		fontFamily: 'serif',
-	},
-	commentContent: {
-		fontSize: 14,
-		color: '#333',
-		fontFamily: 'serif',
-		lineHeight: 20,
-	},
-	// 弹窗样式
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: 'rgba(0, 0, 0, 0.5)',
-		justifyContent: 'flex-end',
-	},
-	modalContent: {
-		backgroundColor: '#FFFFFF',
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		maxHeight: '80%',
-	},
-	modalHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		padding: 20,
-		borderBottomWidth: 1,
-		borderBottomColor: '#EEEEEE',
-	},
-	modalTitle: {
-		fontSize: 18,
-		fontWeight: '600',
-		color: '#333',
-		fontFamily: 'serif',
-	},
-	resultScrollView: {
-		maxHeight: 400,
-		padding: 20,
-	},
-	resultSection: {
-		marginBottom: 20,
-	},
-	resultLabel: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#666',
-		fontFamily: 'serif',
-		marginBottom: 8,
-	},
-	originalText: {
-		fontSize: 16,
-		color: '#333',
-		fontFamily: 'Times New Roman',
-		lineHeight: 24,
-		backgroundColor: '#F5F5F5',
-		padding: 12,
-		borderRadius: 8,
-	},
-	statusCorrect: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		backgroundColor: '#E8F5E9',
-		padding: 16,
-		borderRadius: 8,
-		gap: 10,
-	},
-	statusCorrectText: {
-		fontSize: 16,
-		color: '#4CAF50',
-		fontWeight: '600',
-		fontFamily: 'serif',
-	},
-	statusIncorrect: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		backgroundColor: '#FFF3E0',
-		padding: 16,
-		borderRadius: 8,
-		gap: 10,
-	},
-	statusIncorrectText: {
-		fontSize: 16,
-		color: '#FF9800',
-		fontWeight: '600',
-		fontFamily: 'serif',
-	},
-	issueItem: {
-		backgroundColor: '#FFF3E0',
-		padding: 12,
-		borderRadius: 8,
-		marginBottom: 10,
-		borderLeftWidth: 4,
-		borderLeftColor: '#FF9800',
-	},
-	issueTitleRow: {
-		marginBottom: 8,
-	},
-	issueTitle: {
-		fontSize: 16,
-		fontWeight: '600',
-		color: '#E65100',
-		fontFamily: 'serif',
-	},
-	issueMessage: {
-		fontSize: 14,
-		color: '#333',
-		fontFamily: 'serif',
-		lineHeight: 20,
-	},
-	issueShortMessage: {
-		fontSize: 13,
-		color: '#FF9800',
-		fontFamily: 'serif',
-		marginTop: 4,
-	},
-	replacementContainer: {
-		marginTop: 8,
-		paddingTop: 8,
-		borderTopWidth: 1,
-		borderTopColor: '#EEE',
-	},
-	replacementLabel: {
-		fontSize: 13,
-		color: '#666',
-		fontFamily: 'serif',
-		marginBottom: 4,
-	},
-	replacementText: {
-		fontSize: 14,
-		color: '#4CAF50',
-		fontFamily: 'serif',
-		marginLeft: 8,
-	},
-	modalFooter: {
-		flexDirection: 'row',
-		padding: 20,
-		gap: 12,
-		borderTopWidth: 1,
-		borderTopColor: '#EEEEEE',
-	},
-	modalButton: {
-		flex: 1,
-		paddingVertical: 14,
-		borderRadius: 8,
-		alignItems: 'center',
-	},
-	cancelButton: {
-		backgroundColor: '#F5F5F5',
-	},
-	cancelButtonText: {
-		fontSize: 16,
-		fontWeight: '600',
-		color: '#666',
-		fontFamily: 'serif',
-	},
-	publishButton: {
-		backgroundColor: '#4F46E5',
-	},
-	publishButtonText: {
-		fontSize: 16,
-		fontWeight: '600',
-		color: '#FFF',
-		fontFamily: 'serif',
-	},
-	// 拖拽相关样式
-	wordCard: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 16,
-		padding: 24,
-		marginHorizontal: 20,
-		marginVertical: 16,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
-		elevation: 4,
-	},
-	wordCardDragging: {
-		shadowOpacity: 0.3,
-		shadowRadius: 16,
-		elevation: 8,
-		opacity: 0.9,
-	},
-	dragHint: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		marginTop: 16,
-		paddingTop: 12,
-		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
-		gap: 6,
-	},
-	dragHintText: {
-		fontSize: 12,
-		color: '#999',
-		fontFamily: 'serif',
-	},
-	dropZonesContainer: {
-		paddingHorizontal: 20,
-		paddingVertical: 16,
-		backgroundColor: '#F8F8F8',
-		borderTopWidth: 1,
-		borderTopColor: '#E0E0E0',
-	},
-	dropZoneHint: {
-		fontSize: 12,
-		color: '#999',
-		textAlign: 'center',
-		marginBottom: 12,
-		fontFamily: 'serif',
-	},
-	dropZones: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-	},
-	dropZone: {
-		flex: 1,
-		marginHorizontal: 6,
-		paddingVertical: 10,
-		borderRadius: 16,
-		alignItems: 'center',
-		justifyContent: 'center',
-		minHeight: 52,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 3 },
-		shadowOpacity: 0.15,
-		shadowRadius: 6,
-		elevation: 4,
-	},
-	dropZoneX: {
-		backgroundColor: '#66BB6A',
-	},
-	dropZoneY: {
-		backgroundColor: '#FFA726',
-	},
-	dropZoneZ: {
-		backgroundColor: '#EF5350',
-	},
-	dropZoneText: {
-		fontSize: 15,
-		fontWeight: '600',
-		color: '#FFFFFF',
-		fontFamily: 'serif',
-	},
-	dropZoneCount: {
-		fontSize: 12,
-		color: 'rgba(255,255,255,0.9)',
-		marginTop: 4,
-		fontFamily: 'serif',
-	},
-	// 录音按钮样式
-	exampleActions: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 6,
-	},
-	recordButton: {
-		padding: 8,
-		backgroundColor: '#FEE2E2',
-		borderRadius: 8,
-	},
-	recordButtonActive: {
-		backgroundColor: '#EF4444',
-	},
-	// 音波动画样式
-	waveformContainer: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		height: 40,
-		marginBottom: 8,
-		gap: 3,
-	},
-	waveformBar: {
-		width: 4,
-		borderRadius: 2,
-		backgroundColor: '#EF4444',
-	},
-	// 评分弹窗样式
-	scoreContainer: {
-		alignItems: 'center',
-		paddingVertical: 16,
-		backgroundColor: '#F0FDF4',
-		borderRadius: 12,
-	},
-	scoreValue: {
-		fontSize: 48,
-		fontWeight: '700',
-		color: '#16A34A',
-		fontFamily: 'serif',
-	},
-	scoreLabel: {
-		fontSize: 14,
-		color: '#666',
-		fontFamily: 'serif',
-		marginTop: 4,
-	},
-	scoreRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		marginTop: 8,
-	},
-	scoreItem: {
-		alignItems: 'center',
-		backgroundColor: '#F5F5F5',
-		borderRadius: 8,
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		flex: 1,
-		marginHorizontal: 4,
-	},
-	scoreItemValue: {
-		fontSize: 24,
-		fontWeight: '700',
-		color: '#4F46E5',
-		fontFamily: 'serif',
-	},
-	scoreItemLabel: {
-		fontSize: 12,
-		color: '#666',
-		fontFamily: 'serif',
-		marginTop: 4,
-	},
-	feedbackText: {
-		fontSize: 14,
-		color: '#333',
-		fontFamily: 'serif',
-		lineHeight: 22,
-		backgroundColor: '#F5F5F5',
-		padding: 12,
-		borderRadius: 8,
-	},
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#4F46E5',
+    fontWeight: '500',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  centerArea: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#9CA3AF',
+    fontSize: 16,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  wordCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+
+    marginBottom: 28,
+  },
+  wordText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#1F2937',
+    letterSpacing: 0.5,
+  },
+  phoneticText: {
+    fontSize: 18,
+    color: '#6B7280',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  section: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 16,
+
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  sectionContent: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    lineHeight: 28,
+  },
+  exampleText: {
+    fontSize: 17,
+    color: '#4B5563',
+    lineHeight: 28,
+    fontStyle: 'italic',
+  },
 });
