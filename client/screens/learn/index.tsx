@@ -125,6 +125,9 @@ export default function LearnPage() {
   // 用于精确查找触摸位置对应的单词，避免 scrollOffset 不同步问题
   const cardLayoutsRef = useRef<Map<number, { x: number; w: number }>>(new Map());
 
+  const dragStartedRef = useRef(false);
+  const scrollStartedRef = useRef(false);
+
   const registerCardLayout = useCallback((index: number, x: number, w: number) => {
     cardLayoutsRef.current.set(index, { x, w });
   }, []);
@@ -137,6 +140,8 @@ export default function LearnPage() {
   const gestureStartPos = useRef({ x: 0, y: 0, time: 0 });
   const gestureMode = useRef<'idle' | 'scroll' | 'drag'>('idle');
   const tappedIndex = useRef(-1);
+  const dragStartedRefRef = useRef(false);
+  const scrollStartedRefRef = useRef(false);
 
   // 分类按钮位置
   const catBtnLayouts = useRef<{ [key: string]: { x: number; y: number; w: number; h: number } }>({}).current;
@@ -249,7 +254,7 @@ export default function LearnPage() {
     setDraggingIdx(-1);
   }, []);
 
-  // ── finishGesture（在 handleClassify 之后定义）──
+  // ── finishGesture ──
   const finishGesture = useCallback(
     (gs?: { dx: number; dy: number; moveY?: number }) => {
       const mode = gestureMode.current;
@@ -290,7 +295,6 @@ export default function LearnPage() {
         }).start();
 
         scrollOffsetRef.current = targetOffset;
-        panX.extractOffset();
 
         const currentIdx = Math.round(Math.abs(targetOffset) / (CARD_WIDTH + CARD_GAP));
         if (currentIdx + VISIBLE_CARDS + 2 >= words.length && !loading) {
@@ -333,8 +337,9 @@ export default function LearnPage() {
         onPanResponderGrant(_, gs) {
           gestureStartPos.current = { x: gs.x0, y: gs.y0, time: Date.now() };
           gestureMode.current = 'idle';
+          dragStartedRef.current = false;
+          scrollStartedRef.current = false;
 
-          // 用注册的卡片屏幕位置精确匹配触摸点，避免 scrollOffset 不同步
           let foundIdx = -1;
           const touchX = gs.x0;
           for (const [idx, layout] of cardLayoutsRef.current.entries()) {
@@ -343,16 +348,12 @@ export default function LearnPage() {
               break;
             }
           }
-
-          // 回退：如果映射表未命中（首次渲染等），用 scrollOffset 估算
           if (foundIdx < 0) {
             const step = CARD_WIDTH + CARD_GAP;
             foundIdx = Math.round((scrollOffsetRef.current + touchX) / step);
             foundIdx = Math.max(0, Math.min(foundIdx, words.length - 1));
           }
           tappedIndex.current = foundIdx;
-          panX.setOffset(scrollOffsetRef.current);
-          panX.setValue(0);
         },
 
         onPanResponderMove(_, gs) {
@@ -360,36 +361,56 @@ export default function LearnPage() {
           const dy = gs.dy;
           const dt = Date.now() - gestureStartPos.current.time;
 
+          // 已确定模式 → 直接跟随
           if (gestureMode.current === 'drag') {
             dragTx.setValue(dx);
             dragTy.setValue(dy);
             return;
           }
-
           if (gestureMode.current === 'scroll') {
             panX.setValue(dx);
             return;
           }
 
-          if (Math.abs(dy) > Math.abs(dx) && dy > 25 && dt > 200) {
+          // idle 状态下判定模式
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
+
+          // 向下拖拽 > 20px 且垂直分量更大 → 拖拽分类
+          if (absDy > 20 && dy > 15 && absDy > absDx * 0.6 && dt > 120) {
             gestureMode.current = 'drag';
+            dragStartedRef.current = true;
             const idx = tappedIndex.current;
             if (idx >= 0 && idx < words.length) {
               setClassifyingId(words[idx].id);
               setDraggingIdx(idx);
-              dragTx.setValue(dx);
-              dragTy.setValue(dy);
-              Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
             }
-          } else if (Math.abs(dx) > 8) {
+            dragTx.setValue(dx);
+            dragTy.setValue(dy);
+            Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
+            return;
+          }
+
+          // 水平移动 > 6px → 滚动
+          if (absDx > 6) {
             gestureMode.current = 'scroll';
+            scrollStartedRef.current = true;
+            panX.setOffset(scrollOffsetRef.current);
             panX.setValue(dx);
+            return;
           }
         },
         /* eslint-enable react-hooks/purity */
 
         onPanResponderTerminate: () => finishGesture(),
-        onPanResponderRelease: (_, gs) => finishGesture(gs),
+        onPanResponderRelease: (_, gs) => {
+          // release 时如果还是 scroll 模式，需要清理 offset 以便下次使用
+          if (gestureMode.current === 'scroll') {
+            panX.extractOffset();
+            panX.setValue(0);
+          }
+          finishGesture(gs);
+        },
       }),
     [panX, dragTx, dragTy, dragScale, words, finishGesture]
   );
