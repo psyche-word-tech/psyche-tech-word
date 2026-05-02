@@ -127,6 +127,8 @@ export default function LearnPage() {
 
   const dragStartedRef = useRef(false);
   const scrollStartedRef = useRef(false);
+  // scrollBase 的 JS 值追踪（Animated.Value._value 在 TS 中无法访问）
+  const scrollBaseRef = useRef(0);
 
   const registerCardLayout = useCallback((index: number, x: number, w: number) => {
     cardLayoutsRef.current.set(index, { x, w });
@@ -280,35 +282,13 @@ export default function LearnPage() {
           setClassifyingId(null);
           setDraggingIdx(-1);
         });
-      } else if (mode === 'scroll') {
-        const totalWidth = Math.max(1, words.length) * (CARD_WIDTH + CARD_GAP);
-        const maxOffset = Math.max(0, totalWidth - SCREEN_WIDTH + 40);
-        let targetOffset = scrollOffsetRef.current + dx;
-        targetOffset = Math.round(targetOffset / (CARD_WIDTH + CARD_GAP)) * (CARD_WIDTH + CARD_GAP);
-        targetOffset = Math.max(-maxOffset, Math.min(0, targetOffset));
-
-        Animated.spring(panX, {
-          toValue: targetOffset,
-          friction: 8,
-          tension: 80,
-          useNativeDriver: true,
-        }).start();
-
-        scrollOffsetRef.current = targetOffset;
-
-        const currentIdx = Math.round(Math.abs(targetOffset) / (CARD_WIDTH + CARD_GAP));
-        if (currentIdx + VISIBLE_CARDS + 2 >= words.length && !loading) {
-          const newOff = offset + words.length;
-          setOffset(newOff);
-          fetchWords(newOff);
-        }
       } else if (dt < 250 && dist < 12) {
         handleTapWord(tappedIndex.current);
       }
 
       gestureMode.current = 'idle';
     },
-    [classifyingId, words.length, loading, offset, fetchWords, handleClassify, handleTapWord, panX, dragTx, dragTy, dragScale]
+    [classifyingId, handleClassify, handleTapWord, dragTx, dragTy, dragScale]
   );
 
   // ── loadMore ──
@@ -325,20 +305,31 @@ export default function LearnPage() {
     }
   }, [classifyingId, handleClassify]);
 
+  // ── 滚动偏移量（独立于手势的累积值）──
+  const scrollBase = useRef(new Animated.Value(0)).current;
+  const gestureStartBase = useRef(0);
+
   // ── PanResponder ──
   // eslint-disable-next-line react-hooks/purity
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
+        // 延迟激活：不立即抢夺触摸，让 onPress 有机会触发
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gs) => {
+          const dx = Math.abs(gs.dx);
+          const dy = Math.abs(gs.dy);
+          return dx > 8 || dy > 12; // 移动超过阈值才激活
+        },
 
         /* eslint-disable react-hooks/purity */
         onPanResponderGrant(_, gs) {
           gestureStartPos.current = { x: gs.x0, y: gs.y0, time: Date.now() };
           gestureMode.current = 'idle';
           dragStartedRef.current = false;
-          scrollStartedRef.current = false;
+
+          // 记录滚动基准值（当前 scrollBase 的实际值）
+          gestureStartBase.current = scrollBaseRef.current;
 
           let foundIdx = -1;
           const touchX = gs.x0;
@@ -359,6 +350,8 @@ export default function LearnPage() {
         onPanResponderMove(_, gs) {
           const dx = gs.dx;
           const dy = gs.dy;
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
           const dt = Date.now() - gestureStartPos.current.time;
 
           // 已确定模式 → 直接跟随
@@ -368,16 +361,14 @@ export default function LearnPage() {
             return;
           }
           if (gestureMode.current === 'scroll') {
-            panX.setValue(dx);
+            // scroll 模式：translateX = 初始基准 + 当前手势dx（不会跳变）
+            panX.setValue(gestureStartBase.current + dx);
             return;
           }
 
-          // idle 状态下判定模式
-          const absDx = Math.abs(dx);
-          const absDy = Math.abs(dy);
-
-          // 向下拖拽 > 20px 且垂直分量更大 → 拖拽分类
-          if (absDy > 20 && dy > 15 && absDy > absDx * 0.6 && dt > 120) {
+          // idle 状态判定方向
+          // 向下拖拽优先：垂直分量大 且 向下移动 → 拖拽分类
+          if (absDy > 18 && dy > 15 && absDy > absDx * 0.6 && dt > 100) {
             gestureMode.current = 'drag';
             dragStartedRef.current = true;
             const idx = tappedIndex.current;
@@ -391,12 +382,12 @@ export default function LearnPage() {
             return;
           }
 
-          // 水平移动 > 6px → 滚动
-          if (absDx > 6) {
+          // 水平移动 → 滚动（需要更大的阈值避免误触）
+          if (absDx > 14 && absDx > absDy * 0.8) {
             gestureMode.current = 'scroll';
             scrollStartedRef.current = true;
-            panX.setOffset(scrollOffsetRef.current);
-            panX.setValue(dx);
+            // 用初始基准值 + 手势偏移，确保不跳变
+            panX.setValue(gestureStartBase.current + dx);
             return;
           }
         },
@@ -404,15 +395,44 @@ export default function LearnPage() {
 
         onPanResponderTerminate: () => finishGesture(),
         onPanResponderRelease: (_, gs) => {
-          // release 时如果还是 scroll 模式，需要清理 offset 以便下次使用
+          const dx = gs.dx;
+          const dy = gs.dy;
+
           if (gestureMode.current === 'scroll') {
-            panX.extractOffset();
-            panX.setValue(0);
+            // 将最终位置固化到 scrollBase，重置 panX 为 0
+            const finalValue = gestureStartBase.current + dx;
+            const totalWidth = Math.max(1, words.length) * (CARD_WIDTH + CARD_GAP);
+            const maxOffset = Math.max(0, totalWidth - SCREEN_WIDTH + 40);
+            let targetOffset = finalValue;
+            targetOffset = Math.round(targetOffset / (CARD_WIDTH + CARD_GAP)) * (CARD_WIDTH + CARD_GAP);
+            targetOffset = Math.max(-maxOffset, Math.min(0, targetOffset));
+
+            // 动画到目标位置后，更新 scrollBase 并将 panX 归零
+            Animated.spring(panX, {
+              toValue: targetOffset,
+              friction: 8,
+              tension: 80,
+              useNativeDriver: true,
+            }).start(() => {
+              scrollBase.setValue(targetOffset); // 更新基准值
+              scrollBaseRef.current = targetOffset;
+              panX.setValue(0);                  // 重置手势值为 0
+              scrollOffsetRef.current = targetOffset;
+
+              // 自动加载更多
+              const currentIdx = Math.round(Math.abs(targetOffset) / (CARD_WIDTH + CARD_GAP));
+              if (currentIdx + VISIBLE_CARDS + 2 >= words.length && !loading) {
+                loadMore();
+              }
+            });
+            gestureMode.current = 'idle';
+            return;
           }
+
           finishGesture(gs);
         },
       }),
-    [panX, dragTx, dragTy, dragScale, words, finishGesture]
+    [panX, dragTx, dragTy, dragScale, words, finishGesture, scrollBase, loading]
   );
 
   // ── 渲染 ──
@@ -437,7 +457,7 @@ export default function LearnPage() {
       {/* 单词卡片区 */}
       <View style={styles.scrollArea} {...panResponder.panHandlers}>
         {/* 正常显示的单词行 */}
-        <Animated.View style={[styles.wordRow, { transform: [{ translateX: panX }] }]}>
+        <Animated.View style={[styles.wordRow, { transform: [{ translateX: Animated.add(scrollBase, panX) }] }]}>
           {words.map((word, index) =>
             word.id === classifyingId && index === draggingIdx ? (
               <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />
