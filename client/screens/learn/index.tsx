@@ -158,20 +158,24 @@ export default function LearnPage() {
     }
   }, [router, words]);
 
-  // ── handleClassify ──
+  // ── handleClassify：将单词从 words_b 复制到目标表并删除 ──
   const handleClassify = useCallback(async (wordId: number, category: string) => {
     try {
       /**
        * 服务端文件：server/src/routes/user-words.ts
-       * 接口：PUT /api/v1/user-words/:id/status
-       * Body 参数：status: string ('known'|'fuzzy'|'unknown')
+       * 接口：POST /api/v1/user-words/move
+       * Body 参数：wordId: number, targetTable: string ('words_x'|'words_y'|'words_z')
        */
+      const tableMap: Record<string, string> = { known: 'words_x', vague: 'words_y', unknown: 'words_z' };
+      const targetTable = tableMap[category];
+      if (!targetTable) return;
+
       const res = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/${wordId}/status`,
+        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/move`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: category }),
+          body: JSON.stringify({ wordId, targetTable }),
         }
       );
       if (res.ok) {
