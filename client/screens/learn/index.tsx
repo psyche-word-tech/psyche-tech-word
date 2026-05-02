@@ -4,11 +4,9 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
   Dimensions,
   PanResponder,
-  ScrollView as RNScrollView,
 } from 'react-native';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
@@ -41,33 +39,35 @@ const CATEGORIES = [
 // ─── 调试面板组件 ─────────────────────────────────
 function DebugPanel({ logs, onClear }: { logs: DebugLog[]; onClear: () => void }) {
   const [visible, setVisible] = useState(false);
-
   if (!visible) {
     return (
-      <TouchableOpacity style={styles.debugBtn} onPress={() => setVisible(true)}>
+      <View style={styles.debugBtn} onTouchEnd={() => setVisible(true)}>
         <Text style={styles.debugBtnText}>[DEBUG]</Text>
-      </TouchableOpacity>
+      </View>
     );
   }
-
   const logText = logs.map((l) => `[${l.time}] ${l.msg}`).join('\n');
-
   return (
     <View style={styles.debugPanel}>
       <View style={styles.debugHeader}>
-        <Text style={styles.debugTitle}>调试日志 (可选中复制)</Text>
+        <Text style={styles.debugTitle}>调试日志</Text>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity onPress={onClear}>
-            <Text style={styles.debugAction}>清空</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setVisible(false)}>
-            <Text style={styles.debugAction}>收起</Text>
-          </TouchableOpacity>
+          <View onTouchEnd={onClear}><Text style={styles.debugAction}>清空</Text></View>
+          <View onTouchEnd={() => setVisible(false)}><Text style={styles.debugAction}>收起</Text></View>
         </View>
       </View>
-      <RNScrollView nestedScrollEnabled style={styles.debugBody}>
+      <View style={styles.debugBody}>
         <Text selectable style={styles.debugText}>{logText || '(无日志)'}</Text>
-      </RNScrollView>
+      </View>
+    </View>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function TouchableOpacity({ children, style, onPress, ...rest }: any) {
+  return (
+    <View {...rest} style={style} onTouchEnd={onPress}>
+      {children}
     </View>
   );
 }
@@ -81,31 +81,43 @@ export default function LearnPage() {
   const [words, setWords] = useState<Word[]>([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [classifyingId, setClassifyingId] = useState<number | null>(null);
-  const [draggingIdx, setDraggingIdx] = useState<number>(-1);
   const [catCounts, setCatCounts] = useState({ known: 0, vague: 0, unknown: 0 });
-  // 调试日志
   const [debugLogs, setDebugLogs] = useState<DebugLog[]>([]);
-  // 滚动事件记录
   const [lastScrollX, setLastScrollX] = useState(0);
-  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   // ── 动画值 ──
-  const dragTx = useRef(new Animated.Value(0)).current;
-  const dragTy = useRef(new Animated.Value(0)).current;
-  const dragScale = useRef(new Animated.Value(1)).current;
+  const panX = useRef(new Animated.Value(0)).current;       // 水平滚动偏移
+  const dragTx = useRef(new Animated.Value(0)).current;       // 拖拽 X 偏移
+  const dragTy = useRef(new Animated.Value(0)).current;       // 拖拽 Y 偏移
+  const dragScale = useRef(new Animated.Value(1)).current;    // 拖拽缩放
 
-  // 分类按钮位置
+  // ── Refs ──
   const catBtnLayouts = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({}).current;
-  const draggingWordRef = useRef<Word | null>(null);
-  const dragOriginRef = useRef({ x: 0, y: 0 });
+  const wordsRef = useRef<Word[]>([]);
+  useEffect(() => { wordsRef.current = words; }, [words]);
+
+  // 手势状态机: 'idle' | 'scrolling' | 'dragging'
+  const modeRef = useRef<'idle' | 'scrolling' | 'dragging'>('idle');
+  const gestureStartX = useRef(0);   // 手势起始 X（屏幕坐标）
+  const gestureStartY = useRef(0);   // 手势起始 Y
+  const pressedIdx = useRef(-1);     // 按下的卡片索引
+  const scrollXRef = useRef(0);      // 当前水平滚动位置（像素，负值表示左移）
+  const maxScrollX = useRef(0);      // 最大可滚动距离
+  const draggingInfo = useRef<{ word: Word; idx: number; originX: number; originY: number } | null>(null);
+  const [, forceUpdate] = useState(0);
 
   // ── 日志工具 ──
   const addLog = useCallback((msg: string) => {
     const now = new Date();
     const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-    setDebugLogs((prev) => [...prev.slice(-30), { time: t, msg }]);
+    setDebugLogs((prev) => [...prev.slice(-40), { time: t, msg }]);
   }, []);
+
+  // 计算最大滚动距离
+  useEffect(() => {
+    const totalWidth = words.length * (CARD_WIDTH + CARD_GAP) + 32;
+    maxScrollX.current = Math.max(0, totalWidth - SCREEN_WIDTH + 16);
+  }, [words.length]);
 
   // ── fetchCategoryStats ──
   /**
@@ -114,18 +126,13 @@ export default function LearnPage() {
    */
   const fetchCatStats = useCallback(async () => {
     try {
-      addLog('fetchCatStats 开始请求');
       const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/stats`);
-      addLog(`fetchCatStats 状态: ${res.status}`);
       if (res.ok) {
         const data = await res.json();
-        addLog(`fetchCatStats 数据: ${JSON.stringify(data)}`);
         setCatCounts({ known: data.known || 0, vague: data.vague || 0, unknown: data.unknown || 0 });
       }
-    } catch (e: any) {
-      addLog(`fetchCatStats 错误: ${e.message}`);
-    }
-  }, [addLog]);
+    } catch {}
+  }, []);
 
   // ── fetchWords ──
   /**
@@ -136,27 +143,17 @@ export default function LearnPage() {
   const fetchWords = useCallback(async (newOffset?: number) => {
     try {
       const off = newOffset ?? offset;
-      addLog(`fetchWords 请求: table=${table}, offset=${off}, limit=20`);
       const res = await fetch(
         `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${off}&limit=20`
       );
-      addLog(`fetchWords 状态: ${res.status}`);
       if (res.ok) {
         const data = await res.json();
         const arr = data.words || data || [];
-        addLog(`fetchWords 返回 ${arr.length} 条, 首词: ${arr[0]?.word ?? '(空)'}`);
-        if (newOffset === undefined || newOffset === 0) {
-          setWords(arr);
-        } else {
-          setWords((prev) => [...prev, ...arr]);
-        }
+        if (newOffset === undefined || newOffset === 0) setWords(arr);
+        else setWords((prev) => [...prev, ...arr]);
       }
-    } catch (e: any) {
-      addLog(`fetchWords 错误: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [table, offset, addLog]);
+    } catch {} finally { setLoading(false); }
+  }, [table, offset]);
 
   // ── 加载初始数据 ──
   useEffect(() => {
@@ -164,48 +161,40 @@ export default function LearnPage() {
     const doFetch = async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${offset}&limit=20`
-        );
+        const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=0&limit=20`);
         if (!cancelled && res.ok) {
           const data = await res.json();
           setWords(data.words || data || []);
-          addLog(`初始加载: ${(data.words||data||[]).length} 条`);
         }
         if (!cancelled) fetchCatStats();
-      } catch (e: any) {
-        addLog(`加载错误: ${e.message}`);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      } catch { if (!cancelled) setLoading(false); } finally { if (!cancelled) setLoading(false); }
     };
     doFetch();
     return () => { cancelled = true; };
   }, [table]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 点击单词 → 进入详情 ──
-  const handleTapWord = useCallback((idx: number) => {
-    addLog(`点击单词 idx=${idx}, word=${words[idx]?.word ?? '(越界)'}, words.length=${words.length}`);
-    if (idx >= 0 && idx < words.length) {
-      router.push('/word-detail', { id: words[idx].id });
-    }
-  }, [router, words, addLog]);
+  // ── loadMore ──
+  const loadMore = useCallback(() => {
+    if (loading) return;
+    const n = offset + words.length;
+    setOffset(n); fetchWords(n);
+  }, [offset, words.length, loading, fetchWords]);
 
-  // ── 长按开始拖拽 ──
-  const startDrag = useCallback((idx: number) => {
-    addLog(`长按触发拖拽 idx=${idx}, word=${words[idx]?.word ?? '(越界)'}`);
-    if (idx < 0 || idx >= words.length) return;
-    const word = words[idx];
-    draggingWordRef.current = word;
-    dragOriginRef.current = { x: 16 + idx * (CARD_WIDTH + CARD_GAP), y: 8 };
-    setClassifyingId(word.id);
-    setDraggingIdx(idx);
-    dragTx.setValue(0); dragTy.setValue(0); dragScale.setValue(1);
-    Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
-  }, [words, dragTx, dragTy, dragScale, addLog]);
+  // ── 吸附到最近卡片 ──
+  const snapToNearest = useCallback(() => {
+    const step = CARD_WIDTH + CARD_GAP;
+    const currentRaw = -scrollXRef.current;
+    const snapped = Math.round(currentRaw / step) * step;
+    const clamped = Math.max(0, Math.min(snapped, maxScrollX.current));
+    scrollXRef.current = -clamped;
+    setLastScrollX(Math.round(clamped));
+    Animated.spring(panX, { toValue: -clamped, useNativeDriver: true, friction: 8 }).start();
+    // 自动加载更多
+    if (maxScrollX.current - clamped < step * 2) loadMore();
+  }, [panX, loadMore]);
 
-  // ── 拖拽分类 ──
-  const handleClassify = useCallback(async (wordId: number, category: string) => {
+  // ── 分类操作 ──
+  const doClassify = useCallback(async (wordId: number, category: string) => {
     try {
       /**
        * 服务端文件：server/src/routes/user-words.ts
@@ -214,77 +203,177 @@ export default function LearnPage() {
        */
       const map: Record<string, string> = { known: 'words_x', vague: 'words_y', unknown: 'words_z' };
       const target = map[category];
-      addLog(`分类操作: wordId=${wordId} → ${target} (${category})`);
+      addLog(`分类: ${wordId} → ${target}`);
       const res = await fetch(
         `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/move`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wordId, targetTable: target }) }
       );
-      addLog(`分类结果: ${res.status}`);
       if (res.ok) { setWords((p) => p.filter((w) => w.id !== wordId)); fetchCatStats(); }
-    } catch (e: any) { addLog(`分类错误: ${e.message}`); }
-    setClassifyingId(null); setDraggingIdx(-1); draggingWordRef.current = null;
+    } catch (e: any) { addLog(`分类错: ${e.message}`); }
   }, [fetchCatStats, addLog]);
 
-  // ── 取消拖拽回弹 ──
-  const cancelDrag = useCallback(() => {
-    addLog('取消拖拽(回弹)');
-    Animated.parallel([
-      Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
-      Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
-      Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
-    ]).start(() => { setClassifyingId(null); setDraggingIdx(-1); draggingWordRef.current = null; });
-  }, [dragTx, dragTy, dragScale, addLog]);
-
-  // ── loadMore ──
-  const loadMore = useCallback(() => {
-    const n = offset + words.length;
-    addLog(`自动加载更多: 新offset=${n}`);
-    setOffset(n); fetchWords(n);
-  }, [offset, words.length, fetchWords, addLog]);
-
-  // ── 分类按钮点击 ──
-  const handleCategoryPress = useCallback((c: string) => {
-    if (classifyingId != null) handleClassify(classifyingId, c);
-    else addLog(`点击分类按钮(${c}) 但无拖拽目标`);
-  }, [classifyingId, handleClassify, addLog]);
-
-  // ── 浮动卡片拖拽 PanResponder ──
+  // ════════════════════════════════════════════════
+  //  统一 PanResponder — 管理: 滑动 / 点击 / 拖拽
+  // ════════════════════════════════════════════════
   /* eslint-disable react-hooks/purity */
-  const floatingDragResp = useCallback(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant() { addLog('拖拽 Grant'); dragTx.setValue(0); dragTy.setValue(0); },
-        onPanResponderMove(_, gs) { dragTx.setValue(gs.dx); dragTy.setValue(gs.dy); },
-        onPanResponderRelease(_, gs) {
-          addLog(`拖拽 Release: dx=${gs.dx.toFixed(1)}, dy=${gs.dy.toFixed(1)}, moveY=${gs.moveY.toFixed(1)}`);
-          const dropped = Object.keys(catBtnLayouts).find((k) => {
-            const b = catBtnLayouts[k]; return b && gs.moveY >= b.y && gs.moveY <= b.y + b.h;
-          });
-          if (dropped && classifyingId != null) { handleClassify(classifyingId, dropped); } else { cancelDrag(); }
-        },
-        onPanResponderTerminate() { addLog('拖拽 Terminate'); cancelDrag(); },
-      }),
-    [dragTx, dragTy, classifyingId, handleClassify, cancelDrag, catBtnLayouts, addLog]
-  );
-  const dragRespInst = useRef(floatingDragResp()).current;
+  const mainResp = useRef(
+    PanResponder.create({
+      // ── 是否响应开始 ──
+      onStartShouldSetPanResponder: () => true,
+
+      // ── 是否响应移动 ──
+      onMoveShouldSetPanResponder: () => true,
+
+      // ── 手势开始 ──
+      onPanResponderGrant(_e, gs) {
+        gestureStartX.current = gs.x0;
+        gestureStartY.current = gs.y0;
+        modeRef.current = 'idle';
+
+        // 判断点击了哪个卡片（将屏幕坐标转换为内容坐标系）
+        const touchX = gs.x0 - scrollXRef.current;
+        const clickedIdx = Math.floor((touchX - 16) / (CARD_WIDTH + CARD_GAP));
+        if (clickedIdx >= 0 && clickedIdx < wordsRef.current.length) {
+          pressedIdx.current = clickedIdx;
+        } else {
+          pressedIdx.current = -1;
+        }
+
+        // 记录当前滚动值作为基准
+        panX.setOffset(scrollXRef.current);
+        panX.setValue(0);
+
+        dragTx.setValue(0);
+        dragTy.setValue(0);
+        dragScale.setValue(1);
+      },
+
+      // ── 手势移动 ──
+      onPanResponderMove(_e, gs) {
+        const dx = gs.dx;
+        const dy = gs.dy;
+        const mode = modeRef.current;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (mode === 'idle') {
+          // 决定进入哪种模式
+          if (absDy > 12 && dy > 0 && dy > absDx * 0.4 && pressedIdx.current >= 0) {
+            // ── 进入拖拽模式 ──
+            modeRef.current = 'dragging';
+            const idx = pressedIdx.current;
+            const w = wordsRef.current[idx];
+            if (!w) return;
+            addLog(`→ 拖拽模式: ${w.word}`);
+
+            // 计算浮动卡片初始位置（相对于 scrollContainer）
+            const originX = 16 + idx * (CARD_WIDTH + CARD_GAP) + scrollXRef.current;
+            const originY = 8;
+
+            draggingInfo.current = { word: w, idx, originX, originY };
+
+            dragTx.setValue(dx);
+            dragTy.setValue(dy);
+            Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
+
+            // 强制刷新以显示浮动卡片
+            forceUpdate((n) => n + 1);
+          } else if (absDx > 3) {
+            // ── 进入滚动模式 ──
+            modeRef.current = 'scrolling';
+            panX.setValue(dx);
+            setLastScrollX(Math.round(Math.max(0, Math.abs(scrollXRef.current + dx))));
+          }
+        } else if (mode === 'scrolling') {
+          // 继续滚动
+          panX.setValue(dx);
+          setLastScrollX(Math.round(Math.max(0, Math.abs(scrollXRef.current + dx))));
+        } else if (mode === 'dragging') {
+          // 继续拖拽浮动卡片
+          dragTx.setValue(dx);
+          dragTy.setValue(dy);
+        }
+      },
+
+      // ── 手势结束 ──
+      onPanResponderRelease(_e, gs) {
+        const mode = modeRef.current;
+        const dist = Math.sqrt(gs.dx * gs.dx + gs.dy * gs.dy);
+
+        if (mode === 'idle' && dist < 10) {
+          // ── 短按（几乎没移动）→ 点击事件 ──
+          if (pressedIdx.current >= 0 && pressedIdx.current < wordsRef.current.length) {
+            const word = wordsRef.current[pressedIdx.current];
+            addLog(`点击: ${word.word}`);
+            router.push('/word-detail', { id: word.id });
+          }
+        } else if (mode === 'scrolling') {
+          // ── 滚动结束 → 吸附 ──
+          const newX = Math.max(-maxScrollX.current, Math.min(0, scrollXRef.current + gs.dx));
+          scrollXRef.current = newX;
+          snapToNearest();
+        } else if (mode === 'dragging') {
+          // ── 拖拽结束 → 检测是否落在按钮上 ──
+          if (draggingInfo.current) {
+            const dropX = gestureStartX.current + gs.dx;
+            const dropY = gestureStartY.current + gs.dy;
+            addLog(`释放: (${dropX.toFixed(0)}, ${dropY.toFixed(0)})`);
+
+            const dropped = Object.keys(catBtnLayouts).find((k) => {
+              const b = catBtnLayouts[k];
+              return b && dropY >= b.y && dropY <= b.y + b.h && dropX >= b.x && dropX <= b.x + b.w;
+            });
+
+            if (dropped) {
+              addLog(`命中: ${dropped}`);
+              doClassify(draggingInfo.current.word.id, dropped);
+            } else {
+              addLog('未命中按钮 → 取消');
+            }
+          }
+          // 隐藏浮动卡片
+          draggingInfo.current = null;
+          forceUpdate((n) => n + 1);
+        }
+
+        // 清理
+        modeRef.current = 'idle';
+        pressedIdx.current = -1;
+        panX.flattenOffset();
+      },
+
+      // ── 手势被抢夺 ──
+      onPanResponderTerminate() {
+        addLog('手势被终止');
+        if (modeRef.current === 'scrolling') snapToNearest();
+        else if (modeRef.current === 'dragging') {
+          draggingInfo.current = null;
+          forceUpdate((n) => n + 1);
+        }
+        modeRef.current = 'idle';
+        panX.flattenOffset();
+      },
+    })
+  ).current;
   /* eslint-enable react-hooks/purity */
 
-  // ── 渲染 ──
+  // ════════════════════════════════════════════════
+  //  渲染
+  // ════════════════════════════════════════════════
   const remaining = words.length;
-  const rowWidth = words.length * (CARD_WIDTH + CARD_GAP);
-  const origin = dragOriginRef.current;
+  const rowWidth = words.length * (CARD_WIDTH + CARD_GAP) + 32;
+  const drag = draggingInfo.current;
+  const isDraggingAny = drag !== null;
 
   return (
     <Screen>
       {/* 头部 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={8} style={{ paddingVertical: 4 }}>
           <Text style={styles.backText}>back</Text>
         </TouchableOpacity>
         <Text style={styles.titleText}>词汇预览</Text>
-        <TouchableOpacity hitSlop={8}>
+        <TouchableOpacity hitSlop={8} style={{ paddingVertical: 4 }}>
           <FontAwesome6 name="calendar" size={18} color="#374151" />
         </TouchableOpacity>
       </View>
@@ -292,65 +381,56 @@ export default function LearnPage() {
       {/* 剩余数量 */}
       <Text style={styles.remainingText}>剩余 {remaining} 个单词</Text>
 
-      {/* 单词卡片行 — ScrollView 原生水平滚动 */}
-      <View style={[styles.scrollContainer, styles.scrollDebugBorder]}>
-        <RNScrollView
-          horizontal
-          scrollEnabled={scrollEnabled}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
+      {/* 单词卡片区域 — 统一 PanResponder */}
+      <View style={[styles.scrollContainer]} {...mainResp.panHandlers}>
+        {/* 卡片行（通过 panX 平移实现水平滚动） */}
+        <Animated.View
+          style={[
             styles.wordRow,
-            { width: Math.max(rowWidth + 32, SCREEN_WIDTH) },
+            { width: Math.max(rowWidth, SCREEN_WIDTH), transform: [{ translateX: panX }] },
           ]}
-          decelerationRate="fast"
-          snapToInterval={CARD_WIDTH + CARD_GAP}
-          onScroll={(e) => setLastScrollX(Math.round(e.nativeEvent.contentOffset.x))}
-          onMomentumScrollEnd={(e) => {
-            const ox = e.nativeEvent.contentOffset.x;
-            addLog(`滚动结束: offsetX=${Math.round(ox)}, totalContent=${Math.round(rowWidth)}`);
-            const visibleEnd = ox + SCREEN_WIDTH;
-            if (rowWidth - visibleEnd < CARD_WIDTH * 3 && !loading) loadMore();
-          }}
-          onScrollBeginDrag={() => addLog('开始拖动滚动')}
-          onTouchStart={() => addLog('ScrollView onTouchStart')}
-          onContentSizeChange={(w, h) => addLog(`contentSize: w=${w}, h=${h}`)}
         >
-          {words.map((word, index) =>
-            classifyingId === word.id && index === draggingIdx && draggingWordRef.current?.id === word.id ? (
-              <View key={`ph-${word.id}`} style={[styles.card, styles.cardPlaceholder]} />
-            ) : (
-              <TouchableOpacity
-                key={word.id}
-                activeOpacity={0.8}
-                style={styles.card}
-                onPress={() => handleTapWord(index)}
-                onLongPress={() => startDrag(index)}
-                delayLongPress={350}
-              >
+          {words.map((word, index) => {
+            // 正在被拖拽的卡片显示为虚线占位
+            if (isDraggingAny && drag.idx === index) {
+              return (
+                <View key={`ph-${word.id}`} style={[styles.card, styles.cardPlaceholder]} />
+              );
+            }
+            return (
+              <View key={word.id} style={styles.card}>
                 <Text style={styles.cardText}>{word.word}</Text>
-              </TouchableOpacity>
-            )
-          )}
-        </RNScrollView>
+              </View>
+            );
+          })}
+        </Animated.View>
 
         {/* 浮动拖拽卡片 */}
-        {classifyingId != null && draggingWordRef.current && (
+        {isDraggingAny && (
           <Animated.View
             style={[
-              styles.card, styles.draggingCard,
-              { position: 'absolute', left: origin.x, top: origin.y,
-                transform: [{ translateX: dragTx }, { translateY: dragTy }, { scale: dragScale }] },
+              styles.card,
+              styles.draggingCard,
+              {
+                position: 'absolute',
+                left: drag.originX,
+                top: drag.originY,
+                transform: [
+                  { translateX: dragTx },
+                  { translateY: dragTy },
+                  { scale: dragScale },
+                ],
+              },
             ]}
-            {...dragRespInst.panHandlers}
           >
-            <Text style={styles.cardText}>{draggingWordRef.current.word}</Text>
+            <Text style={styles.cardText}>{drag.word.word}</Text>
           </Animated.View>
         )}
 
-        {/* 实时状态指示器 */}
+        {/* 状态指示器 */}
         <View style={styles.statusBar}>
           <Text style={styles.statusText}>
-            scrollX={lastScrollX} | 词数={remaining} | scroll={scrollEnabled ? 'ON' : 'OFF'}
+            scrollX={lastScrollX} | 词数={remaining} | 模式={modeRef.current}
           </Text>
         </View>
       </View>
@@ -362,9 +442,11 @@ export default function LearnPage() {
             <TouchableOpacity
               key={cat.key}
               style={[styles.catButton, { backgroundColor: cat.color }]}
-              onPress={() => handleCategoryPress(cat.key)}
-              activeOpacity={0.7}
-              onLayout={(e) => {
+              onPress={() => {
+                if (isDraggingAny) doClassify(drag.word.id, cat.key);
+                else addLog(`点击${cat.label}(无拖拽目标)`);
+              }}
+              onLayout={(e: any) => {
                 const l = e.nativeEvent.layout;
                 catBtnLayouts[cat.key] = { x: l.x, y: l.y, w: l.width, h: l.height };
               }}
@@ -377,7 +459,7 @@ export default function LearnPage() {
           ))}
         </View>
         <Text style={styles.catHint}>
-          {classifyingId != null ? '松手即可归类' : '单击查看详情 · 长按拖拽可分类'}
+          {isDraggingAny ? '松手即可归类' : '左右滑动浏览 · 单击查看详情 · 按住下拖可分类'}
         </Text>
       </View>
 
@@ -398,8 +480,7 @@ const styles = StyleSheet.create({
   titleText: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
   remainingText: { textAlign: 'center', color: '#6B7280', fontSize: 14, marginTop: 16, marginBottom: 24 },
 
-  scrollContainer: { height: CARD_HEIGHT + 40, justifyContent: 'center', marginHorizontal: 8 },
-  scrollDebugBorder: { borderWidth: 1, borderColor: '#FEF3C7', borderRadius: 10, borderStyle: 'dashed' },
+  scrollContainer: { height: CARD_HEIGHT + 40, justifyContent: 'center', marginHorizontal: 8, overflow: 'hidden' },
   wordRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: CARD_GAP },
 
   card: {
@@ -426,7 +507,6 @@ const styles = StyleSheet.create({
   catCount: { fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   catHint: { textAlign: 'center', color: '#9CA3AF', fontSize: 13, marginTop: 12 },
 
-  // 调试面板样式
   debugBtn: { position: 'absolute', right: 8, bottom: 8, backgroundColor: '#1F2937', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, elevation: 10, zIndex: 999 },
   debugBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
   debugPanel: { position: 'absolute', left: 8, right: 8, bottom: 8, backgroundColor: 'rgba(17,24,39,0.95)', borderRadius: 12, maxHeight: 220, elevation: 50, zIndex: 1000 },
