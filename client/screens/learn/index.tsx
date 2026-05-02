@@ -62,6 +62,7 @@ export default function LearnPage() {
   const [loading, setLoading] = useState(true);
   const [classifyingId, setClassifyingId] = useState<number | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number>(-1);
+  const [catCounts, setCatCounts] = useState({ known: 0, vague: 0, unknown: 0 });
 
   // ── 动画值 ──
   const panX = useRef(new Animated.Value(0)).current;
@@ -79,6 +80,24 @@ export default function LearnPage() {
 
   // 分类按钮位置
   const catBtnLayouts = useRef<{ [key: string]: { x: number; y: number; w: number; h: number } }>({}).current;
+
+  // ── fetchCategoryStats ──
+  /**
+   * 服务端文件：server/src/routes/wordbooks.ts
+   * 接口：GET /api/v1/wordbooks/stats
+   * 返回：{ learning: number, known: number, vague: number, unknown: number }
+   */
+  const fetchCatStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        setCatCounts({ known: data.known || 0, vague: data.vague || 0, unknown: data.unknown || 0 });
+      }
+    } catch (e) {
+      console.error('fetchCatStats error:', e);
+    }
+  }, []);
 
   // ── fetchWords ──
   /**
@@ -120,6 +139,8 @@ export default function LearnPage() {
           const data = await res.json();
           setWords(data.words || data || []);
         }
+        // 获取分类统计
+        if (!cancelled) { fetchCatStats(); }
       } catch (e) {
         console.error('fetchWords error:', e);
       } finally {
@@ -155,6 +176,7 @@ export default function LearnPage() {
       );
       if (res.ok) {
         setWords((prev) => prev.filter((w) => w.id !== wordId));
+        fetchCatStats();
       }
     } catch (e) {
       console.error('classify error:', e);
@@ -360,7 +382,7 @@ export default function LearnPage() {
               }}
             >
               <Text style={styles.catLabel}>{cat.label}</Text>
-              <Text style={styles.catCount}>({remaining})</Text>
+              <Text style={styles.catCount}>({cat.key === 'known' ? catCounts.known : cat.key === 'fuzzy' ? catCounts.vague : catCounts.unknown})</Text>
             </TouchableOpacity>
           ))}
         </View>
