@@ -333,8 +333,11 @@ export default function LearnPage() {
 
           let foundIdx = -1;
           const touchX = gs.x0;
+          // cardLayouts 存储的是相对于父容器的坐标（onLayout 返回值）
+          // 但 gs.x0 是屏幕绝对坐标，需加上当前滚动偏移量才能正确匹配
+          const adjustedTouchX = touchX + gestureStartBase.current;
           for (const [idx, layout] of cardLayoutsRef.current.entries()) {
-            if (touchX >= layout.x && touchX <= layout.x + layout.w) {
+            if (adjustedTouchX >= layout.x && adjustedTouchX <= layout.x + layout.w) {
               foundIdx = idx;
               break;
             }
