@@ -34,18 +34,66 @@ const CATEGORIES = [
 ];
 
 // ─── 纯工具函数（组件外部，无状态依赖）────────────
-function calcTappedIndex(touchX: number, wordsCount: number, scrollOffset: number = 0): number {
-  const paddingLeft = (SCREEN_WIDTH - VISIBLE_CARDS * CARD_WIDTH - (VISIBLE_CARDS - 1) * CARD_GAP) / 2;
-  const adjustedX = touchX - paddingLeft - scrollOffset;
-  // scrollOffsetRef.current 需要作为参数传入
-  const rawIndex = Math.round(adjustedX / (CARD_WIDTH + CARD_GAP));
-  return Math.max(0, Math.min(rawIndex, wordsCount - 1));
+
+/**
+ * 根据触摸位置从卡片位置表中查找对应的单词索引。
+ * 比用 scrollOffset 计算更精确，不依赖偏移量同步。
+ */
+function findCardIndexAtX(
+  touchX: number,
+  cardLayouts: Map<number, { x: number; w: number }>
+): number {
+  let bestIdx = -1;
+  let bestOverlap = -1;
+  for (const [idx, layout] of cardLayouts) {
+    const cardCenter = layout.x + layout.w / 2;
+    const overlap = Math.max(0, Math.min(touchX, layout.x + layout.w) - Math.max(touchX, layout.x));
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap;
+      bestIdx = idx;
+    }
+    // 也考虑距离卡片中心的距离作为备选
+  }
+  // 如果没有重叠匹配，找最近的卡片中心
+  if (bestIdx === -1 && cardLayouts.size > 0) {
+    let minDist = Infinity;
+    for (const [idx, layout] of cardLayouts) {
+      const dist = Math.abs(touchX - (layout.x + layout.w / 2));
+      if (dist < minDist) {
+        minDist = dist;
+        bestIdx = idx;
+      }
+    }
+  }
+  return bestIdx;
 }
 
 // ─── 单词卡片组件 ────────────────────────────────
-function WordCard({ word, onPress, style }: { word: Word; onPress?: () => void; style?: any }) {
+function WordCard({
+  word,
+  index,
+  onPress,
+  onLayout,
+  style,
+}: {
+  word: Word;
+  index: number;
+  onPress?: () => void;
+  onLayout?: (x: number, w: number) => void;
+  style?: any;
+}) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={[styles.card, style]}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[styles.card, style]}
+      onLayout={(e) => {
+        if (onLayout) {
+          const { x, width } = e.nativeEvent.layout;
+          onLayout(x, width);
+        }
+      }}
+    >
       <Text style={styles.cardText}>{word.word}</Text>
     </TouchableOpacity>
   );
@@ -72,6 +120,18 @@ export default function LearnPage() {
 
   // 用 ref 追踪当前滚动偏移量
   const scrollOffsetRef = useRef(0);
+
+  // 每个卡片的屏幕位置映射表（index → {x, w}）
+  // 用于精确查找触摸位置对应的单词，避免 scrollOffset 不同步问题
+  const cardLayoutsRef = useRef<Map<number, { x: number; w: number }>>(new Map());
+
+  const registerCardLayout = useCallback((index: number, x: number, w: number) => {
+    cardLayoutsRef.current.set(index, { x, w });
+  }, []);
+
+  const unregisterCardLayout = useCallback((index: number) => {
+    cardLayoutsRef.current.delete(index);
+  }, []);
 
   // 手势状态 ref
   const gestureStartPos = useRef({ x: 0, y: 0, time: 0 });
@@ -273,7 +333,24 @@ export default function LearnPage() {
         onPanResponderGrant(_, gs) {
           gestureStartPos.current = { x: gs.x0, y: gs.y0, time: Date.now() };
           gestureMode.current = 'idle';
-          tappedIndex.current = calcTappedIndex(gs.x0, words.length, scrollOffsetRef.current);
+
+          // 用注册的卡片屏幕位置精确匹配触摸点，避免 scrollOffset 不同步
+          let foundIdx = -1;
+          const touchX = gs.x0;
+          for (const [idx, layout] of cardLayoutsRef.current.entries()) {
+            if (touchX >= layout.x && touchX <= layout.x + layout.w) {
+              foundIdx = idx;
+              break;
+            }
+          }
+
+          // 回退：如果映射表未命中（首次渲染等），用 scrollOffset 估算
+          if (foundIdx < 0) {
+            const step = CARD_WIDTH + CARD_GAP;
+            foundIdx = Math.round((scrollOffsetRef.current + touchX) / step);
+            foundIdx = Math.max(0, Math.min(foundIdx, words.length - 1));
+          }
+          tappedIndex.current = foundIdx;
           panX.setOffset(scrollOffsetRef.current);
           panX.setValue(0);
         },
@@ -344,7 +421,7 @@ export default function LearnPage() {
             word.id === classifyingId && index === draggingIdx ? (
               <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />
             ) : (
-              <WordCard key={word.id} word={word} onPress={() => handleTapWord(index)} />
+              <WordCard key={word.id} word={word} index={index} onPress={() => handleTapWord(index)} onLayout={(x, w) => registerCardLayout(index, x, w)} />
             )
           )}
         </Animated.View>
