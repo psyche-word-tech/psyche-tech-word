@@ -28,7 +28,7 @@ interface Word {
 }
 
 const CATEGORIES = [
-  { key: 'known', label: '已全', color: '#22C55E' },
+  { key: 'known', label: '已会', color: '#22C55E' },
   { key: 'fuzzy', label: '模糊', color: '#F59E0B' },
   { key: 'unknown', label: '不会', color: '#EF4444' },
 ];
