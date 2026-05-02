@@ -316,8 +316,8 @@ export default function LearnPage() {
           onContentSizeChange={(w, h) => addLog(`contentSize: w=${w}, h=${h}`)}
         >
           {words.map((word, index) =>
-            classifyingId === word.id && index === draggingIdx ? (
-              <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />
+            classifyingId === word.id && index === draggingIdx && draggingWordRef.current?.id === word.id ? (
+              <View key={`ph-${word.id}`} style={[styles.card, styles.cardPlaceholder]} />
             ) : (
               <TouchableOpacity
                 key={word.id}
