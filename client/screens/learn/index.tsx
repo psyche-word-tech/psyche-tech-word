@@ -103,7 +103,7 @@ export default function LearnPage() {
   const pressedIdx = useRef(-1);     // 按下的卡片索引
   const scrollXRef = useRef(0);      // 当前水平滚动位置（像素，负值表示左移）
   const maxScrollX = useRef(0);      // 最大可滚动距离
-  const draggingInfo = useRef<{ word: Word; idx: number; originX: number; originY: number } | null>(null);
+  const draggingInfo = useRef<{ word: Word; idx: number; originX: number } | null>(null);
   const [, forceUpdate] = useState(0);
 
   // ── 日志工具 ──
@@ -266,11 +266,12 @@ export default function LearnPage() {
             if (!w) return;
             addLog(`→ 拖拽模式: ${w.word}`);
 
-            // 计算浮动卡片初始位置（相对于 scrollContainer）
+            // 计算浮动卡片初始屏幕位置
+            // 卡片区域在头部(~44px)+剩余文字(~56px)之后，约从 Y=120 开始
+            const cardAreaTop = 120;
             const originX = 16 + idx * (CARD_WIDTH + CARD_GAP) + scrollXRef.current;
-            const originY = 8;
 
-            draggingInfo.current = { word: w, idx, originX, originY };
+            draggingInfo.current = { word: w, idx, originX };
 
             dragTx.setValue(dx);
             dragTy.setValue(dy);
@@ -405,28 +406,6 @@ export default function LearnPage() {
           })}
         </Animated.View>
 
-        {/* 浮动拖拽卡片 */}
-        {isDraggingAny && (
-          <Animated.View
-            style={[
-              styles.card,
-              styles.draggingCard,
-              {
-                position: 'absolute',
-                left: drag.originX,
-                top: drag.originY,
-                transform: [
-                  { translateX: dragTx },
-                  { translateY: dragTy },
-                  { scale: dragScale },
-                ],
-              },
-            ]}
-          >
-            <Text style={styles.cardText}>{drag.word.word}</Text>
-          </Animated.View>
-        )}
-
         {/* 状态指示器 */}
         <View style={styles.statusBar}>
           <Text style={styles.statusText}>
@@ -434,6 +413,29 @@ export default function LearnPage() {
           </Text>
         </View>
       </View>
+
+      {/* ═══ 浮动拖拽卡片 — 渲染在最外层，确保在所有元素之上 ═══ */}
+      {isDraggingAny && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.card,
+            styles.draggingCard,
+            {
+              position: 'absolute',
+              left: drag.originX,
+              top: 120, // 固定Y偏移（头部+剩余文字区域之后）
+              transform: [
+                { translateX: dragTx },
+                { translateY: dragTy },
+                { scale: dragScale },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.cardText}>{drag.word.word}</Text>
+        </Animated.View>
+      )}
 
       {/* 分类按钮区 */}
       <View style={styles.categorySection}>
