@@ -93,6 +93,8 @@ export default function LearnPage() {
 
   // ── Refs ──
   const catBtnLayouts = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({}).current;
+  const catBtnRefs = useRef<Record<string, React.RefObject<View>>>({}).current;
+  CATEGORIES.forEach((c) => { if (!catBtnRefs[c.key]) { catBtnRefs[c.key] = React.createRef(); } });
   const wordsRef = useRef<Word[]>([]);
   useEffect(() => { wordsRef.current = words; }, [words]);
 
@@ -318,7 +320,7 @@ export default function LearnPage() {
           if (draggingInfo.current) {
             const dropX = gestureStartX.current + gs.dx;
             const dropY = gestureStartY.current + gs.dy;
-            addLog(`释放: (${dropX.toFixed(0)}, ${dropY.toFixed(0)})`);
+            addLog(`释放: (${dropX.toFixed(0)}, ${dropY.toFixed(0)}) 按钮: ${JSON.stringify(catBtnLayouts)}`);
 
             const dropped = Object.keys(catBtnLayouts).find((k) => {
               const b = catBtnLayouts[k];
@@ -443,14 +445,18 @@ export default function LearnPage() {
           {CATEGORIES.map((cat) => (
             <TouchableOpacity
               key={cat.key}
+              ref={catBtnRefs[cat.key]}
               style={[styles.catButton, { backgroundColor: cat.color }]}
               onPress={() => {
                 if (isDraggingAny) doClassify(drag.word.id, cat.key);
                 else addLog(`点击${cat.label}(无拖拽目标)`);
               }}
-              onLayout={(e: any) => {
-                const l = e.nativeEvent.layout;
-                catBtnLayouts[cat.key] = { x: l.x, y: l.y, w: l.width, h: l.height };
+              onLayout={() => {
+                const ref = catBtnRefs[cat.key];
+                ref?.current?.measureInWindow((x, y, w, h) => {
+                  addLog(`按钮${cat.key}: x=${Math.round(x)} y=${Math.round(y)} w=${w} h=${h}`);
+                  catBtnLayouts[cat.key] = { x, y, w, h };
+                });
               }}
             >
               <Text style={styles.catLabel}>{cat.label}</Text>
