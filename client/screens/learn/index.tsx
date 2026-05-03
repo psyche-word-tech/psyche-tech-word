@@ -1,441 +1,403 @@
 /* eslint-disable react-hooks/refs */
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Dimensions,
-  PanResponder,
-  ScrollView,
-} from 'react-native';
-import { FontAwesome6 } from '@expo/vector-icons';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, PanResponder } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
+import { useFocusEffect } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = 110;
-const CARD_HEIGHT = 56;
-const CARD_GAP = 12;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Word {
-  id: number;
-  word: string;
-  phonetic: string | null;
-  meaning: string | null;
-  example_sentence: string | null;
+	id: number;
+	word: string;
+	meaning: string;
+	phonetic?: string;
+	example?: string;
+	example_translation?: string;
+	image_url?: string;
 }
 
-const CATEGORIES = [
-  { key: 'known', label: '已会', color: '#22C55E' },
-  { key: 'fuzzy', label: '模糊', color: '#F59E0B' },
-  { key: 'unknown', label: '不会', color: '#EF4444' },
-];
-
-// ─── 单词卡片组件（独立处理点击）─────────────────────
-function WordCard({
-  word,
-  index,
-  onPress,
-}: {
-  word: Word;
-  index: number;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      style={styles.card}
-      onPress={onPress}
-    >
-      <Text style={styles.cardText}>{word.word}</Text>
-    </TouchableOpacity>
-  );
+interface DraggableWordCardProps {
+	word: Word;
+	onDrop: (wordId: number, categoryId: number) => void;
+	onPress: () => void;
 }
 
-// ─── 主页面 ───────────────────────────────────────
+function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
+	const pan = useRef(new Animated.ValueXY()).current;
+	const [isDragging, setIsDragging] = useState(false);
+
+	const panResponder = useMemo(() =>
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: () => true,
+			onPanResponderGrant: () => {
+				setIsDragging(true);
+				pan.setOffset({
+					x: (pan.x as any)._value || 0,
+					y: (pan.y as any)._value || 0,
+				});
+				pan.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: (evt, gestureState) => {
+				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+			},
+			onPanResponderRelease: (evt, gestureState) => {
+				setIsDragging(false);
+				pan.flattenOffset();
+
+				const dy = gestureState.dy;
+				const absoluteX = gestureState.moveX;
+
+				if (dy > 80) {
+					let targetCategory = 3;
+					if (absoluteX < SCREEN_WIDTH / 3) {
+						targetCategory = 1;
+					} else if (absoluteX < (SCREEN_WIDTH / 3) * 2) {
+						targetCategory = 2;
+					}
+					onDrop(word.id, targetCategory);
+				}
+
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+				}).start();
+			},
+			onPanResponderTerminate: () => {
+				setIsDragging(false);
+				pan.flattenOffset();
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+				}).start();
+			},
+		}),
+		[onDrop, word.id, pan]
+	);
+
+	return (
+		<Animated.View
+			{...panResponder.panHandlers}
+			style={[
+				styles.wordItemContainer,
+				{
+					transform: [
+						{ translateX: pan.x },
+						{ translateY: pan.y },
+					],
+					opacity: isDragging ? 0.8 : 1,
+					zIndex: isDragging ? 100 : 1,
+				},
+			]}
+		>
+			<TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+				<View style={styles.wordCard}>
+					<Text style={styles.wordCardText}>{word.word}</Text>
+				</View>
+			</TouchableOpacity>
+		</Animated.View>
+	);
+}
+
 export default function LearnPage() {
-  const router = useSafeRouter();
-  const { table = 'words_b' } = useSafeSearchParams<{ table: string }>();
+	const router = useSafeRouter();
+	const params = useSafeSearchParams<{ table?: string }>();
+	const table = params.table || 'words_b';
+	
+	const [allWords, setAllWords] = useState<Word[]>([]);
+	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [error, setError] = useState<string | null>(null);
 
-  // ── 状态 ──
-  const [words, setWords] = useState<Word[]>([]);
-  const [offset, setOffset] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [classifyingId, setClassifyingId] = useState<number | null>(null);
-  const [draggingIdx, setDraggingIdx] = useState<number>(-1);
-  const [catCounts, setCatCounts] = useState({ known: 0, vague: 0, unknown: 0 });
+	const categoryColors = ['#4CAF50', '#FF9800', '#F44336'];
+	const categoryNames = ['已会', '模糊', '不会'];
 
-  // ── 动画值 ──
-  const dragTx = useRef(new Animated.Value(0)).current;
-  const dragTy = useRef(new Animated.Value(0)).current;
-  const dragScale = useRef(new Animated.Value(1)).current;
+	const displayWords = allWords.slice(0, 3);
+	const remainingCount = allWords.length;
 
-  // 滚动偏移量追踪
-  const scrollBaseRef = useRef(0);
+	const fetchData = useCallback(async () => {
+		setError(null);
+		try {
+			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
+				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
+			]);
 
-  // 分类按钮位置
-  const catBtnLayouts = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({}).current;
+			const wordsData = await wordsRes.json();
+			const xResult = await xRes.json();
+			const yResult = await yRes.json();
+			const zResult = await zRes.json();
 
-  // 当前拖拽的单词信息
-  const draggingWordRef = useRef<Word | null>(null);
+			setAllWords(Array.isArray(wordsData) ? wordsData : []);
+			setCategoryCounts({
+				x: Array.isArray(xResult) ? xResult.length : 0,
+				y: Array.isArray(yResult) ? yResult.length : 0,
+				z: Array.isArray(zResult) ? zResult.length : 0,
+			});
+		} catch (err: any) {
+			console.error('Failed to fetch data:', err);
+			setError(err?.message || '网络请求失败');
+		}
+	}, [table]);
 
-  // ── fetchCategoryStats ──
-  /**
-   * 服务端文件：server/src/routes/wordbooks.ts
-   * 接口：GET /api/v1/wordbooks/stats
-   * 返回：{ learning: number, known: number, vague: number, unknown: number }
-   */
-  const fetchCatStats = useCallback(async () => {
-    try {
-      const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/stats`);
-      if (res.ok) {
-        const data = await res.json();
-        setCatCounts({ known: data.known || 0, vague: data.vague || 0, unknown: data.unknown || 0 });
-      }
-    } catch (e) {
-      console.error('fetchCatStats error:', e);
-    }
-  }, []);
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			fetchData();
+		}, 0);
+		return () => clearTimeout(timer);
+	}, [fetchData]);
 
-  // ── fetchWords ──
-  /**
-   * 服务端文件：server/src/routes/wordbooks.ts
-   * 接口：GET /api/v1/wordbooks/:table
-   * Query 参数：offset: number, limit: number
-   */
-  const fetchWords = useCallback(async (newOffset?: number) => {
-    try {
-      const off = newOffset ?? offset;
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${off}&limit=20`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (newOffset === undefined || newOffset === 0) {
-          setWords(data.words || data || []);
-        } else {
-          setWords((prev) => [...prev, ...(data.words || data || [])]);
-        }
-      }
-    } catch (e) {
-      console.error('fetchWords error:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [table, offset]);
+	useFocusEffect(
+		useCallback(() => {
+			fetchData();
+		}, [fetchData])
+	);
 
-  // ── 加载初始数据 ──
-  useEffect(() => {
-    let cancelled = false;
-    const doFetch = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}?offset=${offset}&limit=20`
-        );
-        if (!cancelled && res.ok) {
-          const data = await res.json();
-          setWords(data.words || data || []);
-        }
-        if (!cancelled) { fetchCatStats(); }
-      } catch (e) {
-        console.error('fetchWords error:', e);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    doFetch();
-    return () => { cancelled = true; };
-  }, [table]);
+	const handleDrop = useCallback(async (wordId: number, categoryId: number) => {
+		const targetTableMap: Record<number, string> = {
+			1: 'words_x',
+			2: 'words_y',
+			3: 'words_z'
+		};
+		const targetTable = targetTableMap[categoryId];
 
-  // ── 点击单词 → 进入详情 ──
-  const handleTapWord = useCallback((idx: number) => {
-    if (idx >= 0 && idx < words.length) {
-      router.push('/word-detail', { id: words[idx].id });
-    }
-  }, [router, words]);
+		try {
+			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					sourceTable: table,
+					targetTable: targetTable,
+					wordId: wordId
+				}),
+			});
+		} catch (error) {
+			console.error('Failed to move word:', error);
+		}
 
-  // ── 拖拽分类：将单词从 words_b 复制到目标表并删除 ──
-  const handleClassify = useCallback(async (wordId: number, category: string) => {
-    try {
-      /**
-       * 服务端文件：server/src/routes/user-words.ts
-       * 接口：POST /api/v1/user-words/move
-       * Body 参数：wordId: number, targetTable: string ('words_x'|'words_y'|'words_z')
-       */
-      const tableMap: Record<string, string> = { known: 'words_x', vague: 'words_y', unknown: 'words_z' };
-      const targetTable = tableMap[category];
-      if (!targetTable) return;
+		setAllWords(prev => prev.filter(w => w.id !== wordId));
+		
+		setCategoryCounts(prev => {
+			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
+			return { ...prev, [key]: prev[key] + 1 };
+		});
+	}, [table]);
 
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/user-words/move`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wordId, targetTable }),
-        }
-      );
-      if (res.ok) {
-        setWords((prev) => prev.filter((w) => w.id !== wordId));
-        fetchCatStats();
-      }
-    } catch (e) {
-      console.error('classify error:', e);
-    }
-    setClassifyingId(null);
-    setDraggingIdx(-1);
-    draggingWordRef.current = null;
-  }, [fetchCatStats]);
+	const handleWordPress = (word: Word) => {
+		router.push('/word-detail', { 
+			word: JSON.stringify({
+				id: word.id,
+				word: word.word,
+				phonetic: word.phonetic || '',
+				meaning: word.meaning,
+				example: word.example || '',
+				example_translation: word.example_translation || '',
+				image_url: word.image_url || ''
+			}),
+			table: table
+		});
+	};
 
-  // ── loadMore ──
-  const loadMore = useCallback(() => {
-    const newOff = offset + words.length;
-    setOffset(newOff);
-    fetchWords(newOff);
-  }, [offset, words.length, fetchWords]);
+	return (
+		<Screen>
+			<View style={styles.container}>
+				<View style={styles.header}>
+					<TouchableOpacity onPress={() => router.back()}>
+						<Text style={styles.backText}>back</Text>
+					</TouchableOpacity>
+					<Text style={styles.title}>词汇预览</Text>
+					<TouchableOpacity onPress={() => router.push('/calendar')}>
+							<FontAwesome6 name="calendar-days" size={22} color="#333333" />
+						</TouchableOpacity>
+				</View>
 
-  // ── handleCategoryPress ──
-  const handleCategoryPress = useCallback((category: string) => {
-    if (classifyingId !== null) {
-      handleClassify(classifyingId, category);
-    }
-  }, [classifyingId, handleClassify]);
+				<View style={styles.centerContainer}>
+					<View style={styles.content}>
+						{error ? (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.errorText}>加载失败: {error}</Text>
+								<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
+							</View>
+						) : (
+							<>
+								<Text style={styles.remainingText}>剩余 {remainingCount} 个单词</Text>
+								{displayWords.length > 0 ? (
+									<View style={styles.wordRow}>
+										{displayWords.map((word) => (
+											<DraggableWordCard
+												key={word.id}
+												word={word}
+												onDrop={handleDrop}
+												onPress={() => handleWordPress(word)}
+											/>
+												))}
+									</View>
+								) : (
+									<View style={styles.emptyContainer}>
+										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+									</View>
+								)}
+							</>
+						)}
+					</View>
 
-  // ── 单个卡片的拖拽 PanResponder（仅用于拖拽分类，不影响点击）──
-  /* eslint-disable react-hooks/purity */
-  const createDragResponder = useCallback((idx: number) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => {
-        // 只有向下移动超过阈值才激活（区分于水平滚动）
-        return Math.abs(gs.dy) > 20 && gs.dy > 15 && Math.abs(gs.dy) > Math.abs(gs.dx) * 0.5;
-      },
 
-      onPanResponderGrant(_, gs) {
-        if (idx < 0 || idx >= words.length) return;
-        const word = words[idx];
-        setClassifyingId(word.id);
-        setDraggingIdx(idx);
-        draggingWordRef.current = word;
-        dragTx.setValue(0);
-        dragTy.setValue(0);
-        dragScale.setValue(1);
-        Animated.spring(dragScale, { toValue: 1.08, useNativeDriver: true }).start();
-      },
-
-      onPanResponderMove(_, gs) {
-        dragTx.setValue(gs.dx);
-        dragTy.setValue(gs.dy);
-      },
-
-      onPanResponderRelease(_, gs) {
-        const my = gs.moveY;
-        const droppedCategory = Object.keys(catBtnLayouts).find((key) => {
-          const b = catBtnLayouts[key];
-          return b && my >= b.y && my <= b.y + b.h;
-        });
-
-        if (droppedCategory && classifyingId !== null) {
-          handleClassify(classifyingId, droppedCategory);
-        } else {
-          // 回弹
-          Animated.parallel([
-            Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
-            Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
-            Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
-          ]).start(() => {
-            setClassifyingId(null);
-            setDraggingIdx(-1);
-            draggingWordRef.current = null;
-          });
-        }
-      },
-
-      onPanResponderTerminate: () => {
-        Animated.parallel([
-          Animated.spring(dragTx, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(dragTy, { toValue: 0, useNativeDriver: true }),
-          Animated.spring(dragScale, { toValue: 1, useNativeDriver: true }),
-        ]).start(() => {
-          setClassifyingId(null);
-          setDraggingIdx(-1);
-          draggingWordRef.current = null;
-        });
-      },
-    })
-  , [words, classifyingId, dragTx, dragTy, dragScale, handleClassify]);
-  /* eslint-enable react-hooks/purity */
-
-  // ── 渲染 ──
-  const remaining = words.length;
-  const rowWidth = words.length * (CARD_WIDTH + CARD_GAP);
-
-  return (
-    <Screen>
-      {/* 头部 */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-          <Text style={styles.backText}>back</Text>
-        </TouchableOpacity>
-        <Text style={styles.titleText}>词汇预览</Text>
-        <TouchableOpacity hitSlop={8}>
-          <FontAwesome6 name="calendar" size={18} color="#374151" />
-        </TouchableOpacity>
-      </View>
-
-      {/* 剩余数量 */}
-      <Text style={styles.remainingText}>剩余 {remaining} 个单词</Text>
-
-      {/* 单词卡片行 — 用 ScrollView 实现原生水平滚动 */}
-      <View style={styles.scrollContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.wordRow,
-            { width: Math.max(rowWidth + 24, SCREEN_WIDTH) },
-          ]}
-          decelerationRate="fast"
-          snapToInterval={CARD_WIDTH + CARD_GAP}
-          onMomentumScrollEnd={(e) => {
-            const offsetX = e.nativeEvent.contentOffset.x;
-            scrollBaseRef.current = offsetX;
-            // 接近末尾自动加载更多
-            const visibleEnd = offsetX + SCREEN_WIDTH;
-            const totalContent = words.length * (CARD_WIDTH + CARD_GAP);
-            if (totalContent - visibleEnd < CARD_WIDTH * 3 && !loading) {
-              loadMore();
-            }
-          }}
-        >
-          {words.map((word, index) => {
-            // 被拖拽中的位置显示占位
-            if (classifyingId === word.id && index === draggingIdx && draggingWordRef.current) {
-              return <View key={word.id} style={[styles.card, styles.cardPlaceholder]} />;
-            }
-
-            const responder = createDragResponder(index);
-
-            return (
-              <View key={word.id} {...responder.panHandlers}>
-                <WordCard word={word} index={index} onPress={() => handleTapWord(index)} />
-              </View>
-            );
-          })}
-        </ScrollView>
-
-        {/* 拖拽中浮动的卡片 */}
-        {classifyingId != null && draggingWordRef.current && (
-          <Animated.View
-            style={[
-              styles.card,
-              styles.draggingCard,
-              {
-                transform: [{ translateX: dragTx }, { translateY: dragTy }, { scale: dragScale }],
-                position: 'absolute' as const,
-                left: 16,
-                top: 8,
-              },
-            ]}
-          >
-            <Text style={styles.cardText}>{draggingWordRef.current.word}</Text>
-          </Animated.View>
-        )}
-      </View>
-
-      {/* 分类按钮区 */}
-      <View style={styles.categorySection}>
-        <View style={styles.categoryRow}>
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat.key}
-              style={[styles.catButton, { backgroundColor: cat.color }]}
-              onPress={() => handleCategoryPress(cat.key)}
-              activeOpacity={0.7}
-              onLayout={(e) => {
-                const l = e.nativeEvent.layout;
-                catBtnLayouts[cat.key] = { x: l.x, y: l.y, w: l.width, h: l.height };
-              }}
-            >
-              <Text style={styles.catLabel}>{cat.label}</Text>
-              <Text style={styles.catCount}>
-                ({cat.key === 'known' ? catCounts.known : cat.key === 'fuzzy' ? catCounts.vague : catCounts.unknown})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <Text style={styles.catHint}>
-          {classifyingId != null ? '松手即可归类' : '单击卡片查看详情，长按向下拖拽可分类'}
-        </Text>
-      </View>
-
-      {/* 加载提示 */}
-      {loading && words.length === 0 && (
-        <Text style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>加载中...</Text>
-      )}
-    </Screen>
-  );
+					<View style={styles.categorySection}>
+						<View style={styles.categoryRow}>
+							{[1, 2, 3].map((id) => {
+								const targetTable = id === 1 ? 'words_x' : id === 2 ? 'words_y' : 'words_z';
+								return (
+									<TouchableOpacity
+										key={id}
+										style={styles.categoryItem}
+										onPress={() => router.push('/word-list', { table: targetTable })}
+									>
+										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
+											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
+											<Text style={styles.categoryCount}>
+												({id === 1 ? categoryCounts.x : id === 2 ? categoryCounts.y : categoryCounts.z})
+											</Text>
+										</View>
+									</TouchableOpacity>
+								);
+							})}
+						</View>
+						<Text style={styles.instructionText}>拖动单词到上方分类区域</Text>
+					</View>
+				</View>
+			</View>
+		</Screen>
+	);
 }
 
-// ─── 样式 ─────────────────────────────────────────
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backText: { fontSize: 16, color: '#4F46E5', fontWeight: '500' },
-  titleText: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  remainingText: { textAlign: 'center', color: '#6B7280', fontSize: 14, marginTop: 16, marginBottom: 24 },
-
-  // 滚动容器：固定高度，用于定位浮动卡片
-  scrollContainer: {
-    height: CARD_HEIGHT + 32,
-    justifyContent: 'center',
-    marginHorizontal: 8,
-  },
-  wordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    gap: CARD_GAP,
-  },
-
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardPlaceholder: { opacity: 0, borderWidth: 0, elevation: 0, shadowOpacity: 0 },
-  cardText: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
-  draggingCard: {
-    zIndex: 100,
-    elevation: 20,
-    borderColor: '#4F46E5',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-  },
-
-  categorySection: { marginTop: 36, paddingHorizontal: 20 },
-  categoryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  catButton: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
-  catLabel: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-  catCount: { fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  catHint: { textAlign: 'center', color: '#9CA3AF', fontSize: 13, marginTop: 12 },
+	container: {
+		flex: 1,
+		backgroundColor: '#FFFFFF',
+	},
+	header: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		padding: 20,
+		backgroundColor: '#E5E5E5',
+	},
+	backText: {
+		fontSize: 14,
+		color: '#000000',
+	},
+	title: {
+		fontSize: 16,
+		color: '#333333',
+		fontWeight: '600',
+	},
+	placeholder: {
+		width: 50,
+	},
+	centerContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		paddingHorizontal: 20,
+	},
+	content: {
+		paddingVertical: 16,
+		alignItems: 'center',
+		transform: [{ translateY: -100 }],
+	},
+	remainingText: {
+		fontSize: 14,
+		color: '#999999',
+		marginBottom: 20,
+	},
+	wordRow: {
+		flexDirection: 'row',
+		gap: 28,
+		justifyContent: 'center',
+	},
+	wordItemContainer: {
+		width: 68,
+	},
+	wordCard: {
+		backgroundColor: '#F0F0F0',
+		paddingHorizontal: 6,
+		paddingVertical: 8,
+		borderRadius: 8,
+		alignItems: 'center',
+		minHeight: 44,
+		justifyContent: 'center',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	wordCardText: {
+		fontSize: 12,
+		color: '#333333',
+		fontWeight: '600',
+	},
+	categorySection: {
+		paddingVertical: 10,
+		backgroundColor: '#FFFFFF',
+	},
+	categoryRow: {
+		flexDirection: 'row',
+		gap: 10,
+	},
+	categoryItem: {
+		flex: 1,
+	},
+	categoryCard: {
+		paddingVertical: 10,
+		borderRadius: 10,
+		alignItems: 'center',
+	},
+	categoryName: {
+		fontSize: 13,
+		color: '#FFFFFF',
+		fontWeight: '600',
+	},
+	categoryCount: {
+		fontSize: 11,
+		color: 'rgba(255,255,255,0.8)',
+		marginTop: 2,
+	},
+	instructionText: {
+		fontSize: 11,
+		color: '#999999',
+		textAlign: 'center',
+		marginTop: 6,
+	},
+	emptyContainer: {
+		padding: 48,
+		alignItems: 'center',
+	},
+	emptyText: {
+		fontSize: 16,
+		color: '#999999',
+	},
+	errorText: {
+		fontSize: 14,
+		color: '#E53935',
+		marginBottom: 8,
+	},
+	errorSubText: {
+		fontSize: 12,
+		color: '#999999',
+	},
+	debugContainer: {
+		marginTop: 12,
+		padding: 10,
+		backgroundColor: '#FFFDE7',
+		borderRadius: 6,
+	},
+	debugText: {
+		fontSize: 10,
+		color: '#666666',
+		fontFamily: 'monospace',
+	},
 });
