@@ -384,6 +384,86 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
+		// 自动播放例句音频
+		useEffect(() => {
+			if (!word.id) return;
+
+			// 测试用的在线音频 URL
+			const testAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+			
+			console.log("=== 自动播放调试信息 ===");
+			console.log("当前单词:", word.word);
+			console.log("单词 ID:", word.id);
+			console.log("数据库中的 example_audio_url:", word.example_audio_url);
+			console.log("是否是 gut 单词:", word.word === "gut");
+
+			// 如果是 gut 单词，使用测试音频
+			const audioUrlToPlay = (word.word === "gut") 
+				? testAudioUrl 
+				: (word.example_audio_url as string);
+
+			if (!audioUrlToPlay) {
+				console.log("没有音频 URL，跳过自动播放");
+				return;
+			}
+
+			console.log("准备播放的音频 URL:", audioUrlToPlay);
+
+			// 自动播放
+			const autoPlay = async () => {
+				try {
+					if (soundRef.current) {
+						await soundRef.current.unloadAsync();
+					}
+
+					setIsAudioPlaying(true);
+
+					await Audio.setAudioModeAsync({
+						playsInSilentModeIOS: true,
+						staysActiveInBackground: false,
+						shouldDuckAndroid: true,
+					});
+
+					console.log("正在创建 Audio.Sound...");
+					const { sound } = await Audio.Sound.createAsync(
+						{ uri: audioUrlToPlay },
+						{ shouldPlay: true },
+						(status: any) => {
+							console.log("播放状态更新:", status);
+							if (status.isLoaded && status.didJustFinish) {
+								console.log("播放完成");
+								setIsAudioPlaying(false);
+							}
+							if (status.error) {
+								console.error("播放错误:", status.error);
+								setIsAudioPlaying(false);
+							}
+						},
+						true
+					);
+
+					console.log("Audio.Sound 创建成功，开始播放");
+					soundRef.current = sound;
+				} catch (error: any) {
+					console.error("自动播放失败:", error);
+					setIsAudioPlaying(false);
+					Alert.alert("自动播放提示", `播放失败: ${error?.message || "未知错误"}`);
+				}
+			};
+
+			// 延迟一小段时间再播放，确保页面加载完成
+			const timer = setTimeout(() => {
+				autoPlay();
+			}, 1000);
+
+			return () => {
+				clearTimeout(timer);
+				if (soundRef.current) {
+					soundRef.current.unloadAsync();
+				}
+			};
+		}, [word.id, word.word, word.example_audio_url]);
+
 
 	// 清理音频资源
 	useEffect(() => {
