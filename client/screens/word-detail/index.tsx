@@ -392,112 +392,68 @@ export default function WordDetailPage() {
 			console.log("当前单词:", word.word);
 
 			// 只有 gut 单词才播放音效
-			if (word.word !== 'gut') {
+			if (word.word !== "gut") {
 				console.log("不是 gut 单词，跳过");
 				return;
 			}
 
-			console.log("检测到 gut 单词，立即播放逼真的切鱼音效！");
+			console.log("检测到 gut 单词，立即播放真实的切鱼音效！");
 
-			// 使用 Web Audio API 生成逼真的切菜声音
-			const playRealisticChoppingSound = () => {
+			// 使用真实的音效文件
+			const playRealFishSound = async () => {
 				try {
+					if (soundRef.current) {
+						await soundRef.current.unloadAsync();
+					}
+
 					setIsAudioPlaying(true);
+
+					await Audio.setAudioModeAsync({
+						playsInSilentModeIOS: true,
+						staysActiveInBackground: false,
+						shouldDuckAndroid: true,
+					});
+
+					// 找一个真实的切菜/切肉音效（Mixkit 免费音效）
+					const soundUrl = "https://cdn.pixabay.com/download/audio/2021/08/04/audio_9178759050.mp3?filename=knife-cutting-vegetables-1-108769.mp3";
 					
-					if (Platform.OS === 'web' && typeof (globalThis as any).AudioContext !== 'undefined') {
-						// Web 端使用 Web Audio API
-						const AudioContext = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext;
-						const audioContext = new AudioContext();
-						
-							// 播放切鱼的声音（湿润、有韧性的感觉）
-							const playFishCut = (delay: number, isFirst: boolean) => {
-								// 主振荡器 - 模拟刀刃切入的声音
-								const oscillator = audioContext.createOscillator();
-								const gainNode = audioContext.createGain();
-								
-								// 噪音节点 - 模拟鱼肉的湿润质感
-								const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.15, audioContext.sampleRate);
-								const noiseData = noiseBuffer.getChannelData(0);
-								for (let i = 0; i < noiseBuffer.length; i++) {
-									noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseBuffer.length * 0.3));
-								}
-								const noiseSource = audioContext.createBufferSource();
-								noiseSource.buffer = noiseBuffer;
-								const noiseGain = audioContext.createGain();
-								
-								// 连接节点
-								oscillator.connect(gainNode);
-								gainNode.connect(audioContext.destination);
-								noiseSource.connect(noiseGain);
-								noiseGain.connect(audioContext.destination);
-								
-								// 主音 - 更低沉、更有韧性的切鱼声
-								oscillator.type = "triangle"; // 三角波更柔和
-								oscillator.frequency.setValueAtTime(400, audioContext.currentTime + delay);
-								oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + delay + 0.08);
-								
-								// 主音音量 - 更持久一点，模拟切鱼的韧性
-								gainNode.gain.setValueAtTime(0.25, audioContext.currentTime + delay);
-								gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.15);
-								
-								// 噪音 - 模拟鱼肉的湿润声
-								noiseGain.gain.setValueAtTime(0.15, audioContext.currentTime + delay);
-								noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.12);
-								
-								// 启动
-								oscillator.start(audioContext.currentTime + delay);
-								oscillator.stop(audioContext.currentTime + delay + 0.15);
-								noiseSource.start(audioContext.currentTime + delay);
-								noiseSource.stop(audioContext.currentTime + delay + 0.12);
-							};
-							
-							// 切两次鱼（第一刀深入，第二刀完成）
-							playFishCut(0, true);
-							playFishCut(0.2, false);
-						
-						console.log("Web Audio API 切菜音效播放中...");
-						
-						// 0.5秒后结束
-						setTimeout(() => {
-							console.log("切鱼音效播放完成！");
-							setIsAudioPlaying(false);
-							audioContext.close();
-						}, 500);
-					} else {
-						// 移动端：使用 expo-av 播放一个简单的音效
-						// 我们用 Audio.Sound 创建一个简单的敲击声
-						const playMobileChop = async () => {
-							try {
-								// 移动端我们可以用一个更简单的方案：快速播放三个短的提示音
-								// 这里我们用简单的方式模拟
-								console.log("移动端播放切菜音效...");
-								
-								// 我们用一个简单的循环来模拟三次切菜
-								for (let i = 0; i < 3; i++) {
-									await new Promise(resolve => setTimeout(resolve, 150));
-									console.log("切!", i + 1);
-									// 移动端可以触发震动或者其他反馈
-								}
-								
-								console.log("移动端切菜音效播放完成！");
-								setIsAudioPlaying(false);
-							} catch (err) {
-								console.error("移动端音效播放失败:", err);
+					console.log("正在加载真实音效...", soundUrl);
+					
+					const { sound } = await Audio.Sound.createAsync(
+						{ uri: soundUrl },
+						{ shouldPlay: true },
+						(status: any) => {
+							console.log("音效播放状态:", status);
+							if (status.isLoaded && status.didJustFinish) {
+								console.log("真实音效播放完成！");
 								setIsAudioPlaying(false);
 							}
-						};
-						
-						playMobileChop();
-					}
+							if (status.error) {
+								console.error("音效播放错误:", status.error);
+								setIsAudioPlaying(false);
+							}
+						},
+						true
+					);
+
+					console.log("真实音效开始播放！");
+					soundRef.current = sound;
 				} catch (error: any) {
-					console.error("切菜音效播放失败:", error);
+					console.error("真实音效播放失败:", error);
 					setIsAudioPlaying(false);
 				}
 			};
 
-			// 立即播放，无需延迟
-			playRealisticChoppingSound();
+			// 立即播放
+			playRealFishSound();
+
+			return () => {
+				if (soundRef.current) {
+					soundRef.current.unloadAsync();
+				}
+			};
 		}, [word.id, word.word]);
+
 
 
 	// 清理音频资源
