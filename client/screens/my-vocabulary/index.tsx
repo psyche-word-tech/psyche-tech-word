@@ -106,7 +106,7 @@ export default function MyVocabularyPage() {
             </View>
           ) : boughtBooks.length > 0 ? (
             boughtBooks.map((book: WordBook, index: number) => (
-              <View key={book.id} style={[styles.bookItem, index === 1 && { marginLeft: -10 }]}>
+              <View key={book.id} style={[styles.bookItem, index === 1 && { marginLeft: -10 }, index === 2 && { marginLeft: -30 }]}>
                 <View style={styles.tagContainer}>
                   {book.name.split('').map((char, i) => (
                     <Text key={i} style={styles.tagText}>{char}</Text>
