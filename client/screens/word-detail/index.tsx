@@ -726,22 +726,20 @@ export default function WordDetailPage() {
 											size={20}
 											color="#4F46E5"
 										/>
-
-										{word.example_audio_url && (
-											<TouchableOpacity
-												style={styles.exampleSpeakerIcon}
-												onPress={playExampleAudio}
-												disabled={isAudioPlaying}
-											>
-												<Ionicons
-													name={isAudioPlaying ? "play-circle" : "play-circle-outline"}
-													size={20}
-													color="#059669"
-												/>
-											</TouchableOpacity>
-										)}
-
 									</TouchableOpacity>
+									{word.example_audio_url && (
+										<TouchableOpacity
+											style={styles.exampleSpeakerIcon}
+											onPress={playExampleAudio}
+											disabled={isAudioPlaying}
+										>
+											<Ionicons
+												name={isAudioPlaying ? "play-circle" : "play-circle-outline"}
+												size={20}
+												color="#059669"
+											/>
+										</TouchableOpacity>
+									)}
 									<TouchableOpacity
 										style={[
 											styles.recordButton,
