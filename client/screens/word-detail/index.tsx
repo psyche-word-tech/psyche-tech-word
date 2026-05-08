@@ -415,7 +415,7 @@ export default function WordDetailPage() {
 					});
 
 					// 找一个真实的切菜/切肉音效（Mixkit 免费音效）
-					const soundUrl = "https://cdn.pixabay.com/download/audio/2021/08/04/audio_9178759050.mp3?filename=knife-cutting-vegetables-1-108769.mp3";
+						const soundUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 					
 					console.log("正在加载真实音效...", soundUrl);
 					
