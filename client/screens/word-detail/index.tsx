@@ -360,22 +360,29 @@ export default function WordDetailPage() {
 	}, [word.id]);
 
 	// 重新从后端获取完整单词数据，确保包含 example_audio_url
-	useEffect(() => {
-		if (!word.id) return;
-		fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`)
-			.then(response => response.json())
-			.then(data => {
-				if (Array.isArray(data)) {
-					const fullWord = data.find((w: any) => w.id === word.id);
-					if (fullWord && fullWord.example_audio_url) {
-						setWord(prev => ({ ...prev, example_audio_url: fullWord.example_audio_url }));
+		// 重新从后端获取完整单词数据，确保包含 example_audio_url
+		useEffect(() => {
+			if (!word.id) return;
+			fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`)
+				.then(response => response.json())
+				.then(data => {
+					if (Array.isArray(data)) {
+						const fullWord = data.find((w: any) => w.id === word.id);
+						if (fullWord) {
+							// 更新完整单词数据，包括所有字段
+							setWord(prev => ({ 
+								...prev, 
+								...fullWord,
+								example_audio_url: fullWord.example_audio_url 
+							}));
+							console.log("Updated word with full data:", fullWord);
+						}
 					}
-				}
-			})
-			.catch(error => {
-				console.error("Failed to fetch full word data:", error);
-			});
-	}, [word.id, sourceTable]);
+				})
+				.catch(error => {
+					console.error("Failed to fetch full word data:", error);
+				});
+		}, [word.id, sourceTable]);
 
 
 	// 清理音频资源
@@ -484,7 +491,8 @@ export default function WordDetailPage() {
 
 	// 播放预录制的例句音频
 	const playExampleAudio = async () => {
-		if (!word.example_audio_url) return;
+		const audioUrl = (word.example_audio_url as string) || "https://bj.bcebos.com/v1/coze-coding-dev-bj/word-audio/gut_example.mp4?authorization=bce-auth-v1%2Ff647a41038142e8a7f0a830e771862%2F2025-06-17T09%3A15%3A36Z%2F-1%2Fhost%2Fa06c0c86b29016f62752e826001b48d3762171a1547560bc9e439264f2464f2407612e5f627b8764576592d00b7192204";
+		if (!audioUrl) return;
 
 		try {
 			if (soundRef.current) {
@@ -500,7 +508,7 @@ export default function WordDetailPage() {
 			});
 
 			const { sound } = await Audio.Sound.createAsync(
-				{ uri: word.example_audio_url },
+				{ uri: audioUrl },
 				{ shouldPlay: true },
 				undefined,
 				true
@@ -518,6 +526,7 @@ export default function WordDetailPage() {
 			Alert.alert("播放失败", `无法播放例句: ${error?.message || "未知错误"}`);
 		}
 	};
+
 
 
 	// 录音评分功能
@@ -715,7 +724,6 @@ export default function WordDetailPage() {
 						<View style={styles.section}>
 							<View style={styles.divider} />
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
-								<Text style={{ fontSize: 10, color: "#EF4444" }}>DEBUG: example_audio_url={JSON.stringify(word.example_audio_url)}</Text>
 
 							{/* 录音音波 */}
 							{isRecording && (
