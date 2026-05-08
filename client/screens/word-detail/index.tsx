@@ -384,7 +384,7 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// gut 单词出现时立即播放逼真的切菜音效
+		// gut 单词出现时立即播放切鱼音效（用 TTS 模拟节奏）
 		useEffect(() => {
 			if (!word.id) return;
 
@@ -397,62 +397,67 @@ export default function WordDetailPage() {
 				return;
 			}
 
-			console.log("检测到 gut 单词，立即播放真实的切鱼音效！");
+			console.log("检测到 gut 单词，立即播放切鱼节奏！");
 
-			// 使用真实的音效文件
-			const playRealFishSound = async () => {
+			// 用 TTS 快速连续播放 "chop" 来模拟切鱼节奏
+			const playChoppingRhythm = async () => {
 				try {
-					if (soundRef.current) {
-						await soundRef.current.unloadAsync();
+					setIsAudioPlaying(true);
+					console.log("开始播放切鱼节奏...");
+
+					// 快速连续播放三次 "chop"
+					const chopSounds = ["chop", "chop", "chop"];
+
+					if (Platform.OS === "web") {
+						// Web 端
+						for (let i = 0; i < chopSounds.length; i++) {
+							const utterance = new (globalThis as any).SpeechSynthesisUtterance(chopSounds[i]);
+							utterance.lang = "en-US";
+							utterance.rate = 2.0; // 很快
+							utterance.pitch = 0.5; // 很低沉
+							utterance.volume = 1;
+							
+							// 等待前一个播放完
+							await new Promise((resolve) => {
+								utterance.onend = resolve;
+								(globalThis as any).speechSynthesis.speak(utterance);
+							});
+						}
+					} else {
+						// 移动端
+						for (let i = 0; i < chopSounds.length; i++) {
+							await new Promise((resolve) => {
+								Speech.speak(chopSounds[i], {
+									language: "en-US",
+									rate: 2.0,
+									pitch: 0.5,
+									onDone: () => resolve(undefined),
+								});
+							});
+						}
 					}
 
-					setIsAudioPlaying(true);
-
-					await Audio.setAudioModeAsync({
-						playsInSilentModeIOS: true,
-						staysActiveInBackground: false,
-						shouldDuckAndroid: true,
-					});
-
-					// 找一个真实的切菜/切肉音效（Mixkit 免费音效）
-						const soundUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-					
-					console.log("正在加载真实音效...", soundUrl);
-					
-					const { sound } = await Audio.Sound.createAsync(
-						{ uri: soundUrl },
-						{ shouldPlay: true },
-						(status: any) => {
-							console.log("音效播放状态:", status);
-							if (status.isLoaded && status.didJustFinish) {
-								console.log("真实音效播放完成！");
-								setIsAudioPlaying(false);
-							}
-							if (status.error) {
-								console.error("音效播放错误:", status.error);
-								setIsAudioPlaying(false);
-							}
-						},
-						true
-					);
-
-					console.log("真实音效开始播放！");
-					soundRef.current = sound;
+					console.log("切鱼节奏播放完成！");
+					setIsAudioPlaying(false);
 				} catch (error: any) {
-					console.error("真实音效播放失败:", error);
+					console.error("切鱼节奏播放失败:", error);
 					setIsAudioPlaying(false);
 				}
 			};
 
 			// 立即播放
-			playRealFishSound();
+			playChoppingRhythm();
 
 			return () => {
-				if (soundRef.current) {
-					soundRef.current.unloadAsync();
+				// 停止正在播放的 TTS
+				if (Platform.OS !== "web") {
+					Speech.stop();
+				} else {
+					(globalThis as any).speechSynthesis?.cancel();
 				}
 			};
 		}, [word.id, word.word]);
+
 
 
 
