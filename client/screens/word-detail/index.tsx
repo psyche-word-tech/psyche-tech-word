@@ -393,7 +393,7 @@ export default function WordDetailPage() {
 
 			console.log("检测到 gut 单词，播放切鱼音效！");
 
-			// 逼真的切鱼音效（多层合成）
+			// 逼真的切鱼音效（多层合成，持续1秒）
 			const playFishSound = () => {
 				if (typeof globalThis.AudioContext === 'undefined') {
 					console.log('Web Audio API 不可用');
@@ -403,32 +403,33 @@ export default function WordDetailPage() {
 				try {
 					const audioContext = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
 					const t = audioContext.currentTime;
+					const duration = 1.0; // 1秒
 
 					// ========== 第一层：刀刃切入声（高频锯齿波 + 快速衰减）==========
 					const osc1 = audioContext.createOscillator();
 					osc1.type = 'sawtooth';
 					osc1.frequency.setValueAtTime(1200, t);
-					osc1.frequency.exponentialRampToValueAtTime(400, t + 0.05);
+					osc1.frequency.exponentialRampToValueAtTime(400, t + 0.1);
 
 					const gain1 = audioContext.createGain();
 					gain1.gain.setValueAtTime(0.15, t);
-					gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+					gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
 
 					// 低通滤波器让声音更柔和
 					const filter1 = audioContext.createBiquadFilter();
 					filter1.type = 'lowpass';
 					filter1.frequency.setValueAtTime(3000, t);
-					filter1.frequency.exponentialRampToValueAtTime(800, t + 0.05);
+					filter1.frequency.exponentialRampToValueAtTime(800, t + 0.2);
 
 					osc1.connect(filter1);
 					filter1.connect(gain1);
 					gain1.connect(audioContext.destination);
 
 					osc1.start(t);
-					osc1.stop(t + 0.08);
+					osc1.stop(t + duration);
 
 					// ========== 第二层：鱼肉撕裂声（粉噪音 + 带通滤波）==========
-					const bufferSize = audioContext.sampleRate * 0.15;
+					const bufferSize = audioContext.sampleRate * duration;
 					const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
 					const noiseData = noiseBuffer.getChannelData(0);
 
@@ -457,40 +458,40 @@ export default function WordDetailPage() {
 
 					const noiseGain = audioContext.createGain();
 					noiseGain.gain.setValueAtTime(0.2, t);
-					noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+					noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
 
 					noise.connect(noiseFilter);
 					noiseFilter.connect(noiseGain);
 					noiseGain.connect(audioContext.destination);
 
 					noise.start(t);
-					noise.stop(t + 0.12);
+					noise.stop(t + duration);
 
 					// ========== 第三层：低沉的撞击声（低频正弦波）==========
 					const osc2 = audioContext.createOscillator();
 					osc2.type = 'sine';
 					osc2.frequency.setValueAtTime(200, t);
-					osc2.frequency.exponentialRampToValueAtTime(80, t + 0.06);
+					osc2.frequency.exponentialRampToValueAtTime(80, t + 0.3);
 
 					const gain2 = audioContext.createGain();
 					gain2.gain.setValueAtTime(0.25, t);
-					gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+					gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
 
 					osc2.connect(gain2);
 					gain2.connect(audioContext.destination);
 
 					osc2.start(t);
-					osc2.stop(t + 0.1);
+					osc2.stop(t + duration);
 
 					// ========== 第四层：高频金属摩擦声（方波）==========
 					const osc3 = audioContext.createOscillator();
 					osc3.type = 'square';
 					osc3.frequency.setValueAtTime(2500, t);
-					osc3.frequency.exponentialRampToValueAtTime(1500, t + 0.03);
+					osc3.frequency.exponentialRampToValueAtTime(1500, t + 0.1);
 
 					const gain3 = audioContext.createGain();
 					gain3.gain.setValueAtTime(0.05, t);
-					gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+					gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
 
 					// 高通滤波器
 					const filter3 = audioContext.createBiquadFilter();
@@ -502,9 +503,9 @@ export default function WordDetailPage() {
 					gain3.connect(audioContext.destination);
 
 					osc3.start(t);
-					osc3.stop(t + 0.05);
+					osc3.stop(t + 0.2);
 
-					console.log("逼真切鱼音效播放成功！（四层合成）");
+					console.log("逼真切鱼音效播放成功！（四层合成，持续1秒）");
 				} catch (error) {
 					console.error("切鱼音效播放失败:", error);
 				}
