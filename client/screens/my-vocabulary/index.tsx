@@ -206,10 +206,10 @@ const styles = StyleSheet.create({
   gridContainer: {
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingTop: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
   },
   bookItem: {
     alignItems: 'center',
