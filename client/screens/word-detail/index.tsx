@@ -359,6 +359,25 @@ export default function WordDetailPage() {
 			});
 	}, [word.id]);
 
+	// 重新从后端获取完整单词数据，确保包含 example_audio_url
+	useEffect(() => {
+		if (!word.id) return;
+		fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`)
+			.then(response => response.json())
+			.then(data => {
+				if (Array.isArray(data)) {
+					const fullWord = data.find((w: any) => w.id === word.id);
+					if (fullWord && fullWord.example_audio_url) {
+						setWord(prev => ({ ...prev, example_audio_url: fullWord.example_audio_url }));
+					}
+				}
+			})
+			.catch(error => {
+				console.error("Failed to fetch full word data:", error);
+			});
+	}, [word.id, sourceTable]);
+
+
 	// 清理音频资源
 	useEffect(() => {
 		return () => {
