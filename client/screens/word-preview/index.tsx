@@ -45,16 +45,24 @@ const DraggableWordCard = memo(function DraggableWordCard({ word, onMoveComplete
 				const cardX = gestureState.moveX;
 				const cardY = gestureState.moveY;
 
-				const dropZoneTop = screenHeight - 180;
+				// 获取当前屏幕尺寸（Web端可能变化）
+				const { width: currentWidth, height: currentHeight } = Dimensions.get('window');
+				const dropZoneTop = currentHeight - 200; // 增加判定区域
+				
+				console.log('Drag release:', { cardX, cardY, dropZoneTop, screenHeight: currentHeight, word: word.word });
+				
 				if (cardY > dropZoneTop) {
-					const zoneWidth = screenWidth / 3;
+					const zoneWidth = currentWidth / 3;
 					let targetTable = 'words_z';
 					if (cardX < zoneWidth) {
 						targetTable = 'words_x';
 					} else if (cardX < zoneWidth * 2) {
 						targetTable = 'words_y';
 					}
+					console.log('Drop in zone:', targetTable, 'for word:', word.word);
 					onMoveComplete(word, targetTable);
+				} else {
+					console.log('Drop outside zone, cardY:', cardY, 'dropZoneTop:', dropZoneTop);
 				}
 
 				Animated.spring(pan, {
