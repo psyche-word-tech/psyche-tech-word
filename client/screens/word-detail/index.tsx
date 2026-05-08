@@ -397,7 +397,7 @@ export default function WordDetailPage() {
 				return;
 			}
 
-			console.log("检测到 gut 单词，立即播放逼真的切菜音效！");
+			console.log("检测到 gut 单词，立即播放逼真的切鱼音效！");
 
 			// 使用 Web Audio API 生成逼真的切菜声音
 			const playRealisticChoppingSound = () => {
@@ -409,37 +409,57 @@ export default function WordDetailPage() {
 						const AudioContext = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext;
 						const audioContext = new AudioContext();
 						
-						// 播放三次切菜声
-						const playChop = (delay: number) => {
-							const oscillator = audioContext.createOscillator();
-							const gainNode = audioContext.createGain();
+							// 播放切鱼的声音（湿润、有韧性的感觉）
+							const playFishCut = (delay: number, isFirst: boolean) => {
+								// 主振荡器 - 模拟刀刃切入的声音
+								const oscillator = audioContext.createOscillator();
+								const gainNode = audioContext.createGain();
+								
+								// 噪音节点 - 模拟鱼肉的湿润质感
+								const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.15, audioContext.sampleRate);
+								const noiseData = noiseBuffer.getChannelData(0);
+								for (let i = 0; i < noiseBuffer.length; i++) {
+									noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseBuffer.length * 0.3));
+								}
+								const noiseSource = audioContext.createBufferSource();
+								noiseSource.buffer = noiseBuffer;
+								const noiseGain = audioContext.createGain();
+								
+								// 连接节点
+								oscillator.connect(gainNode);
+								gainNode.connect(audioContext.destination);
+								noiseSource.connect(noiseGain);
+								noiseGain.connect(audioContext.destination);
+								
+								// 主音 - 更低沉、更有韧性的切鱼声
+								oscillator.type = "triangle"; // 三角波更柔和
+								oscillator.frequency.setValueAtTime(400, audioContext.currentTime + delay);
+								oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + delay + 0.08);
+								
+								// 主音音量 - 更持久一点，模拟切鱼的韧性
+								gainNode.gain.setValueAtTime(0.25, audioContext.currentTime + delay);
+								gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.15);
+								
+								// 噪音 - 模拟鱼肉的湿润声
+								noiseGain.gain.setValueAtTime(0.15, audioContext.currentTime + delay);
+								noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.12);
+								
+								// 启动
+								oscillator.start(audioContext.currentTime + delay);
+								oscillator.stop(audioContext.currentTime + delay + 0.15);
+								noiseSource.start(audioContext.currentTime + delay);
+								noiseSource.stop(audioContext.currentTime + delay + 0.12);
+							};
 							
-							oscillator.connect(gainNode);
-							gainNode.connect(audioContext.destination);
-							
-							// 短促的打击声，模拟刀切
-							oscillator.type = 'sawtooth';
-							oscillator.frequency.setValueAtTime(800, audioContext.currentTime + delay);
-							oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + delay + 0.05);
-							
-							// 快速衰减
-							gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + delay);
-							gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + delay + 0.1);
-							
-							oscillator.start(audioContext.currentTime + delay);
-							oscillator.stop(audioContext.currentTime + delay + 0.1);
-						};
-						
-						// 连续切三次
-						playChop(0);
-						playChop(0.15);
-						playChop(0.3);
+							// 切两次鱼（第一刀深入，第二刀完成）
+							playFishCut(0, true);
+							playFishCut(0.2, false);
 						
 						console.log("Web Audio API 切菜音效播放中...");
 						
 						// 0.5秒后结束
 						setTimeout(() => {
-							console.log("切菜音效播放完成！");
+							console.log("切鱼音效播放完成！");
 							setIsAudioPlaying(false);
 							audioContext.close();
 						}, 500);
