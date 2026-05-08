@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     marginTop: 200,
+    alignSelf: 'center',
   },
   oldSchoolText: {
     fontSize: 12,
