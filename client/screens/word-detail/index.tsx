@@ -384,71 +384,76 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// gut 单词的刀切声音效
-		const knifeSoundUrl = "https://www.soundjay.com/mechanical/sounds/knife-cutting-1.mp3";
-
-		// gut 单词出现时立即播放刀切声
+		// gut 单词出现时立即播放切菜音效（用 TTS 模拟）
 		useEffect(() => {
 			if (!word.id) return;
 
 			console.log("=== gut 单词音效 ===");
 			console.log("当前单词:", word.word);
 
-			// 只有 gut 单词才播放刀切声
+			// 只有 gut 单词才播放音效
 			if (word.word !== 'gut') {
 				console.log("不是 gut 单词，跳过");
 				return;
 			}
 
-			console.log("检测到 gut 单词，立即播放刀切声！");
+			console.log("检测到 gut 单词，立即播放切菜音效！");
 
-			// 立即播放刀切声
-			const playKnifeSound = async () => {
+			// 用 TTS 模拟切菜的声音
+			const playChoppingSound = async () => {
 				try {
-					if (soundRef.current) {
-						await soundRef.current.unloadAsync();
+					setIsAudioPlaying(true);
+					console.log("开始播放切菜音效...");
+
+					// 模拟切菜的声音：chop chop chop
+					const choppingSounds = ['chop', 'chop', 'chop'];
+
+					if (Platform.OS === 'web') {
+						// Web 端
+						for (let i = 0; i < choppingSounds.length; i++) {
+							const utterance = new (globalThis as any).SpeechSynthesisUtterance(choppingSounds[i]);
+							utterance.lang = 'en-US';
+							utterance.rate = 1.5; // 稍快一点
+							utterance.pitch = 0.7; // 稍低一点
+							utterance.volume = 1;
+							
+							// 等待前一个播放完
+							await new Promise((resolve) => {
+								utterance.onend = resolve;
+								(globalThis as any).speechSynthesis.speak(utterance);
+							});
+						}
+					} else {
+						// 移动端
+						for (let i = 0; i < choppingSounds.length; i++) {
+							await new Promise((resolve) => {
+								Speech.speak(choppingSounds[i], {
+									language: 'en-US',
+									rate: 1.5,
+									pitch: 0.7,
+									onDone: () => resolve(undefined),
+								});
+							});
+						}
 					}
 
-					setIsAudioPlaying(true);
-
-					await Audio.setAudioModeAsync({
-						playsInSilentModeIOS: true,
-						staysActiveInBackground: false,
-						shouldDuckAndroid: true,
-					});
-
-					console.log("正在创建 Audio.Sound 播放刀切声...");
-					const { sound } = await Audio.Sound.createAsync(
-						{ uri: knifeSoundUrl },
-						{ shouldPlay: true },
-						(status: any) => {
-							console.log("刀切声播放状态:", status);
-							if (status.isLoaded && status.didJustFinish) {
-								console.log("刀切声播放完成");
-								setIsAudioPlaying(false);
-							}
-							if (status.error) {
-								console.error("刀切声播放错误:", status.error);
-								setIsAudioPlaying(false);
-							}
-						},
-						true
-					);
-
-					console.log("刀切声开始播放！");
-					soundRef.current = sound;
+					console.log("切菜音效播放完成！");
+					setIsAudioPlaying(false);
 				} catch (error: any) {
-					console.error("刀切声播放失败:", error);
+					console.error("切菜音效播放失败:", error);
 					setIsAudioPlaying(false);
 				}
 			};
 
 			// 立即播放，无需延迟
-			playKnifeSound();
+			playChoppingSound();
 
 			return () => {
-				if (soundRef.current) {
-					soundRef.current.unloadAsync();
+				// 停止正在播放的 TTS
+				if (Platform.OS !== 'web') {
+					Speech.stop();
+				} else {
+					(globalThis as any).speechSynthesis?.cancel();
 				}
 			};
 		}, [word.id, word.word]);
