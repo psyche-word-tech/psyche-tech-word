@@ -394,7 +394,8 @@ const styles = StyleSheet.create({
 	},
 	categoryRow: {
 		flexDirection: 'row',
-		gap: 8,
+		justifyContent: 'space-between',
+		gap: 12,
 	},
 	categoryItem: {
 		flex: 1,
