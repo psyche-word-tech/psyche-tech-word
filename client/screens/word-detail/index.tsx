@@ -715,6 +715,8 @@ export default function WordDetailPage() {
 						<View style={styles.section}>
 							<View style={styles.divider} />
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>例句</Text>
+								<Text style={{ fontSize: 10, color: "#EF4444" }}>DEBUG: example_audio_url={JSON.stringify(word.example_audio_url)}</Text>
+
 							{/* 录音音波 */}
 							{isRecording && (
 								<View style={styles.waveformContainer}>
@@ -746,7 +748,6 @@ export default function WordDetailPage() {
 											color="#4F46E5"
 										/>
 									</TouchableOpacity>
-									{word.example_audio_url && (
 										<TouchableOpacity
 											style={styles.exampleSpeakerIcon}
 											onPress={playExampleAudio}
@@ -758,7 +759,6 @@ export default function WordDetailPage() {
 												color="#059669"
 											/>
 										</TouchableOpacity>
-									)}
 									<TouchableOpacity
 										style={[
 											styles.recordButton,
