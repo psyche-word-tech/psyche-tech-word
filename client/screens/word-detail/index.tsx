@@ -21,6 +21,7 @@ interface Word {
 	example?: string;
 	example_translation?: string;
 	image_url?: string;
+	example_audio_url?: string;
 }
 
 interface Comment {
@@ -70,8 +71,10 @@ export default function WordDetailPage() {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [wordsList, setWordsList] = useState<Word[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
+	const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const soundRef = useRef<Audio.Sound | null>(null);
 	const fetchCategoryCountsRef = useRef<() => void>(() => { /* noop */ });
 
 	// 评论相关状态
@@ -96,7 +99,6 @@ export default function WordDetailPage() {
 
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
-	const soundRef = useRef<Audio.Sound | null>(null);
 
 	// 移动单词到目标分类，并自动显示当前表中的下一个单词
 	const handleDrop = useCallback(async (targetTable: string, status: string) => {
@@ -461,6 +463,44 @@ export default function WordDetailPage() {
 		}
 	};
 
+	// 播放预录制的例句音频
+	const playExampleAudio = async () => {
+		if (!word.example_audio_url) return;
+
+		try {
+			if (soundRef.current) {
+				await soundRef.current.unloadAsync();
+			}
+
+			setIsAudioPlaying(true);
+
+			await Audio.setAudioModeAsync({
+				playsInSilentModeIOS: true,
+				staysActiveInBackground: false,
+				shouldDuckAndroid: true,
+			});
+
+			const { sound } = await Audio.Sound.createAsync(
+				{ uri: word.example_audio_url },
+				{ shouldPlay: true },
+				undefined,
+				true
+			);
+
+			soundRef.current = sound;
+			sound.setOnPlaybackStatusUpdate((status) => {
+				if (status.isLoaded && status.didJustFinish) {
+					setIsAudioPlaying(false);
+				}
+			});
+		} catch (error: any) {
+			console.error("Example audio play error:", error);
+			setIsAudioPlaying(false);
+			Alert.alert("播放失败", `无法播放例句: ${error?.message || "未知错误"}`);
+		}
+	};
+
+
 	// 录音评分功能
 	const startRecording = async () => {
 		try {
@@ -686,6 +726,21 @@ export default function WordDetailPage() {
 											size={20}
 											color="#4F46E5"
 										/>
+
+										{word.example_audio_url && (
+											<TouchableOpacity
+												style={styles.exampleSpeakerIcon}
+												onPress={playExampleAudio}
+												disabled={isAudioPlaying}
+											>
+												<Ionicons
+													name={isAudioPlaying ? "play-circle" : "play-circle-outline"}
+													size={20}
+													color="#059669"
+												/>
+											</TouchableOpacity>
+										)}
+
 									</TouchableOpacity>
 									<TouchableOpacity
 										style={[
