@@ -112,6 +112,12 @@ router.post('/purchase', async (req, res) => {
       return;
     }
 
+    // 禁止从 words_a 复制到 words_b（切断联系）
+    if (sourceTable === 'words_a' && targetTable === 'words_b') {
+      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed. The tables are now independent.' });
+      return;
+    }
+
     const client = getSupabaseClient();
 
     // 清空目标表
@@ -165,6 +171,12 @@ router.post('/purchase', async (req, res) => {
 router.post('/copy', async (req, res) => {
   try {
     const { sourceTable, targetTable, bookId } = req.body;
+
+    // 禁止从 words_a 复制到 words_b（切断联系）
+    if (sourceTable === 'words_a' && targetTable === 'words_b') {
+      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed. The tables are now independent.' });
+      return;
+    }
 
     // 验证参数
     const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e'];
