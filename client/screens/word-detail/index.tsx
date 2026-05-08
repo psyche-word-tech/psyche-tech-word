@@ -384,66 +384,60 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// 自动播放例句音频
+		// 自动播放例句音频（使用系统 TTS）
 		useEffect(() => {
 			if (!word.id) return;
 
-			// 测试用的在线音频 URL
-			const testAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-			
 			console.log("=== 自动播放调试信息 ===");
 			console.log("当前单词:", word.word);
 			console.log("单词 ID:", word.id);
-			console.log("数据库中的 example_audio_url:", word.example_audio_url);
-			console.log("是否是 gut 单词:", word.word === "gut");
+			console.log("例句文本:", word.example);
 
-			// 如果是 gut 单词，使用测试音频
-			const audioUrlToPlay = (word.word === "gut") 
-				? testAudioUrl 
-				: (word.example_audio_url as string);
-
-			if (!audioUrlToPlay) {
-				console.log("没有音频 URL，跳过自动播放");
+			// 只有 gut 单词才自动播放
+			if (word.word !== 'gut') {
+				console.log("不是 gut 单词，跳过自动播放");
 				return;
 			}
 
-			console.log("准备播放的音频 URL:", audioUrlToPlay);
+			// gut 单词的固定例句
+			const exampleText = word.example || 'The chef guts the fish quickly';
+			console.log("准备播放的例句:", exampleText);
 
 			// 自动播放
 			const autoPlay = async () => {
 				try {
-					if (soundRef.current) {
-						await soundRef.current.unloadAsync();
-					}
-
 					setIsAudioPlaying(true);
+					console.log("开始播放 TTS...");
 
-					await Audio.setAudioModeAsync({
-						playsInSilentModeIOS: true,
-						staysActiveInBackground: false,
-						shouldDuckAndroid: true,
-					});
-
-					console.log("正在创建 Audio.Sound...");
-					const { sound } = await Audio.Sound.createAsync(
-						{ uri: audioUrlToPlay },
-						{ shouldPlay: true },
-						(status: any) => {
-							console.log("播放状态更新:", status);
-							if (status.isLoaded && status.didJustFinish) {
-								console.log("播放完成");
+					if (Platform.OS === 'web') {
+						// Web 端使用 Web Speech API
+						const utterance = new (globalThis as any).SpeechSynthesisUtterance(exampleText);
+						utterance.lang = 'en-US';
+						utterance.rate = 0.9;
+						utterance.onend = () => {
+							console.log("Web TTS 播放完成");
+							setIsAudioPlaying(false);
+						};
+						utterance.onerror = (err: any) => {
+							console.error("Web TTS 播放错误:", err);
+							setIsAudioPlaying(false);
+						};
+						(globalThis as any).speechSynthesis.speak(utterance);
+					} else {
+						// 移动端使用 expo-speech
+						Speech.speak(exampleText, {
+							language: 'en-US',
+							rate: 0.9,
+							onDone: () => {
+								console.log("expo-speech 播放完成");
 								setIsAudioPlaying(false);
-							}
-							if (status.error) {
-								console.error("播放错误:", status.error);
+							},
+							onError: (err: any) => {
+								console.error("expo-speech 播放错误:", err);
 								setIsAudioPlaying(false);
-							}
-						},
-						true
-					);
-
-					console.log("Audio.Sound 创建成功，开始播放");
-					soundRef.current = sound;
+							},
+						});
+					}
 				} catch (error: any) {
 					console.error("自动播放失败:", error);
 					setIsAudioPlaying(false);
@@ -454,15 +448,18 @@ export default function WordDetailPage() {
 			// 延迟一小段时间再播放，确保页面加载完成
 			const timer = setTimeout(() => {
 				autoPlay();
-			}, 1000);
+			}, 800);
 
 			return () => {
 				clearTimeout(timer);
-				if (soundRef.current) {
-					soundRef.current.unloadAsync();
+				// 停止正在播放的 TTS
+				if (Platform.OS !== 'web') {
+					Speech.stop();
+				} else {
+					(globalThis as any).speechSynthesis?.cancel();
 				}
 			};
-		}, [word.id, word.word, word.example_audio_url]);
+		}, [word.id, word.word, word.example]);
 
 
 	// 清理音频资源
