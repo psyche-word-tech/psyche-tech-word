@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform } from 'react-native';
+import { Video } from 'expo-av';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -712,11 +713,22 @@ export default function WordDetailPage() {
 							)}
 							{word.image_url && (
 								<View style={styles.exampleImageContainer}>
-									<Image 
-										source={{ uri: word.image_url }} 
-										style={styles.exampleImage}
-										resizeMode="cover"
-									/>
+									{word.image_url.includes('word-videos') || word.image_url.endsWith('.mp4') ? (
+										<Video
+											source={{ uri: word.image_url }}
+											style={styles.exampleImage}
+											shouldPlay={true}
+											isLooping={true}
+											isMuted={true}
+											useNativeControls={false}
+										/>
+									) : (
+										<Image
+											source={{ uri: word.image_url }}
+											style={styles.exampleImage}
+											resizeMode="cover"
+										/>
+									)}
 								</View>
 							)}
 						</View>
