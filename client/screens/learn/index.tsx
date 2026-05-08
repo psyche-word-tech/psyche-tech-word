@@ -94,9 +94,14 @@ function DraggableWordCard({ word, onDrop, onPress }: DraggableWordCardProps) {
 			]}
 		>
 			<TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-				<View style={styles.wordCard}>
-					<Text style={styles.wordCardText}>{word.word}</Text>
-				</View>
+					<View style={styles.wordCard}>
+						<Text style={styles.wordCardText}>{word.word}</Text>
+						{word.example_translation ? (
+							<Text style={styles.translationText} numberOfLines={2}>
+								{word.example_translation}
+							</Text>
+						) : null}
+					</View>
 			</TouchableOpacity>
 		</Animated.View>
 	);
@@ -327,7 +332,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 8,
 		alignItems: 'center',
-		minHeight: 44,
+		minHeight: 60,
 		justifyContent: 'center',
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
@@ -365,6 +370,13 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		color: 'rgba(255,255,255,0.8)',
 		marginTop: 2,
+	},
+	translationText: {
+		fontSize: 9,
+		color: 'rgba(255,255,255,0.7)',
+		textAlign: 'center',
+		marginTop: 4,
+		lineHeight: 12,
 	},
 	instructionText: {
 		fontSize: 11,
