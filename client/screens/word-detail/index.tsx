@@ -384,53 +384,26 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// 音效映射：为每个有动图的单词配上相应的音效
-		const soundEffectMap: Record<string, string> = {
-			// gut - 切鱼的声音
-			'gut': 'https://www.soundjay.com/mechanical/sounds/knife-cutting-1.mp3',
-			// pinch - 捏的声音
-			'pinch': 'https://www.soundjay.com/mechanical/sounds/snap-1.mp3',
-			// belly - 拍肚子的声音
-			'belly': 'https://www.soundjay.com/human/sounds/body-hit-1.mp3',
-			// ankle - 扭脚踝的声音
-			'ankle': 'https://www.soundjay.com/mechanical/sounds/crack-1.mp3',
-			// foot - 洗脚的声音（用水声代替）
-			'foot': 'https://www.soundjay.com/nature/sounds/water-splash-1.mp3',
-			// footstep - 脚步声
-			'footstep': 'https://www.soundjay.com/human/sounds/footsteps-concrete-1.mp3',
-			// toe - 踢到脚趾的声音
-			'toe': 'https://www.soundjay.com/human/sounds/grunt-1.mp3',
-			// body - 洗澡的声音（用水声）
-			'body': 'https://www.soundjay.com/nature/sounds/water-dripping-1.mp3',
-			// bone - 狗咬骨头的声音
-			'bone': 'https://www.soundjay.com/mechanical/sounds/chewing-1.mp3',
-			// muscle - 肌肉收缩的声音（用关节声）
-			'muscle': 'https://www.soundjay.com/mechanical/sounds/pop-1.mp3',
-		};
+		// gut 单词的刀切声音效
+		const knifeSoundUrl = "https://www.soundjay.com/mechanical/sounds/knife-cutting-1.mp3";
 
-		// 自动播放动图音效
+		// gut 单词出现时立即播放刀切声
 		useEffect(() => {
 			if (!word.id) return;
 
-			console.log("=== 动图音效调试信息 ===");
+			console.log("=== gut 单词音效 ===");
 			console.log("当前单词:", word.word);
-			console.log("单词 ID:", word.id);
-			console.log("是否有动图:", word.image_url?.includes('word-videos') || word.image_url?.endsWith('.mp4'));
-			console.log("是否有对应音效:", !!soundEffectMap[word.word]);
 
-			// 检查是否有动图和对应音效
-			const hasVideo = word.image_url?.includes('word-videos') || word.image_url?.endsWith('.mp4');
-			const soundEffectUrl = soundEffectMap[word.word];
-
-			if (!hasVideo || !soundEffectUrl) {
-				console.log("没有动图或没有对应音效，跳过自动播放");
+			// 只有 gut 单词才播放刀切声
+			if (word.word !== 'gut') {
+				console.log("不是 gut 单词，跳过");
 				return;
 			}
 
-			console.log("准备播放的音效 URL:", soundEffectUrl);
+			console.log("检测到 gut 单词，立即播放刀切声！");
 
-			// 自动播放音效
-			const autoPlaySoundEffect = async () => {
+			// 立即播放刀切声
+			const playKnifeSound = async () => {
 				try {
 					if (soundRef.current) {
 						await soundRef.current.unloadAsync();
@@ -444,45 +417,41 @@ export default function WordDetailPage() {
 						shouldDuckAndroid: true,
 					});
 
-					console.log("正在创建 Audio.Sound 播放音效...");
+					console.log("正在创建 Audio.Sound 播放刀切声...");
 					const { sound } = await Audio.Sound.createAsync(
-						{ uri: soundEffectUrl },
+						{ uri: knifeSoundUrl },
 						{ shouldPlay: true },
 						(status: any) => {
-							console.log("音效播放状态更新:", status);
+							console.log("刀切声播放状态:", status);
 							if (status.isLoaded && status.didJustFinish) {
-								console.log("音效播放完成");
+								console.log("刀切声播放完成");
 								setIsAudioPlaying(false);
 							}
 							if (status.error) {
-								console.error("音效播放错误:", status.error);
+								console.error("刀切声播放错误:", status.error);
 								setIsAudioPlaying(false);
 							}
 						},
 						true
 					);
 
-					console.log("音效 Audio.Sound 创建成功，开始播放");
+					console.log("刀切声开始播放！");
 					soundRef.current = sound;
 				} catch (error: any) {
-					console.error("音效自动播放失败:", error);
+					console.error("刀切声播放失败:", error);
 					setIsAudioPlaying(false);
-					// 不显示错误弹窗，静默失败
 				}
 			};
 
-			// 延迟一小段时间再播放，确保页面加载完成
-			const timer = setTimeout(() => {
-				autoPlaySoundEffect();
-			}, 500);
+			// 立即播放，无需延迟
+			playKnifeSound();
 
 			return () => {
-				clearTimeout(timer);
 				if (soundRef.current) {
 					soundRef.current.unloadAsync();
 				}
 			};
-		}, [word.id, word.word, word.image_url]);
+		}, [word.id, word.word]);
 
 
 	// 清理音频资源
