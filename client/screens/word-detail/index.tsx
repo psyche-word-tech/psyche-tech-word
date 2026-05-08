@@ -384,82 +384,105 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// 自动播放例句音频（使用系统 TTS）
+		// 音效映射：为每个有动图的单词配上相应的音效
+		const soundEffectMap: Record<string, string> = {
+			// gut - 切鱼的声音
+			'gut': 'https://www.soundjay.com/mechanical/sounds/knife-cutting-1.mp3',
+			// pinch - 捏的声音
+			'pinch': 'https://www.soundjay.com/mechanical/sounds/snap-1.mp3',
+			// belly - 拍肚子的声音
+			'belly': 'https://www.soundjay.com/human/sounds/body-hit-1.mp3',
+			// ankle - 扭脚踝的声音
+			'ankle': 'https://www.soundjay.com/mechanical/sounds/crack-1.mp3',
+			// foot - 洗脚的声音（用水声代替）
+			'foot': 'https://www.soundjay.com/nature/sounds/water-splash-1.mp3',
+			// footstep - 脚步声
+			'footstep': 'https://www.soundjay.com/human/sounds/footsteps-concrete-1.mp3',
+			// toe - 踢到脚趾的声音
+			'toe': 'https://www.soundjay.com/human/sounds/grunt-1.mp3',
+			// body - 洗澡的声音（用水声）
+			'body': 'https://www.soundjay.com/nature/sounds/water-dripping-1.mp3',
+			// bone - 狗咬骨头的声音
+			'bone': 'https://www.soundjay.com/mechanical/sounds/chewing-1.mp3',
+			// muscle - 肌肉收缩的声音（用关节声）
+			'muscle': 'https://www.soundjay.com/mechanical/sounds/pop-1.mp3',
+		};
+
+		// 自动播放动图音效
 		useEffect(() => {
 			if (!word.id) return;
 
-			console.log("=== 自动播放调试信息 ===");
+			console.log("=== 动图音效调试信息 ===");
 			console.log("当前单词:", word.word);
 			console.log("单词 ID:", word.id);
-			console.log("例句文本:", word.example);
+			console.log("是否有动图:", word.image_url?.includes('word-videos') || word.image_url?.endsWith('.mp4'));
+			console.log("是否有对应音效:", !!soundEffectMap[word.word]);
 
-			// 只有 gut 单词才自动播放
-			if (word.word !== 'gut') {
-				console.log("不是 gut 单词，跳过自动播放");
+			// 检查是否有动图和对应音效
+			const hasVideo = word.image_url?.includes('word-videos') || word.image_url?.endsWith('.mp4');
+			const soundEffectUrl = soundEffectMap[word.word];
+
+			if (!hasVideo || !soundEffectUrl) {
+				console.log("没有动图或没有对应音效，跳过自动播放");
 				return;
 			}
 
-			// gut 单词的固定例句
-			const exampleText = word.example || 'The chef guts the fish quickly';
-			console.log("准备播放的例句:", exampleText);
+			console.log("准备播放的音效 URL:", soundEffectUrl);
 
-			// 自动播放
-			const autoPlay = async () => {
+			// 自动播放音效
+			const autoPlaySoundEffect = async () => {
 				try {
-					setIsAudioPlaying(true);
-					console.log("开始播放 TTS...");
-
-					if (Platform.OS === 'web') {
-						// Web 端使用 Web Speech API
-						const utterance = new (globalThis as any).SpeechSynthesisUtterance(exampleText);
-						utterance.lang = 'en-US';
-						utterance.rate = 0.9;
-						utterance.onend = () => {
-							console.log("Web TTS 播放完成");
-							setIsAudioPlaying(false);
-						};
-						utterance.onerror = (err: any) => {
-							console.error("Web TTS 播放错误:", err);
-							setIsAudioPlaying(false);
-						};
-						(globalThis as any).speechSynthesis.speak(utterance);
-					} else {
-						// 移动端使用 expo-speech
-						Speech.speak(exampleText, {
-							language: 'en-US',
-							rate: 0.9,
-							onDone: () => {
-								console.log("expo-speech 播放完成");
-								setIsAudioPlaying(false);
-							},
-							onError: (err: any) => {
-								console.error("expo-speech 播放错误:", err);
-								setIsAudioPlaying(false);
-							},
-						});
+					if (soundRef.current) {
+						await soundRef.current.unloadAsync();
 					}
+
+					setIsAudioPlaying(true);
+
+					await Audio.setAudioModeAsync({
+						playsInSilentModeIOS: true,
+						staysActiveInBackground: false,
+						shouldDuckAndroid: true,
+					});
+
+					console.log("正在创建 Audio.Sound 播放音效...");
+					const { sound } = await Audio.Sound.createAsync(
+						{ uri: soundEffectUrl },
+						{ shouldPlay: true },
+						(status: any) => {
+							console.log("音效播放状态更新:", status);
+							if (status.isLoaded && status.didJustFinish) {
+								console.log("音效播放完成");
+								setIsAudioPlaying(false);
+							}
+							if (status.error) {
+								console.error("音效播放错误:", status.error);
+								setIsAudioPlaying(false);
+							}
+						},
+						true
+					);
+
+					console.log("音效 Audio.Sound 创建成功，开始播放");
+					soundRef.current = sound;
 				} catch (error: any) {
-					console.error("自动播放失败:", error);
+					console.error("音效自动播放失败:", error);
 					setIsAudioPlaying(false);
-					Alert.alert("自动播放提示", `播放失败: ${error?.message || "未知错误"}`);
+					// 不显示错误弹窗，静默失败
 				}
 			};
 
 			// 延迟一小段时间再播放，确保页面加载完成
 			const timer = setTimeout(() => {
-				autoPlay();
-			}, 800);
+				autoPlaySoundEffect();
+			}, 500);
 
 			return () => {
 				clearTimeout(timer);
-				// 停止正在播放的 TTS
-				if (Platform.OS !== 'web') {
-					Speech.stop();
-				} else {
-					(globalThis as any).speechSynthesis?.cancel();
+				if (soundRef.current) {
+					soundRef.current.unloadAsync();
 				}
 			};
-		}, [word.id, word.word, word.example]);
+		}, [word.id, word.word, word.image_url]);
 
 
 	// 清理音频资源
