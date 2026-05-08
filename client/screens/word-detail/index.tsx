@@ -384,78 +384,60 @@ export default function WordDetailPage() {
 				});
 		}, [word.id, sourceTable]);
 
-		// gut 单词出现时立即播放切鱼音效（用 TTS 模拟节奏）
+		// gut 单词出现时立即播放切鱼音效
 		useEffect(() => {
 			if (!word.id) return;
 
-			console.log("=== gut 单词音效 ===");
-			console.log("当前单词:", word.word);
-
 			// 只有 gut 单词才播放音效
-			if (word.word !== "gut") {
-				console.log("不是 gut 单词，跳过");
-				return;
-			}
+			if (word.word !== "gut") return;
 
-			console.log("检测到 gut 单词，立即播放切鱼节奏！");
+			console.log("检测到 gut 单词，播放切鱼音效！");
 
-			// 用 TTS 快速连续播放 "chop" 来模拟切鱼节奏
-			const playChoppingRhythm = async () => {
+			// Web Audio API 生成切鱼音效（白噪音 + 快速衰减）
+			const playFishSound = () => {
+				if (typeof globalThis.AudioContext === 'undefined') {
+					console.log('Web Audio API 不可用');
+					return;
+				}
+
 				try {
-					setIsAudioPlaying(true);
-					console.log("开始播放切鱼节奏...");
+					const audioContext = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
 
-					// 快速连续播放三次 "chop"
-					const chopSounds = ["chop", "chop", "chop"];
+					// 创建白噪音
+					const bufferSize = audioContext.sampleRate * 0.1; // 0.1秒
+					const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+					const data = buffer.getChannelData(0);
 
-					if (Platform.OS === "web") {
-						// Web 端
-						for (let i = 0; i < chopSounds.length; i++) {
-							const utterance = new (globalThis as any).SpeechSynthesisUtterance(chopSounds[i]);
-							utterance.lang = "en-US";
-							utterance.rate = 2.0; // 很快
-							utterance.pitch = 0.5; // 很低沉
-							utterance.volume = 1;
-							
-							// 等待前一个播放完
-							await new Promise((resolve) => {
-								utterance.onend = resolve;
-								(globalThis as any).speechSynthesis.speak(utterance);
-							});
-						}
-					} else {
-						// 移动端
-						for (let i = 0; i < chopSounds.length; i++) {
-							await new Promise((resolve) => {
-								Speech.speak(chopSounds[i], {
-									language: "en-US",
-									rate: 2.0,
-									pitch: 0.5,
-									onDone: () => resolve(undefined),
-								});
-							});
-						}
+					// 填充随机噪音
+					for (let i = 0; i < bufferSize; i++) {
+						data[i] = Math.random() * 2 - 1;
 					}
 
-					console.log("切鱼节奏播放完成！");
-					setIsAudioPlaying(false);
-				} catch (error: any) {
-					console.error("切鱼节奏播放失败:", error);
-					setIsAudioPlaying(false);
+					// 创建噪音源
+					const noise = audioContext.createBufferSource();
+					noise.buffer = buffer;
+
+					// 创建增益节点（控制音量）
+					const gainNode = audioContext.createGain();
+					gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+					gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+					// 连接节点
+					noise.connect(gainNode);
+					gainNode.connect(audioContext.destination);
+
+					// 播放
+					noise.start();
+					noise.stop(audioContext.currentTime + 0.1);
+
+					console.log("切鱼音效播放成功！");
+				} catch (error) {
+					console.error("切鱼音效播放失败:", error);
 				}
 			};
 
 			// 立即播放
-			playChoppingRhythm();
-
-			return () => {
-				// 停止正在播放的 TTS
-				if (Platform.OS !== "web") {
-					Speech.stop();
-				} else {
-					(globalThis as any).speechSynthesis?.cancel();
-				}
-			};
+			playFishSound();
 		}, [word.id, word.word]);
 
 
