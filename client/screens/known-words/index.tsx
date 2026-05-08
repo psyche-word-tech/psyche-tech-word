@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
@@ -19,20 +19,28 @@ export default function KnownWordsPage() {
   const router = useSafeRouter();
   const { apiBaseUrl } = useApiConfig();
   const [words, setWords] = useState<Word[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchWords = async () => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setWords(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch words:', error);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchWords();
+    setRefreshing(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
-      const fetchWords = async () => {
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks/words_x`);
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setWords(data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch words:', error);
-        }
-      };
       fetchWords();
     }, [apiBaseUrl])
   );
@@ -57,7 +65,12 @@ export default function KnownWordsPage() {
         </View>
 
         {/* Word List */}
-        <ScrollView style={styles.listContainer}>
+        <ScrollView
+          style={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {words.length > 0 ? (
             words.map((word) => (
               <TouchableOpacity
