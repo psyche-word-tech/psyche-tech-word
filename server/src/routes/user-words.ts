@@ -149,6 +149,17 @@ router.post('/move', async (req, res) => {
       return;
     }
 
+    // 同时从 words_a 删除（避免重新购买时再次出现）
+    const { error: deleteAError } = await client
+      .from('words_a')
+      .delete()
+      .eq('word', word.word);
+
+    if (deleteAError) {
+      console.warn('Failed to delete from words_a:', deleteAError.message);
+      // 不返回错误，因为主流程已经成功
+    }
+
     res.json({ success: true, message: `Word moved to ${targetTable}` });
   } catch (err) {
     console.error('Error moving word:', err);
