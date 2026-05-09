@@ -50,7 +50,7 @@ export default function SubcategoryWordsPage() {
   const renderItem = ({ item }: { item: WordItem }) => (
     <TouchableOpacity
       activeOpacity={0.8}
-      className="mx-4 mb-3 bg-white rounded-2xl p-4 shadow-sm"
+      className="mx-4 mb-3 bg-white rounded-2xl py-5 px-4 shadow-sm items-center justify-center"
       style={{
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -59,20 +59,7 @@ export default function SubcategoryWordsPage() {
         elevation: 2,
       }}
     >
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <Text className="text-xl font-bold text-gray-900">{item.word}</Text>
-          {item.phonetic ? (
-            <Text className="text-sm text-gray-500 mt-1">{item.phonetic}</Text>
-          ) : null}
-        </View>
-        <FontAwesome6 name="chevron-right" size={16} color="#CBD5E1" />
-      </View>
-      {item.meaning ? (
-        <Text className="text-sm text-gray-600 mt-2 leading-5" numberOfLines={2}>
-          {item.meaning}
-        </Text>
-      ) : null}
+      <Text className="text-2xl font-bold text-gray-900">{item.word}</Text>
     </TouchableOpacity>
   );
 
