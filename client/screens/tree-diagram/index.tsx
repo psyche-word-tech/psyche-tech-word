@@ -30,15 +30,19 @@ const rightNodes: BranchNode[] = [
 
 const centerColor = '#4F46E5';
 
-function BranchCard({ node, align }: { node: BranchNode; align: 'left' | 'right' }) {
+function BranchCard({ node, align, onPress }: { node: BranchNode; align: 'left' | 'right'; onPress?: () => void }) {
   return (
-    <View style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}>
+    <TouchableOpacity
+      style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={[styles.branchDot, { backgroundColor: node.color }]} />
       <View style={styles.branchContent}>
         <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
         <Text style={styles.branchPage}>{node.page}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -53,6 +57,11 @@ function Connector({ align }: { align: 'left' | 'right' }) {
 
 export default function TreeDiagramPage() {
   const router = useSafeRouter();
+
+  const handleNodePress = (node: BranchNode) => {
+    // 导航到词汇预览页面，带上分类信息
+    router.push('/word-preview', { category: node.label, categoryId: node.id });
+  };
 
   return (
     <Screen>
@@ -76,7 +85,7 @@ export default function TreeDiagramPage() {
               <View key={leftNode.id} style={styles.row}>
                 {/* Left side */}
                 <View style={styles.side}>
-                  <BranchCard node={leftNode} align="left" />
+                  <BranchCard node={leftNode} align="left" onPress={() => handleNodePress(leftNode)} />
                 </View>
 
                 {/* Center connector or node */}
@@ -98,7 +107,7 @@ export default function TreeDiagramPage() {
 
                 {/* Right side */}
                 <View style={styles.side}>
-                  <BranchCard node={rightNode} align="right" />
+                  <BranchCard node={rightNode} align="right" onPress={() => handleNodePress(rightNode)} />
                 </View>
               </View>
             );
