@@ -20,8 +20,9 @@ interface Word {
 	meaning: string;
 	example?: string;
 	example_translation?: string;
-	image_url?: string;
+	example_image_url?: string;
 	example_audio_url?: string;
+	noun_phrase?: string;
 }
 
 interface Comment {
@@ -782,6 +783,14 @@ export default function WordDetailPage() {
 						<Text style={styles.meaningText}>{word.meaning}</Text>
 					</View>
 
+					{/* Noun Phrase */}
+					{word.noun_phrase && (
+						<View style={styles.section}>
+							<Text style={styles.sectionLabel}>名词短语</Text>
+							<Text style={styles.nounPhraseText}>{word.noun_phrase}</Text>
+						</View>
+					)}
+
 					{/* Example */}
 					{word.example && (
 						<View style={styles.section}>
@@ -854,11 +863,11 @@ export default function WordDetailPage() {
 							{word.example_translation && (
 								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
 							)}
-							{word.image_url && (
+							{word.example_image_url && (
 								<View style={styles.exampleImageContainer}>
-									{word.image_url.includes('word-videos') || word.image_url.endsWith('.mp4') ? (
+									{word.example_image_url.includes('word-videos') || word.example_image_url.endsWith('.mp4') ? (
 										<Video
-											source={{ uri: word.image_url }}
+											source={{ uri: word.example_image_url }}
 											style={styles.exampleImage}
 											shouldPlay={true}
 											isLooping={true}
@@ -867,7 +876,7 @@ export default function WordDetailPage() {
 										/>
 									) : (
 										<Image
-											source={{ uri: word.image_url }}
+											source={{ uri: word.example_image_url }}
 											style={styles.exampleImage}
 											resizeMode="cover"
 										/>
@@ -1244,6 +1253,17 @@ const styles = StyleSheet.create({
 		color: '#333333',
 		fontFamily: 'serif',
 		lineHeight: 22,
+	},
+	nounPhraseText: {
+		fontSize: 15,
+		color: '#2E7D32',
+		fontFamily: 'serif',
+		fontWeight: '600',
+		lineHeight: 24,
+		backgroundColor: '#E8F5E9',
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
 	},
 	divider: {
 		height: 1,
