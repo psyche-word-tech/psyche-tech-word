@@ -791,6 +791,32 @@ export default function WordDetailPage() {
 						</View>
 					)}
 
+					{/* 配图 */}
+					{word.example_image_url && (
+						<View style={styles.section}>
+							<View style={styles.divider} />
+							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>配图</Text>
+							<View style={styles.exampleImageContainer}>
+								{word.example_image_url.includes('word-videos') || word.example_image_url.endsWith('.mp4') ? (
+									<Video
+										source={{ uri: word.example_image_url }}
+										style={styles.exampleImage}
+										shouldPlay={true}
+										isLooping={true}
+										isMuted={true}
+										useNativeControls={false}
+									/>
+								) : (
+									<Image
+										source={{ uri: word.example_image_url }}
+										style={styles.exampleImage}
+										resizeMode="cover"
+									/>
+								)}
+							</View>
+						</View>
+					)}
+
 					{/* Example */}
 					{word.example && (
 						<View style={styles.section}>
@@ -862,26 +888,6 @@ export default function WordDetailPage() {
 							</View>
 							{word.example_translation && (
 								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
-							)}
-							{word.example_image_url && (
-								<View style={styles.exampleImageContainer}>
-									{word.example_image_url.includes('word-videos') || word.example_image_url.endsWith('.mp4') ? (
-										<Video
-											source={{ uri: word.example_image_url }}
-											style={styles.exampleImage}
-											shouldPlay={true}
-											isLooping={true}
-											isMuted={true}
-											useNativeControls={false}
-										/>
-									) : (
-										<Image
-											source={{ uri: word.example_image_url }}
-											style={styles.exampleImage}
-											resizeMode="cover"
-										/>
-									)}
-								</View>
 							)}
 						</View>
 					)}
