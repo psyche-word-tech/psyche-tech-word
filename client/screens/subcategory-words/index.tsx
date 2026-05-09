@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -47,22 +47,6 @@ export default function SubcategoryWordsPage() {
     fetchData();
   }, [table]);
 
-  const renderItem = ({ item }: { item: WordItem }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      className="mx-4 mb-3 bg-white rounded-2xl py-5 px-4 shadow-sm items-center justify-center"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-      }}
-    >
-      <Text className="text-2xl font-bold text-gray-900">{item.word}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <Screen className="flex-1 bg-gray-50">
       {/* Header */}
@@ -80,26 +64,60 @@ export default function SubcategoryWordsPage() {
         </View>
       </View>
 
-      {/* Word List */}
+      {/* Word Grid - all on one page, no scroll indicator */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text className="text-gray-500 mt-3">加载中...</Text>
         </View>
       ) : (
-        <FlatList
-          data={words}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
+        <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="items-center justify-center mt-20">
-              <FontAwesome6 name="book-open" size={48} color="#CBD5E1" />
-              <Text className="text-gray-400 mt-4 text-base">暂无单词</Text>
-            </View>
-          }
-        />
+          contentContainerStyle={{ padding: 12 }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            {words.map((item) => (
+              <View
+                key={item.id}
+                style={{
+                  width: '31%',
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  paddingVertical: 10,
+                  paddingHorizontal: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 1,
+                  marginBottom: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: '#1F2937',
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={1}
+                >
+                  {item.word}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       )}
     </Screen>
   );
