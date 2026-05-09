@@ -1,74 +1,58 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 
-interface TreeNode {
+const { width: SCREEN_W } = Dimensions.get('window');
+
+interface BranchNode {
   id: string;
   label: string;
-  page?: string;
-  children?: TreeNode[];
-  color?: string;
+  page: string;
+  color: string;
 }
 
-const treeData: TreeNode = {
-  id: 'root',
-  label: '第一章  人',
-  color: '#4F46E5',
-  children: [
-    { id: '1', label: '（一）身体部位', page: '/ 1', color: '#0EA5E9' },
-    { id: '2', label: '（二）属性特征', page: '/ 5', color: '#059669' },
-    { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
-    { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
-    { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
-    { id: '6', label: '（六）行为与限制', page: '/ 12', color: '#EC4899' },
-    { id: '7', label: '（七）年龄', page: '/ 15', color: '#14B8A6' },
-    { id: '8', label: '（八）谱系', page: '/ 16', color: '#F59E0B' },
-    { id: '9', label: '（九）人类与群组', page: '/ 18', color: '#6366F1' },
-    { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
-  ],
-};
+const leftNodes: BranchNode[] = [
+  { id: '1', label: '（一）身体部位', page: '/ 1', color: '#0EA5E9' },
+  { id: '2', label: '（二）属性特征', page: '/ 5', color: '#059669' },
+  { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
+  { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
+  { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
+];
+
+const rightNodes: BranchNode[] = [
+  { id: '6', label: '（六）行为与限制', page: '/ 12', color: '#EC4899' },
+  { id: '7', label: '（七）年龄', page: '/ 15', color: '#14B8A6' },
+  { id: '8', label: '（八）谱系', page: '/ 16', color: '#F59E0B' },
+  { id: '9', label: '（九）人类与群组', page: '/ 18', color: '#6366F1' },
+  { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
+];
+
+const centerColor = '#4F46E5';
+
+function BranchCard({ node, align }: { node: BranchNode; align: 'left' | 'right' }) {
+  return (
+    <View style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}>
+      <View style={[styles.branchDot, { backgroundColor: node.color }]} />
+      <View style={styles.branchContent}>
+        <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
+        <Text style={styles.branchPage}>{node.page}</Text>
+      </View>
+    </View>
+  );
+}
+
+function Connector({ align }: { align: 'left' | 'right' }) {
+  return (
+    <View style={[styles.connectorRow, align === 'left' ? { flexDirection: 'row-reverse' } : { flexDirection: 'row' }]}>
+      <View style={styles.connectorDot} />
+      <View style={styles.connectorLine} />
+    </View>
+  );
+}
 
 export default function TreeDiagramPage() {
   const router = useSafeRouter();
-
-  const renderNode = (node: TreeNode, level: number = 0, isLast: boolean = true, parentLastStack: boolean[] = []) => {
-    const indent = level * 24;
-    const hasChildren = node.children && node.children.length > 0;
-
-    return (
-      <View key={node.id}>
-        <View style={[styles.nodeRow, { marginLeft: indent }]}>
-          {level > 0 && (
-            <View style={styles.lineContainer}>
-              {parentLastStack.map((isParentLast, idx) => (
-                <View key={idx} style={styles.lineSlot}>
-                  {!isParentLast && <View style={styles.verticalLine} />}
-                </View>
-              ))}
-              <View style={styles.lineSlot}>
-                <View style={styles.horizontalLine} />
-                {!isLast && <View style={styles.verticalLineExtended} />}
-              </View>
-            </View>
-          )}
-
-          <View style={[styles.nodeCard, { borderLeftColor: node.color || '#4F46E5' }]}>
-            <View style={[styles.nodeDot, { backgroundColor: node.color || '#4F46E5' }]} />
-            <View style={styles.nodeContent}>
-              <Text style={styles.nodeLabel}>{node.label}</Text>
-              {node.page && <Text style={styles.nodePage}>{node.page}</Text>}
-            </View>
-          </View>
-        </View>
-
-        {hasChildren &&
-          node.children!.map((child, idx) =>
-            renderNode(child, level + 1, idx === node.children!.length - 1, [...parentLastStack, isLast])
-          )}
-      </View>
-    );
-  };
 
   return (
     <Screen>
@@ -82,9 +66,43 @@ export default function TreeDiagramPage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Mind Map */}
-        <View style={styles.treeContainer}>
-          {renderNode(treeData)}
+        {/* Mind Map Body */}
+        <View style={styles.mapBody}>
+          {leftNodes.map((leftNode, idx) => {
+            const rightNode = rightNodes[idx];
+            const isCenterRow = idx === 2;
+
+            return (
+              <View key={leftNode.id} style={styles.row}>
+                {/* Left side */}
+                <View style={styles.side}>
+                  <BranchCard node={leftNode} align="left" />
+                </View>
+
+                {/* Center connector or node */}
+                {isCenterRow ? (
+                  <View style={styles.centerNodeContainer}>
+                    <Connector align="left" />
+                    <View style={styles.centerNode}>
+                      <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+                      <Text style={styles.centerLabel}>第一章</Text>
+                      <Text style={styles.centerSubLabel}>人</Text>
+                    </View>
+                    <Connector align="right" />
+                  </View>
+                ) : (
+                  <View style={styles.centerSpacer}>
+                    <View style={[styles.spacerLine, { marginTop: idx < 2 ? 30 : 10 }]} />
+                  </View>
+                )}
+
+                {/* Right side */}
+                <View style={styles.side}>
+                  <BranchCard node={rightNode} align="right" />
+                </View>
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
     </Screen>
@@ -121,88 +139,125 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 32,
   },
-  treeContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
+  mapBody: {
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
-  nodeRow: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 6,
-  },
-  lineContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginRight: 4,
-    marginTop: 18,
-  },
-  lineSlot: {
-    width: 20,
-    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    marginBottom: 14,
   },
-  verticalLine: {
-    position: 'absolute',
-    left: 10,
-    top: -18,
-    width: 1,
-    height: 38,
-    backgroundColor: '#D1D5DB',
-  },
-  verticalLineExtended: {
-    position: 'absolute',
-    left: 10,
-    top: 2,
-    width: 1,
-    height: 28,
-    backgroundColor: '#D1D5DB',
-  },
-  horizontalLine: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-    width: 12,
-    height: 1,
-    backgroundColor: '#D1D5DB',
-  },
-  nodeCard: {
+  side: {
     flex: 1,
+    maxWidth: (SCREEN_W - 140) / 2,
+  },
+  branchCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderLeftWidth: 4,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 2,
   },
-  nodeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 12,
+  branchLeft: {
+    borderRightWidth: 3,
+    borderRightColor: 'transparent',
   },
-  nodeContent: {
+  branchRight: {
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
+  },
+  branchDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+    flexShrink: 0,
+  },
+  branchContent: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    minWidth: 0,
   },
-  nodeLabel: {
-    fontSize: 15,
+  branchLabel: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#1F2937',
   },
-  nodePage: {
-    fontSize: 13,
+  branchPage: {
+    fontSize: 11,
     color: '#9CA3AF',
-    fontWeight: '500',
+    marginTop: 1,
+  },
+  centerNodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  centerNode: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: centerColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: centerColor,
+  },
+  centerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 4,
+  },
+  centerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: centerColor,
+  },
+  centerSubLabel: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: centerColor,
+  },
+  connectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 20,
+  },
+  connectorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#D1D5DB',
+  },
+  connectorDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#9CA3AF',
+  },
+  centerSpacer: {
+    width: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  spacerLine: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#D1D5DB',
   },
 });
