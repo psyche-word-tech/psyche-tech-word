@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -10,6 +11,12 @@ interface BranchNode {
   label: string;
   page: string;
   color: string;
+}
+
+interface SubNode {
+  id: string;
+  label: string;
+  parentId: string;
 }
 
 const leftNodes: BranchNode[] = [
@@ -28,21 +35,58 @@ const rightNodes: BranchNode[] = [
   { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
 ];
 
+const bodySubNodes: SubNode[] = [
+  { id: '1-1', label: '1. 头~颈', parentId: '1' },
+  { id: '1-2', label: '2. 肩~腹', parentId: '1' },
+  { id: '1-3', label: '3. 腿脚', parentId: '1' },
+];
+
 const centerColor = '#4F46E5';
 
-function BranchCard({ node, align, onPress }: { node: BranchNode; align: 'left' | 'right'; onPress?: () => void }) {
+function SubBranchCard({ node, onPress }: { node: SubNode; onPress?: () => void }) {
   return (
-    <TouchableOpacity
-      style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.branchDot, { backgroundColor: node.color }]} />
-      <View style={styles.branchContent}>
-        <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
-        <Text style={styles.branchPage}>{node.page}</Text>
-      </View>
+    <TouchableOpacity style={styles.subCard} onPress={onPress} activeOpacity={0.7}>
+      <Text style={styles.subLabel}>{node.label}</Text>
     </TouchableOpacity>
+  );
+}
+
+function BranchCard({
+  node,
+  align,
+  onPress,
+  expanded,
+  onToggle,
+}: {
+  node: BranchNode;
+  align: 'left' | 'right';
+  onPress?: () => void;
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
+  const isBody = node.id === '1';
+  return (
+    <View style={align === 'left' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
+      <TouchableOpacity
+        style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
+        onPress={isBody ? onToggle : onPress}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.branchDot, { backgroundColor: node.color }]} />
+        <View style={styles.branchContent}>
+          <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
+          <Text style={styles.branchPage}>{node.page}</Text>
+        </View>
+        {isBody && (
+          <Ionicons
+            name={expanded ? 'chevron-down' : 'chevron-forward'}
+            size={14}
+            color={node.color}
+            style={{ marginLeft: 4 }}
+          />
+        )}
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -57,11 +101,21 @@ function Connector({ align }: { align: 'left' | 'right' }) {
 
 export default function TreeDiagramPage() {
   const router = useSafeRouter();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleNodePress = (node: BranchNode) => {
-    // 导航到词汇预览页面，带上分类信息
     router.push('/word-preview', { category: node.label, categoryId: node.id });
   };
+
+  const handleSubPress = (sub: SubNode) => {
+    router.push('/word-preview', { category: sub.label, subCategoryId: sub.id });
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  };
+
+  const isBodyExpanded = expandedId === '1';
 
   return (
     <Screen>
@@ -80,35 +134,70 @@ export default function TreeDiagramPage() {
           {leftNodes.map((leftNode, idx) => {
             const rightNode = rightNodes[idx];
             const isCenterRow = idx === 2;
+            const isBodyRow = idx === 0;
 
             return (
-              <View key={leftNode.id} style={styles.row}>
-                {/* Left side */}
-                <View style={styles.side}>
-                  <BranchCard node={leftNode} align="left" onPress={() => handleNodePress(leftNode)} />
+              <View key={leftNode.id}>
+                <View style={styles.row}>
+                  {/* Left side */}
+                  <View style={styles.side}>
+                    <BranchCard
+                      node={leftNode}
+                      align="left"
+                      onPress={() => handleNodePress(leftNode)}
+                      expanded={isBodyExpanded}
+                      onToggle={() => toggleExpand(leftNode.id)}
+                    />
+                  </View>
+
+                  {/* Center connector or node */}
+                  {isCenterRow ? (
+                    <View style={styles.centerNodeContainer}>
+                      <Connector align="left" />
+                      <View style={styles.centerNode}>
+                        <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+                        <Text style={styles.centerLabel}>第一章</Text>
+                        <Text style={styles.centerSubLabel}>人</Text>
+                      </View>
+                      <Connector align="right" />
+                    </View>
+                  ) : (
+                    <View style={styles.centerSpacer}>
+                      <View style={[styles.spacerLine, { marginTop: idx < 2 ? 30 : 10 }]} />
+                    </View>
+                  )}
+
+                  {/* Right side */}
+                  <View style={styles.side}>
+                    <BranchCard
+                      node={rightNode}
+                      align="right"
+                      onPress={() => handleNodePress(rightNode)}
+                    />
+                  </View>
                 </View>
 
-                {/* Center connector or node */}
-                {isCenterRow ? (
-                  <View style={styles.centerNodeContainer}>
-                    <Connector align="left" />
-                    <View style={styles.centerNode}>
-                      <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
-                      <Text style={styles.centerLabel}>第一章</Text>
-                      <Text style={styles.centerSubLabel}>人</Text>
+                {/* Sub nodes for body */}
+                {isBodyRow && isBodyExpanded && (
+                  <View style={styles.subRow}>
+                    <View style={styles.subContainer}>
+                      <View style={styles.subConnectorVertical} />
+                      <View style={styles.subList}>
+                        {bodySubNodes.map((sub, sIdx) => (
+                          <View key={sub.id} style={styles.subItemWrapper}>
+                            <View style={styles.subConnectorHorizontal} />
+                            <SubBranchCard node={sub} onPress={() => handleSubPress(sub)} />
+                            {sIdx < bodySubNodes.length - 1 && (
+                              <View style={styles.subConnectorGap} />
+                            )}
+                          </View>
+                        ))}
+                      </View>
                     </View>
-                    <Connector align="right" />
-                  </View>
-                ) : (
-                  <View style={styles.centerSpacer}>
-                    <View style={[styles.spacerLine, { marginTop: idx < 2 ? 30 : 10 }]} />
+                    <View style={styles.centerSpacer} />
+                    <View style={styles.side} />
                   </View>
                 )}
-
-                {/* Right side */}
-                <View style={styles.side}>
-                  <BranchCard node={rightNode} align="right" onPress={() => handleNodePress(rightNode)} />
-                </View>
               </View>
             );
           })}
@@ -268,5 +357,62 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#D1D5DB',
+  },
+  // Sub nodes styles
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  subContainer: {
+    flex: 1,
+    maxWidth: (SCREEN_W - 140) / 2,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+  },
+  subConnectorVertical: {
+    width: 1,
+    height: 60,
+    backgroundColor: '#D1D5DB',
+    marginRight: -1,
+    marginTop: -8,
+  },
+  subList: {
+    alignItems: 'flex-start',
+  },
+  subItemWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subConnectorHorizontal: {
+    width: 16,
+    height: 1,
+    backgroundColor: '#D1D5DB',
+  },
+  subConnectorGap: {
+    width: 1,
+    height: 12,
+    backgroundColor: '#D1D5DB',
+    marginLeft: 16,
+  },
+  subCard: {
+    backgroundColor: '#E0F2FE',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0EA5E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  subLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0369A1',
   },
 });
