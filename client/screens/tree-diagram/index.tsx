@@ -75,7 +75,6 @@ function BranchCard({
         <View style={[styles.branchDot, { backgroundColor: node.color }]} />
         <View style={styles.branchContent}>
           <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
-          <Text style={styles.branchPage}>{node.page}</Text>
         </View>
         {isBody && (
           <Ionicons
