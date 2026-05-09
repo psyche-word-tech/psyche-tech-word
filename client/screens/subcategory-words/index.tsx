@@ -85,8 +85,10 @@ export default function SubcategoryWordsPage() {
             }}
           >
             {words.map((item) => (
-              <View
+              <TouchableOpacity
                 key={item.id}
+                activeOpacity={0.7}
+                onPress={() => router.push('/word-detail', { word: item.word })}
                 style={{
                   width: '31%',
                   backgroundColor: '#fff',
@@ -114,7 +116,7 @@ export default function SubcategoryWordsPage() {
                 >
                   {item.word}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
