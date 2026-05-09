@@ -10,8 +10,9 @@ import {
 	TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
-import { useSafeSearchParams } from '@/hooks/useSafeRouter';
+import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -178,6 +179,7 @@ export default function WordPreviewPage() {
 
 	// 当前单词
 	const currentWord = words[currentIndex];
+	const router = useSafeRouter();
 
 	const headerSubtitle = params.category
 		? `${params.category} · ${words.length} 个单词`
@@ -188,6 +190,9 @@ export default function WordPreviewPage() {
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
+					<TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+						<FontAwesome6 name="arrow-left" size={18} color="#1F2937" />
+					</TouchableOpacity>
 					<View style={styles.headerLeft}>
 						<Text style={styles.headerTitle}>词汇预览</Text>
 						<Text style={styles.headerCount}>
@@ -303,13 +308,16 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 20,
+		paddingHorizontal: 16,
 		paddingVertical: 14,
 		borderBottomWidth: 1,
 		borderBottomColor: '#E5E7EB',
 		flexDirection: 'row',
 		alignItems: 'center',
-		justifyContent: 'space-between',
+	},
+	backButton: {
+		padding: 6,
+		marginRight: 10,
 	},
 	headerLeft: {
 		flex: 1,
