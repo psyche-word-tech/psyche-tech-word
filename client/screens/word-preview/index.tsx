@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
+import { useSafeSearchParams } from '@/hooks/useSafeRouter';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -20,7 +21,8 @@ interface Word {
 	word: string;
 	meaning: string;
 	phonetic: string;
-	example: string;
+	example?: string;
+	example_translation?: string;
 	translation?: string;
 	image_url?: string;
 }
@@ -28,6 +30,7 @@ interface Word {
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
 export default function WordPreviewPage() {
+	const params = useSafeSearchParams<{ category?: string; categoryId?: string }>();
 	const [words, setWords] = useState<Word[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
@@ -118,12 +121,12 @@ export default function WordPreviewPage() {
 			// 从列表中移除当前单词
 			const newWords = words.filter(w => w.id !== word.id);
 			setWords(newWords);
-			
+
 			// 更新索引
 			if (currentIndex >= newWords.length && newWords.length > 0) {
 				setCurrentIndex(newWords.length - 1);
 			}
-			
+
 			// 更新分类数量
 			fetchCategoryCounts();
 		} catch (error) {
@@ -137,15 +140,28 @@ export default function WordPreviewPage() {
 		return (
 			<View style={styles.cardContainer}>
 				<View style={styles.wordCard}>
+					{/* Page number */}
 					<View style={styles.cardHeader}>
 						<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
 					</View>
+
+					{/* Word */}
 					<Text style={styles.wordText}>{item.word}</Text>
+
+					{/* Phonetic */}
 					<Text style={styles.phoneticText}>{item.phonetic}</Text>
+
+					{/* Meaning */}
 					<Text style={styles.meaningText}>{item.meaning}</Text>
+
+					{/* Divider + Example */}
 					{item.example && (
-						<View style={styles.exampleContainer}>
+						<View style={styles.exampleSection}>
+							<View style={styles.divider} />
 							<Text style={styles.exampleText}>{item.example}</Text>
+							{item.example_translation && (
+								<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
+							)}
 						</View>
 					)}
 				</View>
@@ -163,15 +179,21 @@ export default function WordPreviewPage() {
 	// 当前单词
 	const currentWord = words[currentIndex];
 
+	const headerSubtitle = params.category
+		? `${params.category} · ${words.length} 个单词`
+		: `${words.length} 个单词待分类`;
+
 	return (
 		<Screen>
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
-					<Text style={styles.headerTitle}>词汇预览</Text>
-					<Text style={styles.headerCount}>
-						{isLoading ? '加载中...' : `${words.length} 个单词待分类`}
-					</Text>
+					<View style={styles.headerLeft}>
+						<Text style={styles.headerTitle}>词汇预览</Text>
+						<Text style={styles.headerCount}>
+							{isLoading ? '加载中...' : headerSubtitle}
+						</Text>
+					</View>
 					<TouchableOpacity style={styles.refreshButton} onPress={fetchWords}>
 						<Text style={styles.refreshText}>刷新</Text>
 					</TouchableOpacity>
@@ -197,7 +219,7 @@ export default function WordPreviewPage() {
 									index,
 								})}
 							/>
-							
+
 							{/* Page Indicator */}
 							<View style={styles.indicatorContainer}>
 								{words.map((_, index) => (
@@ -277,40 +299,40 @@ export default function WordPreviewPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#F5F5F5',
+		backgroundColor: '#F3F4F6',
 	},
 	header: {
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 20,
-		paddingVertical: 16,
+		paddingVertical: 14,
 		borderBottomWidth: 1,
-		borderBottomColor: '#E5E5E5',
+		borderBottomColor: '#E5E7EB',
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
 	},
+	headerLeft: {
+		flex: 1,
+	},
 	headerTitle: {
-		fontSize: 24,
+		fontSize: 20,
 		fontWeight: '700',
-		color: '#333333',
-		fontFamily: 'serif',
+		color: '#1F2937',
 	},
 	headerCount: {
-		fontSize: 14,
-		color: '#999999',
-		fontFamily: 'serif',
-		flex: 1,
-		marginLeft: 12,
+		fontSize: 13,
+		color: '#9CA3AF',
+		marginTop: 2,
 	},
 	refreshButton: {
-		backgroundColor: '#4F46E5',
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		backgroundColor: '#3B82F6',
+		paddingHorizontal: 14,
+		paddingVertical: 7,
 		borderRadius: 8,
 	},
 	refreshText: {
 		color: '#FFFFFF',
-		fontSize: 12,
+		fontSize: 13,
 		fontWeight: '600',
 	},
 	cardsSection: {
@@ -327,59 +349,67 @@ const styles = StyleSheet.create({
 		width: CARD_WIDTH,
 		backgroundColor: '#FFFFFF',
 		borderRadius: 20,
-		padding: 24,
+		padding: 28,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
-		minHeight: 300,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.06,
+		shadowRadius: 8,
+		elevation: 4,
+		minHeight: 320,
 	},
 	cardHeader: {
 		flexDirection: 'row',
 		justifyContent: 'flex-end',
-		marginBottom: 16,
+		marginBottom: 12,
 	},
 	indexText: {
-		fontSize: 14,
-		color: '#999999',
-		fontFamily: 'serif',
+		fontSize: 13,
+		color: '#9CA3AF',
+		fontWeight: '500',
 	},
 	wordText: {
-		fontSize: 36,
-		fontWeight: '700',
-		color: '#333333',
-		fontFamily: 'serif',
+		fontSize: 40,
+		fontWeight: '800',
+		color: '#1F2937',
 		textAlign: 'center',
+		marginTop: 8,
 	},
 	phoneticText: {
-		fontSize: 18,
-		color: '#666666',
-		marginTop: 8,
-		fontFamily: 'serif',
+		fontSize: 16,
+		color: '#6B7280',
+		marginTop: 10,
 		textAlign: 'center',
+		fontWeight: '500',
 	},
 	meaningText: {
-		fontSize: 18,
-		color: '#4F46E5',
-		marginTop: 16,
-		fontFamily: 'serif',
-		textAlign: 'center',
-		lineHeight: 28,
-	},
-	exampleContainer: {
+		fontSize: 15,
+		color: '#3B82F6',
 		marginTop: 20,
-		paddingTop: 16,
-		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
+		textAlign: 'center',
+		lineHeight: 24,
+		fontWeight: '500',
+	},
+	exampleSection: {
+		marginTop: 24,
+	},
+	divider: {
+		height: 1,
+		backgroundColor: '#E5E7EB',
+		marginBottom: 16,
 	},
 	exampleText: {
 		fontSize: 14,
-		color: '#888888',
-		fontFamily: 'serif',
-		fontStyle: 'italic',
+		color: '#9CA3AF',
 		lineHeight: 22,
 		textAlign: 'center',
+		fontStyle: 'italic',
+	},
+	exampleTranslation: {
+		fontSize: 13,
+		color: '#9CA3AF',
+		lineHeight: 20,
+		textAlign: 'center',
+		marginTop: 6,
 	},
 	indicatorContainer: {
 		flexDirection: 'row',
@@ -396,7 +426,7 @@ const styles = StyleSheet.create({
 	},
 	indicatorDotActive: {
 		width: 24,
-		backgroundColor: '#4F46E5',
+		backgroundColor: '#3B82F6',
 	},
 	emptyContainer: {
 		padding: 48,
@@ -404,38 +434,38 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	emptyText: {
-		fontSize: 18,
-		color: '#999999',
+		fontSize: 16,
+		color: '#9CA3AF',
 		textAlign: 'center',
 	},
 	errorText: {
 		fontSize: 14,
-		color: '#E53935',
+		color: '#EF4444',
 		marginBottom: 8,
 		textAlign: 'center',
 	},
 	errorSubText: {
 		fontSize: 12,
-		color: '#999999',
+		color: '#9CA3AF',
 		textAlign: 'center',
 	},
 	actionSection: {
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 16,
-		paddingVertical: 20,
+		paddingVertical: 18,
 		borderTopLeftRadius: 24,
 		borderTopRightRadius: 24,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: -4 },
-		shadowOpacity: 0.1,
+		shadowOpacity: 0.08,
 		shadowRadius: 12,
 		elevation: 10,
 	},
 	actionHint: {
-		fontSize: 13,
-		color: '#999',
+		fontSize: 12,
+		color: '#9CA3AF',
 		textAlign: 'center',
-		marginBottom: 16,
+		marginBottom: 14,
 	},
 	actionRow: {
 		flexDirection: 'row',
@@ -444,8 +474,8 @@ const styles = StyleSheet.create({
 	},
 	actionButton: {
 		flex: 1,
-		paddingVertical: 16,
-		borderRadius: 16,
+		paddingVertical: 14,
+		borderRadius: 14,
 		alignItems: 'center',
 	},
 	knownButton: {
@@ -458,40 +488,37 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F44336',
 	},
 	actionButtonText: {
-		fontSize: 16,
+		fontSize: 15,
 		fontWeight: '600',
 		color: '#FFFFFF',
-		fontFamily: 'serif',
 	},
 	statsSection: {
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingVertical: 10,
 		borderTopWidth: 1,
-		borderTopColor: '#F0F0F0',
+		borderTopColor: '#F3F4F6',
 	},
 	statsRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		gap: 12,
+		gap: 10,
 	},
 	statsItem: {
 		flex: 1,
+		borderRadius: 10,
+		paddingVertical: 8,
 		alignItems: 'center',
-		paddingVertical: 12,
-		borderRadius: 12,
 	},
 	statsLabel: {
-		fontSize: 12,
-		fontWeight: '600',
+		fontSize: 11,
 		color: '#FFFFFF',
-		fontFamily: 'serif',
+		opacity: 0.9,
 	},
 	statsCount: {
-		fontSize: 20,
+		fontSize: 16,
 		fontWeight: '700',
 		color: '#FFFFFF',
 		marginTop: 2,
-		fontFamily: 'serif',
 	},
 });
