@@ -46,6 +46,7 @@ export default function RootLayout() {
           <Stack.Screen name="register" options={{ title: "" }} />
           <Stack.Screen name="sms-login" options={{ title: "" }} />
           <Stack.Screen name="calendar" options={{ title: "" }} />
+          <Stack.Screen name="tree-diagram" options={{ title: "" }} />
         </Stack>
       </Provider>
       </AuthProvider>

@@ -123,7 +123,7 @@ export default function MyVocabularyPage() {
                 </TouchableOpacity>
                 
                 {index === 1 && (
-                  <TouchableOpacity style={styles.oldSchoolButton} onPress={() => Alert.alert('old-school', 'old-school 模式开发中')}>
+                  <TouchableOpacity style={styles.oldSchoolButton} onPress={() => router.push('/tree-diagram')}>
                     <Text style={styles.oldSchoolText}>old-school</Text>
                   </TouchableOpacity>
                 )}
