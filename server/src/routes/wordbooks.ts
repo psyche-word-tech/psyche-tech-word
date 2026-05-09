@@ -72,7 +72,7 @@ router.get('/stats', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', '111'];
     
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
@@ -342,7 +342,7 @@ router.get('/:table/count', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', '111'];
 
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
