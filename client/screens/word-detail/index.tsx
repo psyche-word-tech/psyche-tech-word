@@ -195,12 +195,8 @@ export default function WordDetailPage() {
 				// 刷新计数
 				fetchMindmapCountsRef.current();
 
-				if (nextWordData) {
-					setWord(nextWordData);
-				} else {
-					Alert.alert('成功', `已将单词"${word.word}"标记为"${status}"\n没有下一个单词了`);
-					router.back();
-				}
+				// 显示成功提示，不自动跳转页面
+				Alert.alert('成功', `已将单词"${word.word}"标记为"${status}"`);
 				return;
 			}
 

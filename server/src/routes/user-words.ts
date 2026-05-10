@@ -294,6 +294,18 @@ router.post('/move-mindmap', async (req, res) => {
       }
     }
 
+    // 从其他两个分类表中删除该单词（实现"改变分类"功能）
+    const otherTables = validTargets.filter((t: string) => t !== targetTable);
+    for (const otherTable of otherTables) {
+      const { error: deleteError } = await client
+        .from(otherTable)
+        .delete()
+        .eq('word', wordData.word);
+      if (deleteError) {
+        console.error(`Error deleting from ${otherTable}:`, deleteError.message);
+      }
+    }
+
     // 注意：不从源表删除，111 表单词数量保持不变
     res.json({ success: true, message: `Word moved to ${targetTable} successfully` });
   } catch (err) {
