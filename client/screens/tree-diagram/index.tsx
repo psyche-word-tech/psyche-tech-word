@@ -358,7 +358,16 @@ export default function TreeDiagramPage() {
                 />
                 {isExpanded && (
                   <View style={[styles.subQuadrantAbsolute, { zIndex: 21 }]}>
-                    {node.subNodes ? (
+                    {node.id === '1' ? (
+                      bodySubNodes.map((sub) => (
+                        <SubBranchCard
+                          key={sub.id}
+                          node={sub}
+                          onPress={() => handleSubPress(sub)}
+                          onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                        />
+                      ))
+                    ) : node.subNodes ? (
                       node.subNodes.map((sub) => (
                         <SubBranchCard
                           key={sub.id}
