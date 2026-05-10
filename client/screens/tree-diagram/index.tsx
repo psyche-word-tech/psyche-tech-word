@@ -69,12 +69,12 @@ const bodySubNodes: SubNode[] = [
 const nodePositions: Record<string, { top: number; left?: number; right?: number }> = {
   center: { top: 260, left: SCREEN_W / 2 - 45 },
   '1': { top: 60, left: 16 },      // 身体部位
-  '2': { top: 130, left: 16 },     // 属性特征
+  '2': { top: 180, left: 16 },     // 属性特征
   '3': { top: 400, left: 16 },     // 能力
   '4': { top: 470, left: 16 },     // 情绪
   '5': { top: 540, left: 16 },     // 所欲
   '6': { top: 60, right: 16 },     // 行为与限制
-  '7': { top: 130, right: 16 },    // 年龄
+  '7': { top: 180, right: 16 },    // 年龄
   '8': { top: 400, right: 16 },    // 谱系
   '9': { top: 470, right: 16 },    // 人类与群组
   '10': { top: 540, right: 16 },   // 职业及其他
