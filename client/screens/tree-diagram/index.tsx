@@ -21,6 +21,7 @@ interface BranchNode {
   label: string;
   page: string;
   color: string;
+  subNodes?: SubNode[];
 }
 
 interface SubNode {
@@ -155,7 +156,6 @@ function BranchCard({
   expanded?: boolean;
   onToggle?: () => void;
 }) {
-  const isBody = node.id === '1';
   const lastTapRef = useRef<{ time: number } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -175,11 +175,7 @@ function BranchCard({
         clearTimeout(timerRef.current);
       }
       timerRef.current = setTimeout(() => {
-        if (isBody) {
-          onToggle?.();
-        } else {
-          onPress?.();
-        }
+        onPress?.();
         timerRef.current = null;
       }, 300);
       lastTapRef.current = { time: now };
@@ -207,13 +203,15 @@ function BranchCard({
         <View style={styles.branchContent}>
           <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
         </View>
-        {isBody && (
-          <Ionicons
-            name={expanded ? 'chevron-down' : 'chevron-forward'}
-            size={14}
-            color="#FFFFFF"
-            style={{ marginLeft: 4 }}
-          />
+        {onToggle && (
+          <TouchableOpacity onPress={onToggle} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons
+              name={expanded ? 'chevron-down' : 'chevron-forward'}
+              size={14}
+              color="#FFFFFF"
+              style={{ marginLeft: 4 }}
+            />
+          </TouchableOpacity>
         )}
       </TouchableOpacity>
     </View>
@@ -347,26 +345,39 @@ export default function TreeDiagramPage() {
           {[...leftTopNodes, ...rightTopNodes, ...leftBottomNodes, ...rightBottomNodes].map((node) => {
             const pos = nodePositions[node.id];
             const isLeft = !!pos.left;
+            const isExpanded = expandedId === node.id;
             return (
-              <View key={node.id} style={[styles.nodeAbsolute, pos, node.id === '1' && isBodyExpanded ? { zIndex: 20 } : {}]}>
+              <View key={node.id} style={[styles.nodeAbsolute, pos, isExpanded ? { zIndex: 20 } : {}]}>
                 <BranchCard
                   node={node}
                   align={isLeft ? 'left' : 'right'}
                   onPress={() => handleNodePress(node)}
                   onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                  expanded={node.id === '1' ? isBodyExpanded : undefined}
-                  onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
+                  expanded={isExpanded}
+                  onToggle={() => toggleExpand(node.id)}
                 />
-                {node.id === '1' && isBodyExpanded && (
+                {isExpanded && (
                   <View style={[styles.subQuadrantAbsolute, { zIndex: 21 }]}>
-                    {bodySubNodes.map((sub) => (
-                      <SubBranchCard
-                        key={sub.id}
-                        node={sub}
-                        onPress={() => handleSubPress(sub)}
-                        onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
-                      />
-                    ))}
+                    {node.subNodes ? (
+                      node.subNodes.map((sub) => (
+                        <SubBranchCard
+                          key={sub.id}
+                          node={sub}
+                          onPress={() => handleSubPress(sub)}
+                          onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                        />
+                      ))
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.expandHintCard, { borderColor: node.color }]}
+                        onPress={() => fetchCategoryWords(node.id, node.label)}
+                      >
+                        <Text style={[styles.expandHintText, { color: node.color }]}>
+                          查看单词列表
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color={node.color} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -470,6 +481,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignItems: 'center',
     gap: 8,
+  },
+  expandHintCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  expandHintText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
   },
   topNodesRow: {
     flexDirection: 'row',
