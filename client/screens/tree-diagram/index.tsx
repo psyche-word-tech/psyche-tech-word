@@ -36,20 +36,23 @@ interface WordItem {
   meaning: string;
 }
 
-const leftNodes: BranchNode[] = [
+const leftTopNodes: BranchNode[] = [
   { id: '1', label: '（一）身体部位', page: '/ 1', color: '#0EA5E9' },
   { id: '2', label: '（二）属性特征', page: '/ 5', color: '#059669' },
 ];
 
-const rightNodes: BranchNode[] = [
+const rightTopNodes: BranchNode[] = [
   { id: '6', label: '（六）行为与限制', page: '/ 12', color: '#EC4899' },
   { id: '7', label: '（七）年龄', page: '/ 15', color: '#14B8A6' },
 ];
 
-const bottomNodes: BranchNode[] = [
+const leftBottomNodes: BranchNode[] = [
   { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
   { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
   { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
+];
+
+const rightBottomNodes: BranchNode[] = [
   { id: '8', label: '（八）谱系', page: '/ 16', color: '#F59E0B' },
   { id: '9', label: '（九）人类与群组', page: '/ 18', color: '#6366F1' },
   { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
@@ -316,108 +319,88 @@ export default function TreeDiagramPage() {
 
         {/* Mind Map Body */}
         <View style={styles.mapBody}>
-          {leftNodes.map((leftNode, idx) => {
-            const rightNode = rightNodes[idx];
-            const isCenterRow = idx === 2;
-            const isBodyRow = idx === 0;
-
-            return (
-              <View key={leftNode.id}>
-                <View style={styles.row}>
-                  {/* Left side */}
-                  <View style={styles.side}>
-                    <BranchCard
-                      node={leftNode}
-                      align="left"
-                      onPress={() => handleNodePress(leftNode)}
-                      onDoublePress={() => fetchCategoryWords(leftNode.id, leftNode.label)}
-                      expanded={isBodyExpanded}
-                      onToggle={() => toggleExpand(leftNode.id)}
-                    />
-                  </View>
-
-                  {/* Center connector or node */}
-                  {isCenterRow ? (
-                    <View style={styles.centerNodeContainer}>
-                      <Connector align="left" />
-                      <View style={styles.centerNode}>
-                        <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
-                        <Text style={styles.centerLabel}>第一章</Text>
-                        <Text style={styles.centerSubLabel}>人</Text>
-                      </View>
-                      <Connector align="right" />
-                    </View>
-                  ) : (
-                    <View style={styles.centerSpacer}>
-                      <View style={[styles.spacerLine, { marginTop: idx < 2 ? 30 : 10 }]} />
-                    </View>
-                  )}
-
-                  {/* Right side */}
-                  <View style={styles.side}>
-                    <BranchCard
-                      node={rightNode}
-                      align="right"
-                      onPress={() => handleNodePress(rightNode)}
-                      onDoublePress={() => fetchCategoryWords(rightNode.id, rightNode.label)}
-                    />
-                  </View>
+          {/* Top section: left top + center + right top */}
+          <View style={styles.topSection}>
+            {/* Left Top */}
+            <View style={styles.quadrant}>
+              {leftTopNodes.map((node) => (
+                <View key={node.id} style={styles.quadrantItem}>
+                  <BranchCard
+                    node={node}
+                    align="left"
+                    onPress={() => handleNodePress(node)}
+                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                    expanded={node.id === '1' ? isBodyExpanded : undefined}
+                    onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
+                  />
                 </View>
-
-                {/* Sub nodes for body */}
-                {isBodyRow && isBodyExpanded && (
-                  <View style={styles.subRow}>
-                    <View style={styles.subContainer}>
-                      <View style={styles.subConnectorVertical} />
-                      <View style={styles.subList}>
-                        {bodySubNodes.map((sub, sIdx) => (
-                          <View
-                            key={sub.id}
-                            style={[
-                              styles.subItemWrapper,
-                              { marginLeft: sIdx * 14 },
-                            ]}
-                          >
-                            <View style={[styles.subConnectorHorizontal, { width: 14 + sIdx * 8 }]} />
-                            <SubBranchCard
-                              node={sub}
-                              onPress={() => handleSubPress(sub)}
-                              onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
-                            />
-                            {sIdx < bodySubNodes.length - 1 && (
-                              <View style={styles.subConnectorGap} />
-                            )}
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                    <View style={styles.centerSpacer} />
-                    <View style={styles.side} />
-                  </View>
-                )}
-              </View>
-            );
-          })}
-
-          {/* Bottom nodes */}
-          {bottomNodes.length > 0 && (
-            <View style={styles.bottomSection}>
-              <View style={styles.bottomConnectorLine} />
-              <View style={styles.bottomNodesRow}>
-                {bottomNodes.map((node) => (
-                  <View key={node.id} style={styles.bottomNodeWrapper}>
-                    <View style={styles.bottomConnectorVertical} />
-                    <BranchCard
-                      node={node}
-                      align="center"
-                      onPress={() => handleNodePress(node)}
-                      onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+              ))}
+              {/* Sub nodes for body */}
+              {isBodyExpanded && (
+                <View style={styles.subQuadrant}>
+                  {bodySubNodes.map((sub) => (
+                    <SubBranchCard
+                      key={sub.id}
+                      node={sub}
+                      onPress={() => handleSubPress(sub)}
+                      onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
                     />
-                  </View>
-                ))}
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Center */}
+            <View style={styles.centerWrapper}>
+              <View style={styles.centerNode}>
+                <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+                <Text style={styles.centerLabel}>第一章</Text>
+                <Text style={styles.centerSubLabel}>人</Text>
               </View>
             </View>
-          )}
+
+            {/* Right Top */}
+            <View style={styles.quadrant}>
+              {rightTopNodes.map((node) => (
+                <View key={node.id} style={styles.quadrantItem}>
+                  <BranchCard
+                    node={node}
+                    align="right"
+                    onPress={() => handleNodePress(node)}
+                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Bottom section: left bottom + right bottom */}
+          <View style={styles.bottomSection}>
+            <View style={styles.quadrant}>
+              {leftBottomNodes.map((node) => (
+                <View key={node.id} style={styles.quadrantItem}>
+                  <BranchCard
+                    node={node}
+                    align="left"
+                    onPress={() => handleNodePress(node)}
+                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                  />
+                </View>
+              ))}
+            </View>
+            <View style={styles.quadrant}>
+              {rightBottomNodes.map((node) => (
+                <View key={node.id} style={styles.quadrantItem}>
+                  <BranchCard
+                    node={node}
+                    align="right"
+                    onPress={() => handleNodePress(node)}
+                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -503,19 +486,30 @@ const styles = StyleSheet.create({
     width: 32,
   },
   mapBody: {
+    flex: 1,
     paddingHorizontal: 12,
     paddingTop: 24,
     paddingBottom: 16,
   },
-  row: {
+  topSection: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 14,
   },
-  side: {
+  quadrant: {
     flex: 1,
-    maxWidth: (SCREEN_W - 140) / 2,
+    alignItems: 'center',
+    gap: 10,
+  },
+  quadrantItem: {
+    alignItems: 'center',
+  },
+  centerWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 12,
+    marginTop: 8,
   },
   branchCard: {
     backgroundColor: '#4CAF50',
@@ -550,12 +544,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
-  },
-  centerNodeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 4,
   },
   centerNode: {
     width: 90,
@@ -604,67 +592,22 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
     backgroundColor: '#9CA3AF',
   },
-  centerSpacer: {
-    width: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 4,
-  },
-  spacerLine: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#D1D5DB',
-  },
   // Bottom nodes styles
   bottomSection: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginTop: 4,
   },
-  bottomConnectorLine: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#D1D5DB',
-  },
-  bottomNodesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 8,
-    paddingHorizontal: 12,
-  },
-  bottomNodeWrapper: {
-    alignItems: 'center',
-  },
-  bottomConnectorVertical: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#D1D5DB',
-    marginBottom: -1,
-  },
   // Sub nodes styles
-  subRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  subContainer: {
-    flex: 1,
-    maxWidth: (SCREEN_W - 140) / 2,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
-  },
-  subConnectorVertical: {
-    width: 1,
-    height: 60,
-    backgroundColor: '#D1D5DB',
-    marginRight: -1,
-    marginTop: -8,
+  subQuadrant: {
+    marginTop: 8,
+    alignItems: 'center',
+    gap: 8,
   },
   subList: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 8,
   },
   subItemWrapper: {
     flexDirection: 'row',
@@ -677,7 +620,7 @@ const styles = StyleSheet.create({
   },
   subConnectorGap: {
     width: 1,
-    height: 12,
+    height: 8,
     backgroundColor: '#D1D5DB',
     marginLeft: 16,
   },
