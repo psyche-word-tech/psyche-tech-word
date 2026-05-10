@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'rea
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 interface WordItem {
   id: number;
@@ -16,6 +17,7 @@ export default function SubcategoryWordsPage() {
   const { table, title } = useSafeSearchParams<{ table: string; title: string }>();
   const [words, setWords] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterInfo, setFilterInfo] = useState<string>('');
 
   const pageTitle = title || '单词列表';
 
@@ -31,7 +33,7 @@ export default function SubcategoryWordsPage() {
       setLoading(true);
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`
+          `${API_BASE_URL}/api/v1/wordbooks/${table}`
         );
         const data = await response.json();
         if (!Array.isArray(data)) {
@@ -42,9 +44,9 @@ export default function SubcategoryWordsPage() {
         // 如果是111表，过滤掉已在x1/y1/z1中的单词
         if (table === '111') {
           const [x1Res, y1Res, z1Res] = await Promise.all([
-            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/x1`),
-            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/y1`),
-            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/z1`),
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
           ]);
           const [x1Data, y1Data, z1Data] = await Promise.all([
             x1Res.json(), y1Res.json(), z1Res.json(),
@@ -57,6 +59,9 @@ export default function SubcategoryWordsPage() {
           ]);
 
           const filtered = data.filter((w: WordItem) => !classifiedWords.has(w.word));
+          const info = `总${data.length} | 已分类${classifiedWords.size} | 显示${filtered.length}`;
+          console.log(`[Filter] ${info}`);
+          setFilterInfo(info);
           setWords(filtered);
         } else {
           setWords(data);
@@ -84,7 +89,7 @@ export default function SubcategoryWordsPage() {
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-lg font-bold text-gray-900">{pageTitle}</Text>
-          <Text className="text-xs text-gray-500 mt-0.5">{words.length} 个单词</Text>
+          <Text className="text-xs text-gray-500 mt-0.5">{words.length} 个单词{filterInfo ? ` (${filterInfo})` : ''}</Text>
         </View>
       </View>
 
