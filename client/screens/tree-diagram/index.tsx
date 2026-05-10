@@ -348,7 +348,7 @@ export default function TreeDiagramPage() {
             const pos = nodePositions[node.id];
             const isLeft = !!pos.left;
             return (
-              <View key={node.id} style={[styles.nodeAbsolute, pos]}>
+              <View key={node.id} style={[styles.nodeAbsolute, pos, node.id === '1' && isBodyExpanded ? { zIndex: 20 } : {}]}>
                 <BranchCard
                   node={node}
                   align={isLeft ? 'left' : 'right'}
@@ -358,7 +358,7 @@ export default function TreeDiagramPage() {
                   onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
                 />
                 {node.id === '1' && isBodyExpanded && (
-                  <View style={styles.subQuadrantAbsolute}>
+                  <View style={[styles.subQuadrantAbsolute, { zIndex: 21 }]}>
                     {bodySubNodes.map((sub) => (
                       <SubBranchCard
                         key={sub.id}
