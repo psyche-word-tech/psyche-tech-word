@@ -39,14 +39,17 @@ interface WordItem {
 const leftNodes: BranchNode[] = [
   { id: '1', label: '（一）身体部位', page: '/ 1', color: '#0EA5E9' },
   { id: '2', label: '（二）属性特征', page: '/ 5', color: '#059669' },
-  { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
-  { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
-  { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
 ];
 
 const rightNodes: BranchNode[] = [
   { id: '6', label: '（六）行为与限制', page: '/ 12', color: '#EC4899' },
   { id: '7', label: '（七）年龄', page: '/ 15', color: '#14B8A6' },
+];
+
+const bottomNodes: BranchNode[] = [
+  { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
+  { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
+  { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
   { id: '8', label: '（八）谱系', page: '/ 16', color: '#F59E0B' },
   { id: '9', label: '（九）人类与群组', page: '/ 18', color: '#6366F1' },
   { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
@@ -128,7 +131,7 @@ function BranchCard({
   onToggle,
 }: {
   node: BranchNode;
-  align: 'left' | 'right';
+  align?: 'left' | 'right' | 'center';
   onPress?: () => void;
   onDoublePress?: () => void;
   expanded?: boolean;
@@ -165,10 +168,20 @@ function BranchCard({
     }
   };
 
+  const alignStyle =
+    align === 'left' ? { alignItems: 'flex-end' as const } :
+    align === 'center' ? { alignItems: 'center' as const } :
+    { alignItems: 'flex-start' as const };
+
+  const cardStyle =
+    align === 'left' ? styles.branchLeft :
+    align === 'center' ? styles.branchCenter :
+    styles.branchRight;
+
   return (
-    <View style={align === 'left' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
+    <View style={alignStyle}>
       <TouchableOpacity
-        style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
+        style={[styles.branchCard, cardStyle]}
         onPress={handlePress}
         activeOpacity={0.7}
       >
@@ -385,6 +398,26 @@ export default function TreeDiagramPage() {
               </View>
             );
           })}
+
+          {/* Bottom nodes */}
+          {bottomNodes.length > 0 && (
+            <View style={styles.bottomSection}>
+              <View style={styles.bottomConnectorLine} />
+              <View style={styles.bottomNodesRow}>
+                {bottomNodes.map((node) => (
+                  <View key={node.id} style={styles.bottomNodeWrapper}>
+                    <View style={styles.bottomConnectorVertical} />
+                    <BranchCard
+                      node={node}
+                      align="center"
+                      onPress={() => handleNodePress(node)}
+                      onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -500,6 +533,7 @@ const styles = StyleSheet.create({
   },
   branchLeft: {},
   branchRight: {},
+  branchCenter: {},
   branchDot: {
     display: 'none',
   },
@@ -580,6 +614,33 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#D1D5DB',
+  },
+  // Bottom nodes styles
+  bottomSection: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  bottomConnectorLine: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#D1D5DB',
+  },
+  bottomNodesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 8,
+    paddingHorizontal: 12,
+  },
+  bottomNodeWrapper: {
+    alignItems: 'center',
+  },
+  bottomConnectorVertical: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#D1D5DB',
+    marginBottom: -1,
   },
   // Sub nodes styles
   subRow: {
