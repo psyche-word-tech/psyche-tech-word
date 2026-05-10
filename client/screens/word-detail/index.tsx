@@ -397,6 +397,17 @@ export default function WordDetailPage() {
 		}, [sourceTable])
 	);
 
+	// 导图模式：如果当前单词已被分类，自动切换到第一个未分类的单词
+	useEffect(() => {
+		if (params.from !== 'mindmap' || filteredWordsList.length === 0 || !word.word) return;
+		const exists = filteredWordsList.find((w) => w.word === word.word);
+		if (!exists) {
+			console.log(`[WordDetail AutoSwitch] ${word.word} already classified, switching to ${filteredWordsList[0].word}`);
+			setWord(filteredWordsList[0]);
+			setCurrentIndex(0);
+		}
+	}, [filteredWordsList, word.word, params.from]);
+
 	// 获取评论列表
 	const fetchComments = useCallback(async (wordId: number) => {
 		if (!wordId) return;
