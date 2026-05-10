@@ -313,14 +313,18 @@ export default function TreeDiagramPage() {
                 <View style={styles.row}>
                   {/* Left side */}
                   <View style={styles.side}>
-                    <BranchCard
-                      node={leftNode}
-                      align="left"
-                      onPress={() => handleNodePress(leftNode)}
-                      onDoublePress={() => fetchCategoryWords(leftNode.id, leftNode.label)}
-                      expanded={isBodyExpanded}
-                      onToggle={() => toggleExpand(leftNode.id)}
-                    />
+                    {isCenterRow ? (
+                      <View style={styles.emptySide} />
+                    ) : (
+                      <BranchCard
+                        node={leftNode}
+                        align="left"
+                        onPress={() => handleNodePress(leftNode)}
+                        onDoublePress={() => fetchCategoryWords(leftNode.id, leftNode.label)}
+                        expanded={isBodyExpanded}
+                        onToggle={() => toggleExpand(leftNode.id)}
+                      />
+                    )}
                   </View>
 
                   {/* Center connector or node */}
@@ -342,12 +346,16 @@ export default function TreeDiagramPage() {
 
                   {/* Right side */}
                   <View style={styles.side}>
-                    <BranchCard
-                      node={rightNode}
-                      align="right"
-                      onPress={() => handleNodePress(rightNode)}
-                      onDoublePress={() => fetchCategoryWords(rightNode.id, rightNode.label)}
-                    />
+                    {isCenterRow ? (
+                      <View style={styles.emptySide} />
+                    ) : (
+                      <BranchCard
+                        node={rightNode}
+                        align="right"
+                        onPress={() => handleNodePress(rightNode)}
+                        onDoublePress={() => fetchCategoryWords(rightNode.id, rightNode.label)}
+                      />
+                    )}
                   </View>
                 </View>
 
@@ -637,6 +645,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#0EA5E9',
+  },
+  emptySide: {
+    width: 1,
   },
   // Modal styles
   modalOverlay: {
