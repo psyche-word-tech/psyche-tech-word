@@ -461,6 +461,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   contentContainer: {
+    flexGrow: 1,
     paddingBottom: 32,
   },
   header: {
@@ -490,6 +491,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 24,
     paddingBottom: 16,
+    justifyContent: 'space-between',
+    minHeight: 500,
   },
   topSection: {
     flexDirection: 'row',
