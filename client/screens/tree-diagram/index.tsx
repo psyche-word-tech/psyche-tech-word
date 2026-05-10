@@ -622,9 +622,9 @@ const styles = StyleSheet.create({
   },
   subCard: {
     backgroundColor: '#E0F2FE',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderLeftWidth: 3,
     borderLeftColor: '#0EA5E9',
     shadowColor: '#000',
