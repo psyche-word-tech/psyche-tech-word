@@ -266,10 +266,14 @@ export default function WordDetailPage() {
 		}
 	}, []);
 
-	// 将 fetchCategoryCounts 赋值给 ref
+	// 将 fetchCategoryCounts 和 fetchMindmapCounts 赋值给 ref
 	useEffect(() => {
 		fetchCategoryCountsRef.current = fetchCategoryCounts;
 	}, [fetchCategoryCounts]);
+
+	useEffect(() => {
+		fetchMindmapCountsRef.current = fetchMindmapCounts;
+	}, [fetchMindmapCounts]);
 
 
 	// 页面加载时获取单词列表和分类数量
