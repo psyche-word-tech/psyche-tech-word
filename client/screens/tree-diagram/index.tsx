@@ -507,6 +507,7 @@ const styles = StyleSheet.create({
   expandHintText: {
     fontSize: 12,
     fontWeight: '500' as const,
+    textAlign: 'center',
   },
   topNodesRow: {
     flexDirection: 'row',
@@ -576,6 +577,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
+    textAlign: 'center' as const,
   },
   centerNode: {
     width: 90,
@@ -679,6 +681,8 @@ const styles = StyleSheet.create({
     height: 52,
     borderLeftWidth: 3,
     borderLeftColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -689,6 +693,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#0EA5E9',
+    textAlign: 'center',
   },
   // Modal styles
   modalOverlay: {
