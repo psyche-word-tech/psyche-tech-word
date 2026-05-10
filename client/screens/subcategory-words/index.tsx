@@ -64,6 +64,31 @@ export default function SubcategoryWordsPage() {
         </View>
       </View>
 
+      {/* Enter Mindmap Study Button */}
+      {!loading && words.length > 0 && (
+        <View className="px-4 pb-3 bg-white">
+          <TouchableOpacity
+            onPress={() => {
+              const firstWord = words[0];
+              if (firstWord) {
+                router.push('/word-detail', {
+                  word: JSON.stringify(firstWord),
+                  table,
+                  from: 'mindmap',
+                  index: '0',
+                });
+              }
+            }}
+            className="flex-row items-center justify-center py-3 rounded-xl"
+            style={{ backgroundColor: '#4F46E5' }}
+            activeOpacity={0.8}
+          >
+            <FontAwesome6 name="brain" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text className="text-white font-bold text-base">进入导图单词</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Word Grid - all on one page, no scroll indicator */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
