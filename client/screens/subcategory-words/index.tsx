@@ -84,11 +84,11 @@ export default function SubcategoryWordsPage() {
               gap: 8,
             }}
           >
-            {words.map((item) => (
+            {words.map((item, index) => (
               <TouchableOpacity
                 key={item.id}
                 activeOpacity={0.7}
-                onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table, from: 'mindmap' })}
+                onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table, from: 'mindmap', index: index.toString() })}
                 style={{
                   width: '31%',
                   backgroundColor: '#fff',

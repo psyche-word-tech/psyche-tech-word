@@ -61,7 +61,7 @@ interface EvaluationResult {
 
 export default function WordDetailPage() {
 	const router = useSafeRouter();
-	const params = useSafeSearchParams<{ word: string; table?: string; from?: string }>();
+	const params = useSafeSearchParams<{ word: string; table?: string; from?: string; index?: string }>();
 	
 	const [word, setWord] = useState<Word>(() => {
 		if (params.word) {
@@ -137,7 +137,28 @@ export default function WordDetailPage() {
 				}
 
 				fetchMindmapCountsRef.current();
-				Alert.alert('成功', `已将单词"${word.word}"标记为"${status}"`);
+
+				// 获取下一个单词
+				let nextWordData: Word | null = null;
+				try {
+					const listRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`);
+					const listData = await listRes.json();
+					if (Array.isArray(listData)) {
+						const currentIndex = listData.findIndex((w: any) => w.word === word.word);
+						if (currentIndex >= 0 && currentIndex < listData.length - 1) {
+							nextWordData = listData[currentIndex + 1];
+						}
+					}
+				} catch (e) {
+					console.log('获取下一个单词失败:', e);
+				}
+
+				if (nextWordData) {
+					setWord(nextWordData);
+				} else {
+					Alert.alert('成功', `已将单词"${word.word}"标记为"${status}"\n没有下一个单词了`);
+					router.back();
+				}
 				return;
 			}
 
