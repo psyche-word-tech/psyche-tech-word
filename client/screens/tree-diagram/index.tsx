@@ -71,12 +71,12 @@ const nodePositions: Record<string, { top: number; left?: number; right?: number
   '1': { top: 60, left: 16 },      // 身体部位
   '2': { top: 180, left: 16 },     // 属性特征
   '3': { top: 400, left: 16 },     // 能力
-  '4': { top: 530, left: 16 },     // 情绪
+  '4': { top: 520, left: 16 },     // 情绪
   '5': { top: 640, left: 16 },     // 所欲
   '6': { top: 60, right: 16 },     // 行为与限制
   '7': { top: 180, right: 16 },    // 年龄
   '8': { top: 400, right: 16 },    // 谱系
-  '9': { top: 530, right: 16 },    // 人类与群组
+  '9': { top: 520, right: 16 },    // 人类与群组
   '10': { top: 640, right: 16 },   // 职业及其他
 };
 
