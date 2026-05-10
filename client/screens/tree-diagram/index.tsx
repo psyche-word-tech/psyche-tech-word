@@ -358,8 +358,14 @@ export default function TreeDiagramPage() {
                       <View style={styles.subConnectorVertical} />
                       <View style={styles.subList}>
                         {bodySubNodes.map((sub, sIdx) => (
-                          <View key={sub.id} style={styles.subItemWrapper}>
-                            <View style={styles.subConnectorHorizontal} />
+                          <View
+                            key={sub.id}
+                            style={[
+                              styles.subItemWrapper,
+                              { marginLeft: sIdx * 14 },
+                            ]}
+                          >
+                            <View style={[styles.subConnectorHorizontal, { width: 14 + sIdx * 8 }]} />
                             <SubBranchCard
                               node={sub}
                               onPress={() => handleSubPress(sub)}
