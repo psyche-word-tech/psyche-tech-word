@@ -71,6 +71,7 @@ export default function WordDetailPage() {
 	});
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [wordsList, setWordsList] = useState<Word[]>([]);
+	const [filteredWordsList, setFilteredWordsList] = useState<Word[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
@@ -134,24 +135,37 @@ export default function WordDetailPage() {
 					return;
 				}
 
-				// 先获取源表列表，找到当前索引和下一个单词（移动后当前单词会从源表消失）
+				// 使用过滤后的列表找到当前索引和下一个单词
 				let nextWordData: Word | null = null;
-				let currentIndex = -1;
-				let listLength = 0;
+				let currentFilteredIndex = -1;
 				try {
-					const listRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`);
-					const listData = await listRes.json();
+					// 重新获取最新的过滤列表
+					const [listRes, x1Res, y1Res, z1Res] = await Promise.all([
+						fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`),
+						fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
+						fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
+						fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+					]);
+					const [listData, x1Data, y1Data, z1Data] = await Promise.all([
+						listRes.json(), x1Res.json(), y1Res.json(), z1Res.json(),
+					]);
 					if (Array.isArray(listData)) {
-						listLength = listData.length;
-						currentIndex = listData.findIndex((w: any) => w.word === word.word);
-						console.log('Mindmap list length:', listLength, 'currentIndex:', currentIndex);
-						if (currentIndex >= 0 && currentIndex < listData.length - 1) {
-							nextWordData = listData[currentIndex + 1];
-							console.log('Next word found:', nextWordData?.word);
+						const classifiedWords = new Set([
+							...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
+							...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
+							...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
+						]);
+						const filtered = listData.filter((w: Word) => !classifiedWords.has(w.word));
+						setFilteredWordsList(filtered);
+						currentFilteredIndex = filtered.findIndex((w: Word) => w.word === word.word);
+						console.log('Mindmap filtered list length:', filtered.length, 'currentIndex:', currentFilteredIndex);
+						if (currentFilteredIndex >= 0 && currentFilteredIndex < filtered.length - 1) {
+							nextWordData = filtered[currentFilteredIndex + 1];
+							console.log('Next filtered word found:', nextWordData?.word);
 						}
 					}
 				} catch (e) {
-					console.log('获取列表失败:', e);
+					console.log('获取过滤列表失败:', e);
 				}
 
 				/**
@@ -350,6 +364,28 @@ export default function WordDetailPage() {
 					if (Array.isArray(data) && data.length > 0 && !isInitialized.current) {
 						setWordsList(data);
 						isInitialized.current = true;
+					}
+
+					// 导图模式：获取过滤后的列表（111中但不在x1/y1/z1中的单词）
+					if (params.from === 'mindmap' && sourceTable === '111') {
+						const [x1Res, y1Res, z1Res] = await Promise.all([
+							fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
+							fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
+							fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+						]);
+						const [x1Data, y1Data, z1Data] = await Promise.all([
+							x1Res.json(), y1Res.json(), z1Res.json(),
+						]);
+						const classifiedWords = new Set([
+							...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
+							...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
+							...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
+						]);
+						const filtered = data.filter((w: Word) => !classifiedWords.has(w.word));
+						setFilteredWordsList(filtered);
+						console.log(`[WordDetail Filtered] total=${data.length}, classified=${classifiedWords.size}, filtered=${filtered.length}`);
+					} else {
+						setFilteredWordsList(data);
 					}
 				} catch (error) {
 					console.error('Failed to fetch words:', error);
