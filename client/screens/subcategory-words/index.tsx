@@ -100,13 +100,15 @@ export default function SubcategoryWordsPage() {
         <View className="px-4 pb-3 bg-white">
           <TouchableOpacity
             onPress={() => {
-              const firstWord = words[0];
-              if (firstWord) {
+              // 找到第一个未分类的单词（status === 'none'）
+              const firstUnclassified = words.find((w) => w.status === 'none');
+              const targetWord = firstUnclassified || words[0];
+              if (targetWord) {
                 router.push('/word-detail', {
-                  word: JSON.stringify(firstWord),
+                  word: JSON.stringify(targetWord),
                   table,
                   from: 'mindmap',
-                  index: '0',
+                  index: words.indexOf(targetWord).toString(),
                 });
               }
             }}
