@@ -114,6 +114,18 @@ export default function WordDetailPage() {
 
 		try {
 			if (params.from === 'mindmap') {
+				// 按钮传入的是 words_x/y/z，后端 move-mindmap 只接受 x1/y1/z1
+				const targetMap: Record<string, string> = {
+					words_x: 'x1',
+					words_y: 'y1',
+					words_z: 'z1',
+				};
+				const mindmapTarget = targetMap[targetTable];
+				if (!mindmapTarget) {
+					Alert.alert('错误', '无效的目标分类');
+					return;
+				}
+
 				// 先获取源表列表，找到当前索引和下一个单词（移动后当前单词会从源表消失）
 				let nextWordData: Word | null = null;
 				let currentIndex = -1;
@@ -144,7 +156,7 @@ export default function WordDetailPage() {
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						sourceTable: '111',
-						targetTable: targetTable,
+						targetTable: mindmapTarget,
 						word: word.word,
 					})
 				});
