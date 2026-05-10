@@ -164,7 +164,7 @@ router.get('/category/:table', async (req, res) => {
     const { table } = req.params;
 
     // 验证表名
-    const validTables = ['words_b', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_b', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
@@ -194,7 +194,7 @@ router.get('/category/:table/count', async (req, res) => {
     const { table } = req.params;
 
     // 验证表名
-    const validTables = ['words_b', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_b', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
