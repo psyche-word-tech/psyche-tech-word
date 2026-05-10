@@ -319,10 +319,9 @@ export default function TreeDiagramPage() {
 
         {/* Mind Map Body */}
         <View style={styles.mapBody}>
-          {/* Top section: left top + center + right top */}
-          <View style={styles.topSection}>
-            {/* Left Top */}
-            <View style={styles.leftQuadrant}>
+          {/* Top nodes row: 一二 + 六七 */}
+          <View style={styles.topNodesRow}>
+            <View style={styles.leftTopArea}>
               {leftTopNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -349,18 +348,7 @@ export default function TreeDiagramPage() {
                 </View>
               )}
             </View>
-
-            {/* Center */}
-            <View style={styles.centerWrapper}>
-              <View style={styles.centerNode}>
-                <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
-                <Text style={styles.centerLabel}>第一章</Text>
-                <Text style={styles.centerSubLabel}>人</Text>
-              </View>
-            </View>
-
-            {/* Right Top */}
-            <View style={styles.rightQuadrant}>
+            <View style={styles.rightTopArea}>
               {rightTopNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -374,9 +362,20 @@ export default function TreeDiagramPage() {
             </View>
           </View>
 
-          {/* Bottom section: left bottom + right bottom */}
-          <View style={styles.bottomSection}>
-            <View style={styles.bottomLeftQuadrant}>
+          {/* Center node */}
+          <View style={styles.centerRow}>
+            <View style={styles.centerWrapper}>
+              <View style={styles.centerNode}>
+                <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+                <Text style={styles.centerLabel}>第一章</Text>
+                <Text style={styles.centerSubLabel}>人</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Bottom nodes row: 三四五 + 八九十 */}
+          <View style={styles.bottomNodesRow}>
+            <View style={styles.leftBottomArea}>
               {leftBottomNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -388,7 +387,7 @@ export default function TreeDiagramPage() {
                 </View>
               ))}
             </View>
-            <View style={styles.bottomRightQuadrant}>
+            <View style={styles.rightBottomArea}>
               {rightBottomNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -489,44 +488,37 @@ const styles = StyleSheet.create({
   mapBody: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingTop: 24,
+    paddingTop: 16,
     paddingBottom: 16,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 0,
     minHeight: 500,
   },
-  topSection: {
+  topNodesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  leftQuadrant: {
-    flex: 1,
     alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    gap: 10,
-    paddingRight: 8,
+    marginBottom: -10,
   },
-  rightQuadrant: {
-    flex: 1,
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: 10,
-    paddingLeft: 8,
-  },
-  bottomLeftQuadrant: {
+  leftTopArea: {
     flex: 1,
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    gap: 10,
-    paddingRight: 8,
+    gap: 8,
+    paddingRight: 10,
   },
-  bottomRightQuadrant: {
+  rightTopArea: {
     flex: 1,
     alignItems: 'flex-start',
     justifyContent: 'flex-end',
-    gap: 10,
-    paddingLeft: 8,
+    gap: 8,
+    paddingLeft: 10,
+  },
+  centerRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 0,
+    zIndex: 10,
   },
   quadrantItem: {
     alignItems: 'center',
@@ -534,8 +526,6 @@ const styles = StyleSheet.create({
   centerWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
-    marginTop: 20,
   },
   branchCard: {
     backgroundColor: '#4CAF50',
@@ -619,11 +609,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   // Bottom nodes styles
-  bottomSection: {
+  bottomNodesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: 4,
+    marginTop: -10,
+  },
+  leftBottomArea: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    gap: 8,
+    paddingRight: 10,
+  },
+  rightBottomArea: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: 8,
+    paddingLeft: 10,
   },
   // Sub nodes styles
   subQuadrant: {
