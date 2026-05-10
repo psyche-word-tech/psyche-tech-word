@@ -892,32 +892,34 @@ export default function WordDetailPage() {
 						</View>
 					)}
 
-					{/* Drop Zones */}
-					<View style={styles.dropZonesContainer}>
-						<View style={styles.dropZones}>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneX]} 
-								onPress={() => handleDrop('words_x', '已会')}
-							>
-								<Text style={styles.dropZoneText}>已会</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.x})</Text>
-							</TouchableOpacity>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneY]} 
-								onPress={() => handleDrop('words_y', '模糊')}
-							>
-								<Text style={styles.dropZoneText}>模糊</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.y})</Text>
-							</TouchableOpacity>
-							<TouchableOpacity 
-								style={[styles.dropZone, styles.dropZoneZ]} 
-								onPress={() => handleDrop('words_z', '不会')}
-							>
-								<Text style={styles.dropZoneText}>不会</Text>
-								<Text style={styles.dropZoneCount}>({categoryCounts.z})</Text>
-							</TouchableOpacity>
+					{/* Drop Zones - 导图单词不显示分类按钮 */}
+					{params.from !== 'mindmap' && (
+						<View style={styles.dropZonesContainer}>
+							<View style={styles.dropZones}>
+								<TouchableOpacity 
+									style={[styles.dropZone, styles.dropZoneX]} 
+									onPress={() => handleDrop('words_x', '已会')}
+								>
+									<Text style={styles.dropZoneText}>已会</Text>
+									<Text style={styles.dropZoneCount}>({categoryCounts.x})</Text>
+								</TouchableOpacity>
+								<TouchableOpacity 
+									style={[styles.dropZone, styles.dropZoneY]} 
+									onPress={() => handleDrop('words_y', '模糊')}
+								>
+									<Text style={styles.dropZoneText}>模糊</Text>
+									<Text style={styles.dropZoneCount}>({categoryCounts.y})</Text>
+								</TouchableOpacity>
+								<TouchableOpacity 
+									style={[styles.dropZone, styles.dropZoneZ]} 
+									onPress={() => handleDrop('words_z', '不会')}
+								>
+									<Text style={styles.dropZoneText}>不会</Text>
+									<Text style={styles.dropZoneCount}>({categoryCounts.z})</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
-					</View>
+					)}
 
 					{/* Familiarity Slider */}
 					<View style={styles.sliderSection}>
