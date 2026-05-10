@@ -34,7 +34,31 @@ export default function SubcategoryWordsPage() {
           `${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`
         );
         const data = await response.json();
-        if (Array.isArray(data)) {
+        if (!Array.isArray(data)) {
+          setWords([]);
+          return;
+        }
+
+        // 如果是111表，过滤掉已在x1/y1/z1中的单词
+        if (table === '111') {
+          const [x1Res, y1Res, z1Res] = await Promise.all([
+            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/x1`),
+            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/y1`),
+            fetch(`${process.env.EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/z1`),
+          ]);
+          const [x1Data, y1Data, z1Data] = await Promise.all([
+            x1Res.json(), y1Res.json(), z1Res.json(),
+          ]);
+
+          const classifiedWords = new Set([
+            ...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
+            ...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
+            ...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
+          ]);
+
+          const filtered = data.filter((w: WordItem) => !classifiedWords.has(w.word));
+          setWords(filtered);
+        } else {
           setWords(data);
         }
       } catch (error) {
