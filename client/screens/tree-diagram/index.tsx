@@ -211,7 +211,7 @@ function BranchCard({
           <Ionicons
             name={expanded ? 'chevron-down' : 'chevron-forward'}
             size={14}
-            color={node.color}
+            color="#FFFFFF"
             style={{ marginLeft: 4 }}
           />
         )}
