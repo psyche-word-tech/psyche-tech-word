@@ -17,7 +17,6 @@ export default function SubcategoryWordsPage() {
   const { table, title } = useSafeSearchParams<{ table: string; title: string }>();
   const [words, setWords] = useState<WordItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterInfo, setFilterInfo] = useState<string>('');
 
   const pageTitle = title || '单词列表';
 
@@ -40,32 +39,7 @@ export default function SubcategoryWordsPage() {
           setWords([]);
           return;
         }
-
-        // 如果是111表，过滤掉已在x1/y1/z1中的单词
-        if (table === '111') {
-          const [x1Res, y1Res, z1Res] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
-          ]);
-          const [x1Data, y1Data, z1Data] = await Promise.all([
-            x1Res.json(), y1Res.json(), z1Res.json(),
-          ]);
-
-          const classifiedWords = new Set([
-            ...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
-            ...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
-            ...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
-          ]);
-
-          const filtered = data.filter((w: WordItem) => !classifiedWords.has(w.word));
-          const info = `总${data.length} | 已分类${classifiedWords.size} | 显示${filtered.length}`;
-          console.log(`[Filter] ${info}`);
-          setFilterInfo(info);
-          setWords(filtered);
-        } else {
-          setWords(data);
-        }
+        setWords(data);
       } catch (error) {
         console.error('Error fetching words:', error);
       } finally {
@@ -89,7 +63,7 @@ export default function SubcategoryWordsPage() {
         </TouchableOpacity>
         <View className="flex-1">
           <Text className="text-lg font-bold text-gray-900">{pageTitle}</Text>
-          <Text className="text-xs text-gray-500 mt-0.5">{words.length} 个单词{filterInfo ? ` (${filterInfo})` : ''}</Text>
+          <Text className="text-xs text-gray-500 mt-0.5">{words.length} 个单词</Text>
         </View>
       </View>
 
