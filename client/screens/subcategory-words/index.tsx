@@ -117,7 +117,7 @@ export default function SubcategoryWordsPage() {
             activeOpacity={0.8}
           >
             <FontAwesome6 name="brain" size={18} color="#fff" style={{ marginRight: 8 }} />
-            <Text className="text-white font-bold text-base">进入导图单词</Text>
+            <Text className="text-white font-bold text-base">看词分类</Text>
           </TouchableOpacity>
         </View>
       )}
