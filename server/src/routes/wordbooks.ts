@@ -72,7 +72,7 @@ router.get('/stats', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', '111'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
     
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
@@ -106,7 +106,7 @@ router.post('/purchase', async (req, res) => {
     const { sourceTable, targetTable } = req.body;
 
     // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
     if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
@@ -179,7 +179,7 @@ router.post('/copy', async (req, res) => {
     }
 
     // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e', 'x1', 'y1', 'z1'];
     if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
@@ -248,7 +248,7 @@ router.post('/move', async (req, res) => {
     const { sourceTable, targetTable, wordId } = req.body;
 
     // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
     if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
@@ -311,7 +311,7 @@ router.post('/move', async (req, res) => {
 router.get('/:table/count', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'user_words'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words'];
 
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
@@ -342,7 +342,7 @@ router.get('/:table/count', async (req, res) => {
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', '111'];
+    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
 
     if (!validTables.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });

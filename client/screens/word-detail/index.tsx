@@ -100,6 +100,14 @@ export default function WordDetailPage() {
 	const [recordingVolume, setRecordingVolume] = useState<number[]>(new Array(20).fill(0));
 	const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+	// 双击按钮显示分类单词弹窗
+	const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+	const [categoryModalTitle, setCategoryModalTitle] = useState('');
+	const [categoryModalWords, setCategoryModalWords] = useState<Word[]>([]);
+	const [categoryModalLoading, setCategoryModalLoading] = useState(false);
+	const lastDropTapRef = useRef<{ table: string; time: number } | null>(null);
+	const dropTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 	const sourceTable = params.table || 'words_b';
 	const isInitialized = useRef(false);
 
@@ -275,6 +283,58 @@ export default function WordDetailPage() {
 		fetchMindmapCountsRef.current = fetchMindmapCounts;
 	}, [fetchMindmapCounts]);
 
+	// 双击底部按钮：显示分类单词列表弹窗
+	const handleDropDoubleTap = useCallback(async (targetTable: string, label: string) => {
+		// 映射到实际表名
+		let tableName = targetTable;
+		if (params.from === 'mindmap') {
+			const map: Record<string, string> = { words_x: 'x1', words_y: 'y1', words_z: 'z1' };
+			tableName = map[targetTable] || targetTable;
+		}
+
+		setCategoryModalVisible(true);
+		setCategoryModalTitle(label);
+		setCategoryModalLoading(true);
+		setCategoryModalWords([]);
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
+			const data = await response.json();
+			if (Array.isArray(data)) {
+				setCategoryModalWords(data);
+			} else {
+				setCategoryModalWords([]);
+			}
+		} catch (error) {
+			console.error('Failed to fetch category words:', error);
+			setCategoryModalWords([]);
+		} finally {
+			setCategoryModalLoading(false);
+		}
+	}, [params.from]);
+
+	const handleDropZonePress = useCallback((targetTable: string, status: string) => {
+		const now = Date.now();
+		if (lastDropTapRef.current && lastDropTapRef.current.table === targetTable && now - lastDropTapRef.current.time < 300) {
+			// 双击
+			if (dropTapTimerRef.current) {
+				clearTimeout(dropTapTimerRef.current);
+				dropTapTimerRef.current = null;
+			}
+			lastDropTapRef.current = null;
+			handleDropDoubleTap(targetTable, status);
+		} else {
+			// 单击（延迟执行）
+			if (dropTapTimerRef.current) {
+				clearTimeout(dropTapTimerRef.current);
+			}
+			dropTapTimerRef.current = setTimeout(() => {
+				handleDrop(targetTable, status);
+				dropTapTimerRef.current = null;
+			}, 300);
+			lastDropTapRef.current = { table: targetTable, time: now };
+		}
+	}, [handleDrop, handleDropDoubleTap]);
 
 	// 页面加载时获取单词列表和分类数量
 	useFocusEffect(
@@ -990,21 +1050,21 @@ export default function WordDetailPage() {
 						<View style={styles.dropZones}>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneX]}
-								onPress={() => handleDrop('words_x', '已会')}
+								onPress={() => handleDropZonePress('words_x', '已会')}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.x : categoryCounts.x})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneY]}
-								onPress={() => handleDrop('words_y', '模糊')}
+								onPress={() => handleDropZonePress('words_y', '模糊')}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.y : categoryCounts.y})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneZ]}
-								onPress={() => handleDrop('words_z', '不会')}
+								onPress={() => handleDropZonePress('words_z', '不会')}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.z : categoryCounts.z})</Text>
@@ -1239,6 +1299,65 @@ export default function WordDetailPage() {
 									<Text style={styles.publishButtonText}>确定</Text>
 								</TouchableOpacity>
 							</View>
+						</View>
+					</View>
+				</Modal>
+
+				{/* 分类单词列表弹窗 */}
+				<Modal
+					visible={categoryModalVisible}
+					transparent
+					animationType="slide"
+					onRequestClose={() => setCategoryModalVisible(false)}
+				>
+					<View style={styles.modalOverlay}>
+						<View style={styles.modalContent}>
+							<View style={styles.modalHeader}>
+								<Text style={styles.modalTitle}>{categoryModalTitle}</Text>
+								<TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+									<Ionicons name="close" size={24} color="#666" />
+								</TouchableOpacity>
+							</View>
+
+							{categoryModalLoading ? (
+								<View style={styles.modalLoading}>
+									<ActivityIndicator size="large" color="#4F46E5" />
+									<Text style={styles.modalLoadingText}>加载中...</Text>
+								</View>
+							) : categoryModalWords.length === 0 ? (
+								<View style={styles.modalEmpty}>
+									<Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+									<Text style={styles.modalEmptyText}>暂无单词</Text>
+								</View>
+							) : (
+								<ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+									<View style={styles.categoryWordsGrid}>
+										{categoryModalWords.map((item) => (
+											<TouchableOpacity
+												key={item.id}
+												style={styles.categoryWordCard}
+												onPress={() => {
+													setCategoryModalVisible(false);
+													const tableMap: Record<string, string> = { words_x: params.from === 'mindmap' ? 'x1' : 'words_x', words_y: params.from === 'mindmap' ? 'y1' : 'words_y', words_z: params.from === 'mindmap' ? 'z1' : 'words_z' };
+													// 根据当前弹窗标题推断表名
+													let targetTable = sourceTable;
+													if (categoryModalTitle === '已会') targetTable = params.from === 'mindmap' ? 'x1' : 'words_x';
+													else if (categoryModalTitle === '模糊') targetTable = params.from === 'mindmap' ? 'y1' : 'words_y';
+													else if (categoryModalTitle === '不会') targetTable = params.from === 'mindmap' ? 'z1' : 'words_z';
+													router.push('/word-detail', {
+														word: JSON.stringify(item),
+														table: targetTable,
+														from: params.from || '',
+													});
+												}}
+												activeOpacity={0.7}
+											>
+												<Text style={styles.categoryWordText}>{item.word}</Text>
+											</TouchableOpacity>
+										))}
+									</View>
+								</ScrollView>
+							)}
 						</View>
 					</View>
 				</Modal>
@@ -1865,5 +1984,55 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F5F5F5',
 		padding: 12,
 		borderRadius: 8,
+	},
+	// 分类单词弹窗样式
+	modalLoading: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		paddingVertical: 60,
+	},
+	modalLoadingText: {
+		marginTop: 16,
+		fontSize: 14,
+		color: '#999',
+		fontFamily: 'serif',
+	},
+	modalEmpty: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		paddingVertical: 80,
+	},
+	modalEmptyText: {
+		marginTop: 12,
+		fontSize: 15,
+		color: '#999',
+		fontFamily: 'serif',
+	},
+	modalScroll: {
+		flex: 1,
+	},
+	categoryWordsGrid: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		padding: 12,
+		gap: 10,
+	},
+	categoryWordCard: {
+		width: '30%',
+		aspectRatio: 2.5,
+		backgroundColor: '#F3F4F6',
+		borderRadius: 12,
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginBottom: 8,
+		marginHorizontal: '1.5%',
+	},
+	categoryWordText: {
+		fontSize: 15,
+		fontWeight: '600',
+		color: '#1F2937',
+		fontFamily: 'serif',
 	},
 });
