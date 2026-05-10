@@ -75,8 +75,10 @@ export default function WordDetailPage() {
 	const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 	const [familiarity, setFamiliarity] = useState(50);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
+	const [mindmapCounts, setMindmapCounts] = useState({ x: 0, y: 0, z: 0 });
 	const soundRef = useRef<Audio.Sound | null>(null);
 	const fetchCategoryCountsRef = useRef<() => void>(() => { /* noop */ });
+	const fetchMindmapCountsRef = useRef<() => void>(() => { /* noop */ });
 
 	// 评论相关状态
 	const [comments, setComments] = useState<Comment[]>([]);
@@ -110,12 +112,35 @@ export default function WordDetailPage() {
 			return;
 		}
 
-		if (params.from === 'mindmap') {
-			Alert.alert('提示', '导图单词暂不支持分类功能');
-			return;
-		}
-
 		try {
+			if (params.from === 'mindmap') {
+				/**
+				 * 服务端文件：server/src/routes/user-words.ts
+				 * 接口：POST /api/v1/user-words/move-mindmap
+				 * Body参数：targetTable: string, word: string
+				 */
+				const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move-mindmap`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						sourceTable: '111',
+						targetTable: targetTable,
+						word: word.word,
+					})       
+				});
+
+				const result = await response.json();
+				console.log('Move mindmap API response:', response.status, result);
+
+				if (!response.ok) {
+					throw new Error(result.error || '移动失败');
+				}
+
+				fetchMindmapCountsRef.current();
+				Alert.alert('成功', `已将单词"${word.word}"标记为"${status}"`);
+				return;
+			}
+
 			/**
 			 * 服务端文件：server/src/routes/wordbooks.ts
 			 * 接口：POST /api/v1/wordbooks/move
@@ -184,10 +209,29 @@ export default function WordDetailPage() {
 		}
 	}, []);
 
+	const fetchMindmapCounts = useCallback(async () => {
+		try {
+			const [xRes, yRes, zRes] = await Promise.all([
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/x1/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/y1/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/z1/count`),
+			]);
+			const [xData, yData, zData] = await Promise.all([xRes.json(), yRes.json(), zRes.json()]);
+			setMindmapCounts({
+				x: xData.count || 0,
+				y: yData.count || 0,
+				z: zData.count || 0,
+			});
+		} catch (error) {
+			console.error('Failed to fetch mindmap counts:', error);
+		}
+	}, []);
+
 	// 将 fetchCategoryCounts 赋值给 ref
 	useEffect(() => {
 		fetchCategoryCountsRef.current = fetchCategoryCounts;
 	}, [fetchCategoryCounts]);
+
 
 	// 页面加载时获取单词列表和分类数量
 	useFocusEffect(
@@ -210,6 +254,7 @@ export default function WordDetailPage() {
 			};
 			fetchWordsList();
 			fetchCategoryCountsRef.current();
+			fetchMindmapCountsRef.current();
 		}, [sourceTable])
 	);
 
@@ -905,21 +950,21 @@ export default function WordDetailPage() {
 								onPress={() => handleDrop('words_x', '已会')}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
-								{params.from !== 'mindmap' && <Text style={styles.dropZoneCount}>({categoryCounts.x})</Text>}
+								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.x : categoryCounts.x})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneY]}
 								onPress={() => handleDrop('words_y', '模糊')}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
-								{params.from !== 'mindmap' && <Text style={styles.dropZoneCount}>({categoryCounts.y})</Text>}
+								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.y : categoryCounts.y})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneZ]}
 								onPress={() => handleDrop('words_z', '不会')}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
-								{params.from !== 'mindmap' && <Text style={styles.dropZoneCount}>({categoryCounts.z})</Text>}
+								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.z : categoryCounts.z})</Text>
 							</TouchableOpacity>
 						</View>
 					</View>

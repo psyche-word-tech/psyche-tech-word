@@ -217,4 +217,127 @@ router.get('/category/:table/count', async (req, res) => {
   }
 });
 
+// POST /api/v1/user-words/move-mindmap - 将导图单词从源表移动到 x1/y1/z1
+router.post('/move-mindmap', async (req, res) => {
+  try {
+    const { word, sourceTable, targetTable } = req.body;
+
+    if (!word || !sourceTable || !targetTable) {
+      res.status(400).json({ error: 'word, sourceTable and targetTable are required' });
+      return;
+    }
+
+    const validTargets = ['x1', 'y1', 'z1'];
+    if (!validTargets.includes(targetTable)) {
+      res.status(400).json({ error: 'Invalid target table' });
+      return;
+    }
+
+    const client = getSupabaseClient();
+
+    // 从源表获取单词详情
+    const { data: wordData, error: fetchError } = await client
+      .from(sourceTable)
+      .select('*')
+      .eq('word', word)
+      .single();
+
+    if (fetchError || !wordData) {
+      res.status(404).json({ error: 'Word not found in source table' });
+      return;
+    }
+
+    // 检查目标表是否已存在该单词
+    const { data: existing, error: existingError } = await client
+      .from(targetTable)
+      .select('id')
+      .eq('word', wordData.word)
+      .single();
+
+    if (existing) {
+      // 已存在则更新
+      const { error: updateError } = await client
+        .from(targetTable)
+        .update({
+          meaning: wordData.meaning,
+          phonetic: wordData.phonetic,
+          example: wordData.example,
+          translation: wordData.translation,
+          example_translation: wordData.example_translation,
+          example_image_url: wordData.example_image_url,
+          example_audio_url: wordData.example_audio_url,
+          noun_phrase: wordData.noun_phrase,
+        })
+        .eq('word', wordData.word);
+
+      if (updateError) {
+        res.status(500).json({ error: updateError.message });
+        return;
+      }
+    } else {
+      // 不存在则插入
+      const { error: insertError } = await client.from(targetTable).insert({
+        word: wordData.word,
+        meaning: wordData.meaning,
+        phonetic: wordData.phonetic,
+        example: wordData.example,
+        translation: wordData.translation,
+        example_translation: wordData.example_translation,
+        example_image_url: wordData.example_image_url,
+        example_audio_url: wordData.example_audio_url,
+        noun_phrase: wordData.noun_phrase,
+      });
+
+      if (insertError) {
+        res.status(500).json({ error: insertError.message });
+        return;
+      }
+    }
+
+    // 从源表删除
+    const { error: deleteError } = await client
+      .from(sourceTable)
+      .delete()
+      .eq('word', wordData.word);
+
+    if (deleteError) {
+      res.status(500).json({ error: deleteError.message });
+      return;
+    }
+
+    res.json({ success: true, message: `Word moved to ${targetTable} successfully` });
+  } catch (err) {
+    console.error('Error moving mindmap word:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/user-words/mindmap-counts - 获取 x1/y1/z1 的单词数量
+router.get('/mindmap-counts', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+
+    const tables = ['x1', 'y1', 'z1'];
+    const counts: Record<string, number> = {};
+
+    for (const table of tables) {
+      const { count, error } = await client
+        .from(table)
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        res.status(500).json({ error: error.message });
+        return;
+      }
+
+      counts[table] = count || 0;
+    }
+
+    res.json(counts);
+  } catch (err) {
+    console.error('Error counting mindmap words:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
