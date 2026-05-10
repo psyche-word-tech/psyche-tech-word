@@ -20,7 +20,9 @@ interface Word {
 	meaning: string;
 	example?: string;
 	example_translation?: string;
+	translation?: string;
 	example_image_url?: string;
+	image_url?: string;
 	example_audio_url?: string;
 	noun_phrase?: string;
 }
@@ -992,27 +994,30 @@ export default function WordDetailPage() {
 					)}
 
 					{/* 配图 */}
-					{word.example_image_url && (
+					{(word.example_image_url || word.image_url) && (
 						<View style={styles.section}>
 							<View style={styles.divider} />
 							<Text style={[styles.sectionLabel, { marginTop: 16 }]}>配图</Text>
 							<View style={styles.exampleImageContainer}>
-								{word.example_image_url.includes('word-videos') || word.example_image_url.endsWith('.mp4') ? (
-									<Video
-										source={{ uri: word.example_image_url }}
-										style={styles.exampleImage}
-										shouldPlay={true}
-										isLooping={true}
-										isMuted={true}
-										useNativeControls={false}
-									/>
-								) : (
-									<Image
-										source={{ uri: word.example_image_url }}
-										style={styles.exampleImage}
-										resizeMode="cover"
-									/>
-								)}
+								{(() => {
+									const imgUrl = word.example_image_url || word.image_url || '';
+									return imgUrl.includes('word-videos') || imgUrl.endsWith('.mp4') ? (
+										<Video
+											source={{ uri: imgUrl }}
+											style={styles.exampleImage}
+											shouldPlay={true}
+											isLooping={true}
+											isMuted={true}
+											useNativeControls={false}
+										/>
+									) : (
+										<Image
+											source={{ uri: imgUrl }}
+											style={styles.exampleImage}
+											resizeMode="cover"
+										/>
+									);
+								})()}
 							</View>
 						</View>
 					)}
@@ -1086,8 +1091,8 @@ export default function WordDetailPage() {
 									</TouchableOpacity>
 								</View>
 							</View>
-							{word.example_translation && (
-								<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
+							{(word.example_translation || word.translation) && (
+								<Text style={styles.exampleTranslation}>{word.example_translation || word.translation}</Text>
 							)}
 						</View>
 					)}
