@@ -323,30 +323,32 @@ export default function TreeDiagramPage() {
           <View style={styles.topNodesRow}>
             <View style={styles.leftTopArea}>
               {leftTopNodes.map((node) => (
-                <View key={node.id} style={styles.quadrantItem}>
-                  <BranchCard
-                    node={node}
-                    align="left"
-                    onPress={() => handleNodePress(node)}
-                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                    expanded={node.id === '1' ? isBodyExpanded : undefined}
-                    onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
-                  />
+                <View key={node.id}>
+                  <View style={styles.quadrantItem}>
+                    <BranchCard
+                      node={node}
+                      align="left"
+                      onPress={() => handleNodePress(node)}
+                      onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                      expanded={node.id === '1' ? isBodyExpanded : undefined}
+                      onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
+                    />
+                  </View>
+                  {/* Sub nodes for body - show right after body node */}
+                  {node.id === '1' && isBodyExpanded && (
+                    <View style={styles.subQuadrant}>
+                      {bodySubNodes.map((sub) => (
+                        <SubBranchCard
+                          key={sub.id}
+                          node={sub}
+                          onPress={() => handleSubPress(sub)}
+                          onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
               ))}
-              {/* Sub nodes for body */}
-              {isBodyExpanded && (
-                <View style={styles.subQuadrant}>
-                  {bodySubNodes.map((sub) => (
-                    <SubBranchCard
-                      key={sub.id}
-                      node={sub}
-                      onPress={() => handleSubPress(sub)}
-                      onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
-                    />
-                  ))}
-                </View>
-              )}
             </View>
             <View style={styles.rightTopArea}>
               {rightTopNodes.map((node) => (
@@ -632,7 +634,7 @@ const styles = StyleSheet.create({
   // Sub nodes styles
   subQuadrant: {
     marginTop: 8,
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 8,
   },
   subList: {
