@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: -200,
+    marginBottom: 8,
   },
   leftTopArea: {
     flex: 1,
@@ -508,7 +508,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     paddingRight: 10,
-    marginTop: -50,
   },
   rightTopArea: {
     flex: 1,
@@ -516,12 +515,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     paddingLeft: 10,
-    marginTop: -50,
   },
   centerRow: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 0,
+    marginVertical: 8,
     zIndex: 10,
   },
   quadrantItem: {
@@ -617,7 +615,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginTop: -200,
+    marginTop: 8,
   },
   leftBottomArea: {
     flex: 1,
