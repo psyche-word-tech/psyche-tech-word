@@ -10,6 +10,7 @@ interface WordItem {
   word: string;
   phonetic: string;
   meaning: string;
+  status?: 'x1' | 'y1' | 'z1' | 'none';
 }
 
 export default function SubcategoryWordsPage() {
@@ -39,7 +40,34 @@ export default function SubcategoryWordsPage() {
           setWords([]);
           return;
         }
-        setWords(data);
+
+        // For table 111, fetch x1/y1/z1 to mark classification status
+        if (table === '111') {
+          const [x1Res, y1Res, z1Res] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
+            fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+          ]);
+          const [x1Data, y1Data, z1Data] = await Promise.all([
+            x1Res.json(),
+            y1Res.json(),
+            z1Res.json(),
+          ]);
+
+          const x1Words = new Set((Array.isArray(x1Data) ? x1Data : []).map((w: any) => w.word));
+          const y1Words = new Set((Array.isArray(y1Data) ? y1Data : []).map((w: any) => w.word));
+          const z1Words = new Set((Array.isArray(z1Data) ? z1Data : []).map((w: any) => w.word));
+
+          const markedData = data.map((w: WordItem) => {
+            if (x1Words.has(w.word)) return { ...w, status: 'x1' as const };
+            if (y1Words.has(w.word)) return { ...w, status: 'y1' as const };
+            if (z1Words.has(w.word)) return { ...w, status: 'z1' as const };
+            return { ...w, status: 'none' as const };
+          });
+          setWords(markedData);
+        } else {
+          setWords(data);
+        }
       } catch (error) {
         console.error('Error fetching words:', error);
       } finally {
@@ -112,40 +140,50 @@ export default function SubcategoryWordsPage() {
               gap: 8,
             }}
           >
-            {words.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
-                activeOpacity={0.7}
-                onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table, from: 'mindmap', index: index.toString() })}
-                style={{
-                  width: '31%',
-                  backgroundColor: '#fff',
-                  borderRadius: 12,
-                  paddingVertical: 10,
-                  paddingHorizontal: 4,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                  marginBottom: 8,
-                }}
-              >
-                <Text
+            {words.map((item, index) => {
+              const getButtonColor = () => {
+                switch (item.status) {
+                  case 'x1': return '#22c55e';
+                  case 'y1': return '#f97316';
+                  case 'z1': return '#ef4444';
+                  default: return '#9ca3af';
+                }
+              };
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table, from: 'mindmap', index: index.toString() })}
                   style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: '#1F2937',
-                    textAlign: 'center',
+                    width: '31%',
+                    backgroundColor: getButtonColor(),
+                    borderRadius: 12,
+                    paddingVertical: 10,
+                    paddingHorizontal: 4,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                    marginBottom: 8,
                   }}
-                  numberOfLines={1}
                 >
-                  {item.word}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '700',
+                      color: '#fff',
+                      textAlign: 'center',
+                    }}
+                    numberOfLines={1}
+                  >
+                    {item.word}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </ScrollView>
       )}
