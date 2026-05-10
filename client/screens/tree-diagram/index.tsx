@@ -1,80 +1,255 @@
-import React, { useState, useCallback, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   ScrollView,
   Dimensions,
   Modal,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
-import { useFocusEffect } from 'expo-router';
+import { useSafeRouter } from '@/hooks/useSafeRouter';
+import { Screen } from '@/components/Screen';
+import { Ionicons } from '@expo/vector-icons';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
-const SCREEN_W = Dimensions.get('window').width;
-const API_BASE_URL = 'http://localhost:9091';
+const { width: SCREEN_W } = Dimensions.get('window');
 
-interface Node {
+interface BranchNode {
   id: string;
   label: string;
+  page: string;
+  color: string;
 }
 
-const nodes: Node[] = [
-  { id: 'body', label: '身体部位' },
-  { id: 'attribute', label: '属性特征' },
-  { id: 'ability', label: '能力' },
-  { id: 'emotion', label: '情绪' },
-  { id: 'desire', label: '所欲' },
-  { id: 'behavior', label: '行为与限制' },
-  { id: 'age', label: '年龄' },
-  { id: 'lineage', label: '谱系' },
-  { id: 'human_group', label: '人类与群组' },
-  { id: 'occupation', label: '职业及其他' },
-];
+interface SubNode {
+  id: string;
+  label: string;
+  parentId: string;
+}
 
-const leftNodes = nodes.slice(0, 5);
-const rightNodes = nodes.slice(5, 10);
-
-const bodySubNodes: Node[] = [
-  { id: 'head-neck', label: '头~颈' },
-  { id: 'shoulder-belly', label: '肩~腹' },
-  { id: 'legs-feet', label: '腿脚' },
-];
-
-interface CategoryWord {
+interface WordItem {
   id: number;
   word: string;
+  phonetic: string;
   meaning: string;
+}
+
+const leftNodes: BranchNode[] = [
+  { id: '1', label: '（一）身体部位', page: '/ 1', color: '#0EA5E9' },
+  { id: '2', label: '（二）属性特征', page: '/ 5', color: '#059669' },
+  { id: '3', label: '（三）能力', page: '/ 6', color: '#D97706' },
+  { id: '4', label: '（四）情绪', page: '/ 9', color: '#DC2626' },
+  { id: '5', label: '（五）所欲', page: '/ 11', color: '#8B5CF6' },
+];
+
+const rightNodes: BranchNode[] = [
+  { id: '6', label: '（六）行为与限制', page: '/ 12', color: '#EC4899' },
+  { id: '7', label: '（七）年龄', page: '/ 15', color: '#14B8A6' },
+  { id: '8', label: '（八）谱系', page: '/ 16', color: '#F59E0B' },
+  { id: '9', label: '（九）人类与群组', page: '/ 18', color: '#6366F1' },
+  { id: '10', label: '（十）职业及其他', page: '/ 19', color: '#10B981' },
+];
+
+const bodySubNodes: SubNode[] = [
+  { id: '1-1', label: '1. 头~颈', parentId: '1' },
+  { id: '1-2', label: '2. 肩~腹', parentId: '1' },
+  { id: '1-3', label: '3. 腿脚', parentId: '1' },
+];
+
+// 分类到数据表的映射
+const categoryTableMap: Record<string, string> = {
+  '1': '11',
+  '1-1': '111',
+  '1-2': '112',
+  '1-3': '113',
+  '2': '21',
+  '3': '22',
+  '4': '23',
+  '5': '24',
+  '6': '25',
+  '7': '26',
+  '8': '27',
+  '9': '28',
+  '10': '29',
+};
+
+const centerColor = '#4F46E5';
+
+function SubBranchCard({
+  node,
+  onPress,
+  onDoublePress,
+}: {
+  node: SubNode;
+  onPress?: () => void;
+  onDoublePress?: () => void;
+}) {
+  const lastTapRef = useRef<{ time: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
+      // 双击
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      lastTapRef.current = null;
+      onDoublePress?.();
+    } else {
+      // 单击（延迟执行）
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        onPress?.();
+        timerRef.current = null;
+      }, 300);
+      lastTapRef.current = { time: now };
+    }
+  };
+
+  return (
+    <TouchableOpacity style={styles.subCard} onPress={handlePress} activeOpacity={0.7}>
+      <Text style={styles.subLabel}>{node.label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function BranchCard({
+  node,
+  align,
+  onPress,
+  onDoublePress,
+  expanded,
+  onToggle,
+}: {
+  node: BranchNode;
+  align: 'left' | 'right';
+  onPress?: () => void;
+  onDoublePress?: () => void;
+  expanded?: boolean;
+  onToggle?: () => void;
+}) {
+  const isBody = node.id === '1';
+  const lastTapRef = useRef<{ time: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
+      // 双击
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      lastTapRef.current = null;
+      onDoublePress?.();
+    } else {
+      // 单击（延迟执行）
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        if (isBody) {
+          onToggle?.();
+        } else {
+          onPress?.();
+        }
+        timerRef.current = null;
+      }, 300);
+      lastTapRef.current = { time: now };
+    }
+  };
+
+  return (
+    <View style={align === 'left' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
+      <TouchableOpacity
+        style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.branchDot, { backgroundColor: node.color }]} />
+        <View style={styles.branchContent}>
+          <Text style={styles.branchLabel} numberOfLines={1}>{node.label}</Text>
+        </View>
+        {isBody && (
+          <Ionicons
+            name={expanded ? 'chevron-down' : 'chevron-forward'}
+            size={14}
+            color={node.color}
+            style={{ marginLeft: 4 }}
+          />
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function Connector({ align }: { align: 'left' | 'right' }) {
+  return (
+    <View style={[styles.connectorRow, align === 'left' ? { flexDirection: 'row-reverse' } : { flexDirection: 'row' }]}>
+      <View style={styles.connectorDot} />
+      <View style={styles.connectorLine} />
+    </View>
+  );
 }
 
 export default function TreeDiagramPage() {
   const router = useSafeRouter();
-  const [expandedBody, setExpandedBody] = useState(true);
-  const [subWords, setSubWords] = useState<CategoryWord[]>([]);
-  const [showSubModal, setShowSubModal] = useState(false);
-  const [subTitle, setSubTitle] = useState('');
-  const lastTapRef = useRef(0);
-  const [lastTapNode, setLastTapNode] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalWords, setModalWords] = useState<WordItem[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [currentTable, setCurrentTable] = useState('');
 
-  const handleSubPress = useCallback((sub: Node) => {
-    router.push('/subcategory-words', { table: '111', title: sub.label, from: 'mindmap' });
-  }, [router]);
+  const handleNodePress = (node: BranchNode) => {
+    router.push('/word-preview', { category: node.label, categoryId: node.id });
+  };
 
-  const handleMainPress = useCallback((node: Node) => {
-    if (node.id === 'body') {
-      setExpandedBody((prev) => !prev);
+  const handleSubPress = (sub: SubNode) => {
+    if (sub.id === '1-1') {
+      router.push('/subcategory-words', { table: '111', title: '头~颈' });
+    } else {
+      router.push('/word-preview', { category: sub.label, subCategoryId: sub.id });
+    }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  };
+
+  const isBodyExpanded = expandedId === '1';
+
+  const fetchCategoryWords = useCallback(async (categoryId: string, title: string) => {
+    const tableName = categoryTableMap[categoryId];
+    setCurrentTable(tableName || '');
+
+    if (!tableName) {
+      setModalTitle(title);
+      setModalWords([]);
+      setModalVisible(true);
       return;
     }
-    Alert.alert('提示', `${node.label} 分类暂无数据`);
-  }, []);
 
-  const fetchCategoryWords = useCallback(async (tableName: string, title: string) => {
+    setModalLoading(true);
+    setModalVisible(true);
+    setModalTitle(title);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
-      if (!response.ok) return;
-      const data: CategoryWord[] = await response.json();
-      let filtered = data;
+      const data = await response.json();
+      if (!Array.isArray(data)) {
+        setModalWords([]);
+        setModalLoading(false);
+        return;
+      }
+
+      // 111 表过滤掉已在 x1/y1/z1 中分类的单词
       if (tableName === '111') {
         const [x1Res, y1Res, z1Res] = await Promise.all([
           fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
@@ -82,362 +257,446 @@ export default function TreeDiagramPage() {
           fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
         ]);
         const [x1Data, y1Data, z1Data] = await Promise.all([
-          x1Res.ok ? x1Res.json() : [],
-          y1Res.ok ? y1Res.json() : [],
-          z1Res.ok ? z1Res.json() : [],
+          x1Res.json(),
+          y1Res.json(),
+          z1Res.json(),
         ]);
         const classifiedWords = new Set([
-          ...(Array.isArray(x1Data) ? x1Data : []).map((w: CategoryWord) => w.word),
-          ...(Array.isArray(y1Data) ? y1Data : []).map((w: CategoryWord) => w.word),
-          ...(Array.isArray(z1Data) ? z1Data : []).map((w: CategoryWord) => w.word),
+          ...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
+          ...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
+          ...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
         ]);
-        filtered = data.filter((w: CategoryWord) => !classifiedWords.has(w.word));
+        const filtered = data.filter((w: WordItem) => !classifiedWords.has(w.word));
+        setModalWords(filtered);
+      } else {
+        setModalWords(data);
       }
-      setSubWords(filtered);
-      setSubTitle(title);
-      setShowSubModal(true);
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Failed to fetch category words:', error);
+      setModalWords([]);
+    } finally {
+      setModalLoading(false);
     }
   }, []);
 
-  const handleDoublePress = useCallback((node: Node) => {
-    if (node.id === 'body') {
-      fetchCategoryWords('111', '身体部位');
-      return;
-    }
-    Alert.alert('提示', `${node.label} 分类暂无数据`);
-  }, [fetchCategoryWords]);
-
-  const handleTap = useCallback((node: Node) => {
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
-    if (lastTapNode === node.id && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      lastTapRef.current = 0;
-      setLastTapNode(null);
-      handleDoublePress(node);
-    } else {
-      lastTapRef.current = now;
-      setLastTapNode(node.id);
-      setTimeout(() => {
-        setLastTapNode((prev) => (prev === node.id ? null : prev));
-      }, DOUBLE_TAP_DELAY + 50);
-    }
-  }, [lastTapNode, handleDoublePress]);
-
-  const renderSideNode = useCallback((node: Node, index: number, isLeft: boolean, total: number) => {
-    const nodeHeight = 50;
-    const gap = (SCREEN_W - 160) / (total + 1);
-    const topOffset = 60 + index * gap;
-
-    return (
-      <View
-        key={node.id}
-        style={[
-          styles.sideNodeWrapper,
-          isLeft ? { right: 70, top: topOffset } : { left: 70, top: topOffset },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.branchCard}
-          onPress={() => handleTap(node)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.branchCardText} numberOfLines={1}>
-            {node.label}
-          </Text>
-        </TouchableOpacity>
-        {/* 连接线 */}
-        <View
-          style={[
-            styles.connectLine,
-            isLeft
-              ? {
-                  right: -20,
-                  width: 20,
-                  top: nodeHeight / 2,
-                  borderTopWidth: 2,
-                  borderRightWidth: 0,
-                  borderLeftWidth: 0,
-                }
-              : {
-                  left: -20,
-                  width: 20,
-                  top: nodeHeight / 2,
-                  borderTopWidth: 2,
-                  borderRightWidth: 0,
-                  borderLeftWidth: 0,
-                },
-          ]}
-        />
-      </View>
-    );
-  }, [handleTap]);
+  const handleWordPress = (word: WordItem) => {
+    setModalVisible(false);
+    if (!currentTable) return;
+    router.push('/word-detail', {
+      word: JSON.stringify(word),
+      table: currentTable,
+      from: 'mindmap',
+    });
+  };
 
   return (
-    <View style={styles.container}>
-      {/* 返回按钮 */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Text style={styles.backText}>← 返回</Text>
-      </TouchableOpacity>
+    <Screen>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>思维导图</Text>
+          <View style={styles.placeholder} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* 标题 */}
-        <Text style={styles.title}>第一章</Text>
+        {/* Mind Map Body */}
+        <View style={styles.mapBody}>
+          {leftNodes.map((leftNode, idx) => {
+            const rightNode = rightNodes[idx];
+            const isCenterRow = idx === 2;
+            const isBodyRow = idx === 0;
 
-        <View style={styles.diagramArea}>
-          {/* 中心节点 */}
-          <View style={styles.centerNode}>
-            <Text style={styles.centerLabel}>人</Text>
-          </View>
-
-          {/* 左侧节点 */}
-          {leftNodes.map((node, idx) => renderSideNode(node, idx, true, leftNodes.length))}
-
-          {/* 右侧节点 */}
-          {rightNodes.map((node, idx) => renderSideNode(node, idx, false, rightNodes.length))}
-
-          {/* 身体部位子节点 */}
-          {expandedBody && (
-            <View style={styles.subNodesContainer}>
-              {bodySubNodes.map((sub, sIdx) => {
-                const angle = -60 + sIdx * 60; // -60, 0, 60 degrees
-                const rad = (angle * Math.PI) / 180;
-                const distance = 90;
-                const dx = Math.cos(rad) * distance;
-                const dy = Math.sin(rad) * distance;
-                return (
-                  <View
-                    key={sub.id}
-                    style={[
-                      styles.subNodeWrapper,
-                      {
-                        left: SCREEN_W / 2 + dx - 50,
-                        top: 220 + dy,
-                      },
-                    ]}
-                  >
-                    {/* 连接线 */}
-                    <View
-                      style={[
-                        styles.subConnectLine,
-                        {
-                          width: distance - 50,
-                          left: angle < 0 ? -(distance - 50) : -25,
-                          top: 20,
-                          transform: [{ rotate: `${-angle}deg` }],
-                          transformOrigin: angle < 0 ? 'right' : 'left',
-                        },
-                      ]}
+            return (
+              <View key={leftNode.id}>
+                <View style={styles.row}>
+                  {/* Left side */}
+                  <View style={styles.side}>
+                    <BranchCard
+                      node={leftNode}
+                      align="left"
+                      onPress={() => handleNodePress(leftNode)}
+                      onDoublePress={() => fetchCategoryWords(leftNode.id, leftNode.label)}
+                      expanded={isBodyExpanded}
+                      onToggle={() => toggleExpand(leftNode.id)}
                     />
-                    <TouchableOpacity
-                      style={styles.subBranchCard}
-                      onPress={() => handleSubPress(sub)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.subBranchCardText} numberOfLines={1}>
-                        {sub.label}
-                      </Text>
-                    </TouchableOpacity>
                   </View>
-                );
-              })}
-            </View>
-          )}
+
+                  {/* Center connector or node */}
+                  {isCenterRow ? (
+                    <View style={styles.centerNodeContainer}>
+                      <Connector align="left" />
+                      <View style={styles.centerNode}>
+                        <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+                        <Text style={styles.centerLabel}>第一章</Text>
+                        <Text style={styles.centerSubLabel}>人</Text>
+                      </View>
+                      <Connector align="right" />
+                    </View>
+                  ) : (
+                    <View style={styles.centerSpacer}>
+                      <View style={[styles.spacerLine, { marginTop: idx < 2 ? 30 : 10 }]} />
+                    </View>
+                  )}
+
+                  {/* Right side */}
+                  <View style={styles.side}>
+                    <BranchCard
+                      node={rightNode}
+                      align="right"
+                      onPress={() => handleNodePress(rightNode)}
+                      onDoublePress={() => fetchCategoryWords(rightNode.id, rightNode.label)}
+                    />
+                  </View>
+                </View>
+
+                {/* Sub nodes for body */}
+                {isBodyRow && isBodyExpanded && (
+                  <View style={styles.subRow}>
+                    <View style={styles.subContainer}>
+                      <View style={styles.subConnectorVertical} />
+                      <View style={styles.subList}>
+                        {bodySubNodes.map((sub, sIdx) => (
+                          <View
+                            key={sub.id}
+                            style={[
+                              styles.subItemWrapper,
+                              { marginLeft: sIdx * 14 },
+                            ]}
+                          >
+                            <View style={[styles.subConnectorHorizontal, { width: 14 + sIdx * 8 }]} />
+                            <SubBranchCard
+                              node={sub}
+                              onPress={() => handleSubPress(sub)}
+                              onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                            />
+                            {sIdx < bodySubNodes.length - 1 && (
+                              <View style={styles.subConnectorGap} />
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                    <View style={styles.centerSpacer} />
+                    <View style={styles.side} />
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 
-      {/* 子分类弹窗 */}
-      <Modal visible={showSubModal} transparent animationType="fade">
+      {/* Words Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{subTitle}</Text>
-              <TouchableOpacity onPress={() => setShowSubModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+              <Text style={styles.modalTitle}>{modalTitle}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.modalGrid}>
-                {subWords.map((w) => (
-                  <View key={w.id} style={styles.modalWordCard}>
-                    <Text style={styles.modalWordText}>{w.word}</Text>
-                  </View>
-                ))}
+
+            {/* Modal Body */}
+            {modalLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={centerColor} />
+                <Text style={styles.modalLoadingText}>加载中...</Text>
               </View>
-            </ScrollView>
+            ) : modalWords.length === 0 ? (
+              <View style={styles.modalEmpty}>
+                <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.modalEmptyText}>暂无单词</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalWordsGrid}>
+                  {modalWords.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.modalWordCard}
+                      onPress={() => handleWordPress(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.modalWordText}>{item.word}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F0',
+    backgroundColor: '#F9FAFB',
   },
-  backBtn: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 10,
+  contentContainer: {
+    paddingBottom: 32,
   },
-  backText: {
-    fontSize: 16,
-    color: '#059669',
-    fontWeight: '600',
-  },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#1F2937',
-    marginBottom: 20,
-  },
-  diagramArea: {
-    width: SCREEN_W,
-    height: 500,
-    position: 'relative',
-  },
-  centerNode: {
-    position: 'absolute',
-    left: SCREEN_W / 2 - 50,
-    top: 160,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#22c55e',
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-    zIndex: 5,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  centerLabel: {
-    fontSize: 28,
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1F2937',
   },
-  sideNodeWrapper: {
-    position: 'absolute',
-    width: 110,
-    height: 50,
-    zIndex: 4,
+  placeholder: {
+    width: 32,
+  },
+  mapBody: {
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  side: {
+    flex: 1,
+    maxWidth: (SCREEN_W - 140) / 2,
   },
   branchCard: {
-    width: 110,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#22c55e',
-    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  branchCardText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  connectLine: {
-    position: 'absolute',
-    height: 0,
-    borderTopColor: '#9CA3AF',
-    borderTopWidth: 2,
-  },
-  subNodesContainer: {
-    position: 'absolute',
-    width: SCREEN_W,
-    height: 300,
-    top: 200,
-    left: 0,
-    zIndex: 3,
-  },
-  subNodeWrapper: {
-    position: 'absolute',
-    width: 100,
-    height: 44,
-  },
-  subBranchCard: {
-    width: 100,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: '#16a34a',
     justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#16a34a',
+    minWidth: 110,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  subBranchCardText: {
+  branchLeft: {},
+  branchRight: {},
+  branchDot: {
+    display: 'none',
+  },
+  branchContent: {
+    alignItems: 'center',
+  },
+  branchLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-    paddingHorizontal: 4,
   },
-  subConnectLine: {
-    position: 'absolute',
-    height: 0,
-    borderTopColor: '#9CA3AF',
-    borderTopWidth: 1.5,
+  branchPage: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
   },
+  centerNodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  centerNode: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: centerColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: centerColor,
+  },
+  centerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 4,
+  },
+  centerLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: centerColor,
+  },
+  centerSubLabel: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: centerColor,
+  },
+  connectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 20,
+  },
+  connectorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#D1D5DB',
+  },
+  connectorDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#9CA3AF',
+  },
+  centerSpacer: {
+    width: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  spacerLine: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#D1D5DB',
+  },
+  // Sub nodes styles
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  subContainer: {
+    flex: 1,
+    maxWidth: (SCREEN_W - 140) / 2,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+  },
+  subConnectorVertical: {
+    width: 1,
+    height: 60,
+    backgroundColor: '#D1D5DB',
+    marginRight: -1,
+    marginTop: -8,
+  },
+  subList: {
+    alignItems: 'flex-start',
+  },
+  subItemWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subConnectorHorizontal: {
+    width: 16,
+    height: 1,
+    backgroundColor: '#D1D5DB',
+  },
+  subConnectorGap: {
+    width: 1,
+    height: 12,
+    backgroundColor: '#D1D5DB',
+    marginLeft: 16,
+  },
+  subCard: {
+    backgroundColor: '#E0F2FE',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0EA5E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  subLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0EA5E9',
+  },
+  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: '90%',
-    maxHeight: '70%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    minHeight: 300,
+    paddingBottom: 32,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#F3F4F6',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1F2937',
   },
-  modalClose: {
-    fontSize: 22,
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalLoading: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  modalLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  modalEmpty: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  modalEmptyText: {
+    marginTop: 12,
+    fontSize: 15,
     color: '#9CA3AF',
-    fontWeight: '400',
   },
-  modalBody: {
-    padding: 16,
+  modalScroll: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  modalGrid: {
+  modalWordsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 10,
   },
   modalWordCard: {
     width: '31%',
