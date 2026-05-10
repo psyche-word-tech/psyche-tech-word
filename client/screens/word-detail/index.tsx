@@ -114,6 +114,26 @@ export default function WordDetailPage() {
 
 		try {
 			if (params.from === 'mindmap') {
+				// 先获取源表列表，找到当前索引和下一个单词（移动后当前单词会从源表消失）
+				let nextWordData: Word | null = null;
+				let currentIndex = -1;
+				let listLength = 0;
+				try {
+					const listRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`);
+					const listData = await listRes.json();
+					if (Array.isArray(listData)) {
+						listLength = listData.length;
+						currentIndex = listData.findIndex((w: any) => w.word === word.word);
+						console.log('Mindmap list length:', listLength, 'currentIndex:', currentIndex);
+						if (currentIndex >= 0 && currentIndex < listData.length - 1) {
+							nextWordData = listData[currentIndex + 1];
+							console.log('Next word found:', nextWordData?.word);
+						}
+					}
+				} catch (e) {
+					console.log('获取列表失败:', e);
+				}
+
 				/**
 				 * 服务端文件：server/src/routes/user-words.ts
 				 * 接口：POST /api/v1/user-words/move-mindmap
@@ -126,7 +146,7 @@ export default function WordDetailPage() {
 						sourceTable: '111',
 						targetTable: targetTable,
 						word: word.word,
-					})       
+					})
 				});
 
 				const result = await response.json();
@@ -136,22 +156,8 @@ export default function WordDetailPage() {
 					throw new Error(result.error || '移动失败');
 				}
 
+				// 刷新计数
 				fetchMindmapCountsRef.current();
-
-				// 获取下一个单词
-				let nextWordData: Word | null = null;
-				try {
-					const listRes = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`);
-					const listData = await listRes.json();
-					if (Array.isArray(listData)) {
-						const currentIndex = listData.findIndex((w: any) => w.word === word.word);
-						if (currentIndex >= 0 && currentIndex < listData.length - 1) {
-							nextWordData = listData[currentIndex + 1];
-						}
-					}
-				} catch (e) {
-					console.log('获取下一个单词失败:', e);
-				}
 
 				if (nextWordData) {
 					setWord(nextWordData);
