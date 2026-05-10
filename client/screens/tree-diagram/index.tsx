@@ -1,8 +1,18 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Modal,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
+import { API_BASE_URL } from '@/utils/apiConfig';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -17,6 +27,13 @@ interface SubNode {
   id: string;
   label: string;
   parentId: string;
+}
+
+interface WordItem {
+  id: number;
+  word: string;
+  phonetic: string;
+  meaning: string;
 }
 
 const leftNodes: BranchNode[] = [
@@ -41,11 +58,62 @@ const bodySubNodes: SubNode[] = [
   { id: '1-3', label: '3. 腿脚', parentId: '1' },
 ];
 
+// 分类到数据表的映射
+const categoryTableMap: Record<string, string> = {
+  '1': '11',
+  '1-1': '111',
+  '1-2': '112',
+  '1-3': '113',
+  '2': '21',
+  '3': '22',
+  '4': '23',
+  '5': '24',
+  '6': '25',
+  '7': '26',
+  '8': '27',
+  '9': '28',
+  '10': '29',
+};
+
 const centerColor = '#4F46E5';
 
-function SubBranchCard({ node, onPress }: { node: SubNode; onPress?: () => void }) {
+function SubBranchCard({
+  node,
+  onPress,
+  onDoublePress,
+}: {
+  node: SubNode;
+  onPress?: () => void;
+  onDoublePress?: () => void;
+}) {
+  const lastTapRef = useRef<{ time: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
+      // 双击
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      lastTapRef.current = null;
+      onDoublePress?.();
+    } else {
+      // 单击（延迟执行）
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        onPress?.();
+        timerRef.current = null;
+      }, 300);
+      lastTapRef.current = { time: now };
+    }
+  };
+
   return (
-    <TouchableOpacity style={styles.subCard} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.subCard} onPress={handlePress} activeOpacity={0.7}>
       <Text style={styles.subLabel}>{node.label}</Text>
     </TouchableOpacity>
   );
@@ -55,21 +123,53 @@ function BranchCard({
   node,
   align,
   onPress,
+  onDoublePress,
   expanded,
   onToggle,
 }: {
   node: BranchNode;
   align: 'left' | 'right';
   onPress?: () => void;
+  onDoublePress?: () => void;
   expanded?: boolean;
   onToggle?: () => void;
 }) {
   const isBody = node.id === '1';
+  const lastTapRef = useRef<{ time: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
+      // 双击
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      lastTapRef.current = null;
+      onDoublePress?.();
+    } else {
+      // 单击（延迟执行）
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        if (isBody) {
+          onToggle?.();
+        } else {
+          onPress?.();
+        }
+        timerRef.current = null;
+      }, 300);
+      lastTapRef.current = { time: now };
+    }
+  };
+
   return (
     <View style={align === 'left' ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }}>
       <TouchableOpacity
         style={[styles.branchCard, align === 'left' ? styles.branchLeft : styles.branchRight]}
-        onPress={isBody ? onToggle : onPress}
+        onPress={handlePress}
         activeOpacity={0.7}
       >
         <View style={[styles.branchDot, { backgroundColor: node.color }]} />
@@ -101,6 +201,11 @@ function Connector({ align }: { align: 'left' | 'right' }) {
 export default function TreeDiagramPage() {
   const router = useSafeRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalWords, setModalWords] = useState<WordItem[]>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [currentTable, setCurrentTable] = useState('');
 
   const handleNodePress = (node: BranchNode) => {
     router.push('/word-preview', { category: node.label, categoryId: node.id });
@@ -119,6 +224,47 @@ export default function TreeDiagramPage() {
   };
 
   const isBodyExpanded = expandedId === '1';
+
+  const fetchCategoryWords = useCallback(async (categoryId: string, title: string) => {
+    const tableName = categoryTableMap[categoryId];
+    setCurrentTable(tableName || '');
+
+    if (!tableName) {
+      setModalTitle(title);
+      setModalWords([]);
+      setModalVisible(true);
+      return;
+    }
+
+    setModalLoading(true);
+    setModalVisible(true);
+    setModalTitle(title);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setModalWords(data);
+      } else {
+        setModalWords([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch category words:', error);
+      setModalWords([]);
+    } finally {
+      setModalLoading(false);
+    }
+  }, []);
+
+  const handleWordPress = (word: WordItem) => {
+    setModalVisible(false);
+    if (!currentTable) return;
+    router.push('/word-detail', {
+      word: JSON.stringify(word),
+      table: currentTable,
+      from: 'mindmap',
+    });
+  };
 
   return (
     <Screen>
@@ -148,6 +294,7 @@ export default function TreeDiagramPage() {
                       node={leftNode}
                       align="left"
                       onPress={() => handleNodePress(leftNode)}
+                      onDoublePress={() => fetchCategoryWords(leftNode.id, leftNode.label)}
                       expanded={isBodyExpanded}
                       onToggle={() => toggleExpand(leftNode.id)}
                     />
@@ -176,6 +323,7 @@ export default function TreeDiagramPage() {
                       node={rightNode}
                       align="right"
                       onPress={() => handleNodePress(rightNode)}
+                      onDoublePress={() => fetchCategoryWords(rightNode.id, rightNode.label)}
                     />
                   </View>
                 </View>
@@ -189,7 +337,11 @@ export default function TreeDiagramPage() {
                         {bodySubNodes.map((sub, sIdx) => (
                           <View key={sub.id} style={styles.subItemWrapper}>
                             <View style={styles.subConnectorHorizontal} />
-                            <SubBranchCard node={sub} onPress={() => handleSubPress(sub)} />
+                            <SubBranchCard
+                              node={sub}
+                              onPress={() => handleSubPress(sub)}
+                              onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                            />
                             {sIdx < bodySubNodes.length - 1 && (
                               <View style={styles.subConnectorGap} />
                             )}
@@ -206,6 +358,54 @@ export default function TreeDiagramPage() {
           })}
         </View>
       </ScrollView>
+
+      {/* Words Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{modalTitle}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Body */}
+            {modalLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={centerColor} />
+                <Text style={styles.modalLoadingText}>加载中...</Text>
+              </View>
+            ) : modalWords.length === 0 ? (
+              <View style={styles.modalEmpty}>
+                <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.modalEmptyText}>暂无单词</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <View style={styles.modalWordsGrid}>
+                  {modalWords.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.modalWordCard}
+                      onPress={() => handleWordPress(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.modalWordText}>{item.word}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -400,13 +600,87 @@ const styles = StyleSheet.create({
     borderLeftColor: '#0EA5E9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 1,
   },
   subLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0369A1',
+    color: '#0EA5E9',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    minHeight: 300,
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalLoading: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  modalLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  modalEmpty: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  modalEmptyText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#9CA3AF',
+  },
+  modalScroll: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  modalWordsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  modalWordCard: {
+    width: '31%',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modalWordText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
   },
 });
