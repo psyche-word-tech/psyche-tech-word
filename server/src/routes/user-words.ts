@@ -294,17 +294,7 @@ router.post('/move-mindmap', async (req, res) => {
       }
     }
 
-    // 从源表删除
-    const { error: deleteError } = await client
-      .from(sourceTable)
-      .delete()
-      .eq('word', wordData.word);
-
-    if (deleteError) {
-      res.status(500).json({ error: deleteError.message });
-      return;
-    }
-
+    // 注意：不从源表删除，111 表单词数量保持不变
     res.json({ success: true, message: `Word moved to ${targetTable} successfully` });
   } catch (err) {
     console.error('Error moving mindmap word:', err);
