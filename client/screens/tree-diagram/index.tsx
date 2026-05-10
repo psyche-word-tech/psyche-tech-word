@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     paddingRight: 10,
-    marginTop: -200,
+    marginTop: -400,
   },
   rightTopArea: {
     flex: 1,
