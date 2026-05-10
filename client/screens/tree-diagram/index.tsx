@@ -64,6 +64,21 @@ const bodySubNodes: SubNode[] = [
   { id: '1-3', label: '3. 腿脚', parentId: '1' },
 ];
 
+// 节点绝对位置配置 (top, left/right) — 可直接修改数字调整位置
+const nodePositions: Record<string, { top: number; left?: number; right?: number }> = {
+  center: { top: 260, left: SCREEN_W / 2 - 45 },
+  '1': { top: 60, left: 16 },      // 身体部位
+  '2': { top: 130, left: 16 },     // 属性特征
+  '3': { top: 400, left: 16 },     // 能力
+  '4': { top: 470, left: 16 },     // 情绪
+  '5': { top: 540, left: 16 },     // 所欲
+  '6': { top: 60, right: 16 },     // 行为与限制
+  '7': { top: 130, right: 16 },    // 年龄
+  '8': { top: 400, right: 16 },    // 谱系
+  '9': { top: 470, right: 16 },    // 人类与群组
+  '10': { top: 540, right: 16 },   // 职业及其他
+};
+
 // 分类到数据表的映射
 const categoryTableMap: Record<string, string> = {
   '1': '11',
@@ -317,91 +332,46 @@ export default function TreeDiagramPage() {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Mind Map Body */}
-        <View style={styles.mapBody}>
-          {/* Top nodes row: 一二 + 六七 */}
-          <View style={styles.topNodesRow}>
-            <View style={styles.leftTopArea}>
-              {leftTopNodes.map((node) => (
-                <View key={node.id}>
-                  <View style={styles.quadrantItem}>
-                    <BranchCard
-                      node={node}
-                      align="left"
-                      onPress={() => handleNodePress(node)}
-                      onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                      expanded={node.id === '1' ? isBodyExpanded : undefined}
-                      onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
-                    />
-                  </View>
-                  {/* Sub nodes for body - show right after body node */}
-                  {node.id === '1' && isBodyExpanded && (
-                    <View style={styles.subQuadrant}>
-                      {bodySubNodes.map((sub) => (
-                        <SubBranchCard
-                          key={sub.id}
-                          node={sub}
-                          onPress={() => handleSubPress(sub)}
-                          onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
-            <View style={styles.rightTopArea}>
-              {rightTopNodes.map((node) => (
-                <View key={node.id} style={styles.quadrantItem}>
-                  <BranchCard
-                    node={node}
-                    align="right"
-                    onPress={() => handleNodePress(node)}
-                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
-
+        {/* Mind Map Body — 绝对定位 */}
+        <View style={[styles.mapBody, { position: 'relative', height: 640 }]}>
           {/* Center node */}
-          <View style={styles.centerRow}>
-            <View style={styles.centerWrapper}>
-              <View style={styles.centerNode}>
-                <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
-                <Text style={styles.centerLabel}>第一章</Text>
-                <Text style={styles.centerSubLabel}>人</Text>
-              </View>
+          <View style={[styles.nodeAbsolute, nodePositions.center]}>
+            <View style={styles.centerNode}>
+              <View style={[styles.centerDot, { backgroundColor: centerColor }]} />
+              <Text style={styles.centerLabel}>第一章</Text>
+              <Text style={styles.centerSubLabel}>人</Text>
             </View>
           </View>
 
-          {/* Bottom nodes row: 三四五 + 八九十 */}
-          <View style={styles.bottomNodesRow}>
-            <View style={styles.leftBottomArea}>
-              {leftBottomNodes.map((node) => (
-                <View key={node.id} style={styles.quadrantItem}>
-                  <BranchCard
-                    node={node}
-                    align="left"
-                    onPress={() => handleNodePress(node)}
-                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                  />
-                </View>
-              ))}
-            </View>
-            <View style={styles.rightBottomArea}>
-              {rightBottomNodes.map((node) => (
-                <View key={node.id} style={styles.quadrantItem}>
-                  <BranchCard
-                    node={node}
-                    align="right"
-                    onPress={() => handleNodePress(node)}
-                    onDoublePress={() => fetchCategoryWords(node.id, node.label)}
-                  />
-                </View>
-              ))}
-            </View>
-          </View>
+          {/* All branch nodes */}
+          {[...leftTopNodes, ...rightTopNodes, ...leftBottomNodes, ...rightBottomNodes].map((node) => {
+            const pos = nodePositions[node.id];
+            const isLeft = !!pos.left;
+            return (
+              <View key={node.id} style={[styles.nodeAbsolute, pos]}>
+                <BranchCard
+                  node={node}
+                  align={isLeft ? 'left' : 'right'}
+                  onPress={() => handleNodePress(node)}
+                  onDoublePress={() => fetchCategoryWords(node.id, node.label)}
+                  expanded={node.id === '1' ? isBodyExpanded : undefined}
+                  onToggle={node.id === '1' ? () => toggleExpand(node.id) : undefined}
+                />
+                {node.id === '1' && isBodyExpanded && (
+                  <View style={styles.subQuadrantAbsolute}>
+                    {bodySubNodes.map((sub) => (
+                      <SubBranchCard
+                        key={sub.id}
+                        node={sub}
+                        onPress={() => handleSubPress(sub)}
+                        onDoublePress={() => fetchCategoryWords(sub.id, sub.label)}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -488,13 +458,18 @@ const styles = StyleSheet.create({
     width: 32,
   },
   mapBody: {
-    flex: 1,
     paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 16,
-    justifyContent: 'center',
-    gap: 0,
     minHeight: 500,
+  },
+  nodeAbsolute: {
+    position: 'absolute',
+  },
+  subQuadrantAbsolute: {
+    marginTop: 8,
+    alignItems: 'center',
+    gap: 8,
   },
   topNodesRow: {
     flexDirection: 'row',
