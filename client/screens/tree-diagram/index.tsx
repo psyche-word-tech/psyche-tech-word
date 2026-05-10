@@ -243,10 +243,33 @@ export default function TreeDiagramPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
       const data = await response.json();
-      if (Array.isArray(data)) {
-        setModalWords(data);
-      } else {
+      if (!Array.isArray(data)) {
         setModalWords([]);
+        setModalLoading(false);
+        return;
+      }
+
+      // 111 表过滤掉已在 x1/y1/z1 中分类的单词
+      if (tableName === '111') {
+        const [x1Res, y1Res, z1Res] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
+          fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
+          fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+        ]);
+        const [x1Data, y1Data, z1Data] = await Promise.all([
+          x1Res.json(),
+          y1Res.json(),
+          z1Res.json(),
+        ]);
+        const classifiedWords = new Set([
+          ...(Array.isArray(x1Data) ? x1Data.map((w: any) => w.word) : []),
+          ...(Array.isArray(y1Data) ? y1Data.map((w: any) => w.word) : []),
+          ...(Array.isArray(z1Data) ? z1Data.map((w: any) => w.word) : []),
+        ]);
+        const filtered = data.filter((w: WordItem) => !classifiedWords.has(w.word));
+        setModalWords(filtered);
+      } else {
+        setModalWords(data);
       }
     } catch (error) {
       console.error('Failed to fetch category words:', error);
