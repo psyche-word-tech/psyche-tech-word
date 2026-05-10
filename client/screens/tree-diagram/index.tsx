@@ -322,7 +322,7 @@ export default function TreeDiagramPage() {
           {/* Top section: left top + center + right top */}
           <View style={styles.topSection}>
             {/* Left Top */}
-            <View style={styles.quadrant}>
+            <View style={styles.leftQuadrant}>
               {leftTopNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -360,7 +360,7 @@ export default function TreeDiagramPage() {
             </View>
 
             {/* Right Top */}
-            <View style={styles.quadrant}>
+            <View style={styles.rightQuadrant}>
               {rightTopNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -376,7 +376,7 @@ export default function TreeDiagramPage() {
 
           {/* Bottom section: left bottom + right bottom */}
           <View style={styles.bottomSection}>
-            <View style={styles.quadrant}>
+            <View style={styles.bottomLeftQuadrant}>
               {leftBottomNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -388,7 +388,7 @@ export default function TreeDiagramPage() {
                 </View>
               ))}
             </View>
-            <View style={styles.quadrant}>
+            <View style={styles.bottomRightQuadrant}>
               {rightBottomNodes.map((node) => (
                 <View key={node.id} style={styles.quadrantItem}>
                   <BranchCard
@@ -500,10 +500,33 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 14,
   },
-  quadrant: {
+  leftQuadrant: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
     gap: 10,
+    paddingRight: 8,
+  },
+  rightQuadrant: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: 10,
+    paddingLeft: 8,
+  },
+  bottomLeftQuadrant: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    gap: 10,
+    paddingRight: 8,
+  },
+  bottomRightQuadrant: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    gap: 10,
+    paddingLeft: 8,
   },
   quadrantItem: {
     alignItems: 'center',
@@ -511,8 +534,8 @@ const styles = StyleSheet.create({
   centerWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 12,
-    marginTop: 8,
+    marginHorizontal: 8,
+    marginTop: 20,
   },
   branchCard: {
     backgroundColor: '#4CAF50',
