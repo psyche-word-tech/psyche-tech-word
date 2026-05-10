@@ -61,7 +61,7 @@ interface EvaluationResult {
 
 export default function WordDetailPage() {
 	const router = useSafeRouter();
-	const params = useSafeSearchParams<{ word: string; table?: string }>();
+	const params = useSafeSearchParams<{ word: string; table?: string; from?: string }>();
 	
 	const [word, setWord] = useState<Word>(() => {
 		if (params.word) {
@@ -751,7 +751,7 @@ export default function WordDetailPage() {
 					<TouchableOpacity onPress={() => router.back()}>
 						<Text style={styles.backText}>← 返回</Text>
 					</TouchableOpacity>
-					<Text style={styles.headerTitle}>每日单词</Text>
+					<Text style={styles.headerTitle}>{params.from === 'mindmap' ? '导图单词' : '每日单词'}</Text>
 					<View style={styles.placeholder} />
 				</View>
 

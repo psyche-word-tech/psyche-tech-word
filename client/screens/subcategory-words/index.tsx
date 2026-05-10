@@ -88,7 +88,7 @@ export default function SubcategoryWordsPage() {
               <TouchableOpacity
                 key={item.id}
                 activeOpacity={0.7}
-                onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table })}
+                onPress={() => router.push('/word-detail', { word: JSON.stringify(item), table, from: 'mindmap' })}
                 style={{
                   width: '31%',
                   backgroundColor: '#fff',
