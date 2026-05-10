@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 16,
-    minHeight: 500,
+    minHeight: 800,
   },
   nodeAbsolute: {
     position: 'absolute',
