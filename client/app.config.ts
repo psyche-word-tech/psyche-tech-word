@@ -76,7 +76,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           "fonts": ["./assets/fonts/TimesNewRoman.ttf"]
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

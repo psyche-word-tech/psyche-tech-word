@@ -1,12 +1,34 @@
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
+import SyncModal from '@/components/SyncModal';
+import { needsInitialSync, initDatabase } from '@/utils/localDatabase';
 
 const backgroundImg = require('@/assets/home-bg.jpg');
 const booksIcon = require('@/assets/books-icon.webp');
 
 export default function HomeScreen() {
   const router = useSafeRouter();
+  const [syncModalVisible, setSyncModalVisible] = useState(false);
+  const [syncChecked, setSyncChecked] = useState(false);
+
+  useEffect(() => {
+    const checkSync = async () => {
+      try {
+        await initDatabase();
+        const needs = await needsInitialSync();
+        if (needs) {
+          setSyncModalVisible(true);
+        }
+      } catch (err) {
+        console.error('Check sync error:', err);
+      } finally {
+        setSyncChecked(true);
+      }
+    };
+    checkSync();
+  }, []);
 
   return (
     <Screen>
@@ -39,6 +61,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <SyncModal
+        visible={syncModalVisible}
+        onClose={() => setSyncModalVisible(false)}
+        onSyncComplete={() => {
+          setSyncModalVisible(false);
+        }}
+      />
     </Screen>
   );
 }
