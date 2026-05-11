@@ -1,12 +1,37 @@
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { useState } from 'react';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsScreen() {
   const router = useSafeRouter();
+  const { logout } = useAuth();
   const [elderMode, setElderMode] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert(
+      '退出登录',
+      '确定要退出登录吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确定',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login');
+            } catch (error) {
+              console.error('退出登录失败:', error);
+              Alert.alert('错误', '退出登录失败，请重试');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const settingsItems = [
     {
@@ -135,6 +160,7 @@ export default function SettingsScreen() {
           <TouchableOpacity 
             style={styles.logoutButton}
             activeOpacity={0.8}
+            onPress={handleLogout}
           >
             <Text style={styles.logoutText}>退出登录</Text>
           </TouchableOpacity>

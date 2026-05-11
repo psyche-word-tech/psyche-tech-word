@@ -32,8 +32,13 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await logout();
+              // 清除导航栈并跳转到登录页
+              if (router.dismissAll) {
+                router.dismissAll();
+              }
               router.replace('/login');
             } catch (error) {
+              console.error('退出登录失败:', error);
               Alert.alert('错误', '退出登录失败，请重试');
             }
           },
