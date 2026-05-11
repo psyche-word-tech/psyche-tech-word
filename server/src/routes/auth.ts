@@ -48,7 +48,14 @@ router.post('/send-code', async (req, res) => {
       return res.json({ success: false, error: '发送失败' });
     }
 
-    res.json({ success: true, message: '验证码已发送', code, smsWarning: smsResult.success ? undefined : smsResult.error });
+    // 真实短信发送成功时不返回验证码（安全考虑）
+    // 仅在短信服务异常时返回 code，方便开发调试
+    const response: any = { success: true, message: '验证码已发送' };
+    if (!smsResult.success) {
+      response.code = code;
+      response.smsWarning = smsResult.error;
+    }
+    res.json(response);
   } catch (error) {
     console.error('发送验证码失败:', error);
     res.json({ success: false, error: '发送失败' });
