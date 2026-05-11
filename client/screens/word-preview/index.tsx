@@ -31,6 +31,7 @@ interface Word {
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
 export default function WordPreviewPage() {
+	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ category?: string; categoryId?: string }>();
 	const [words, setWords] = useState<Word[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
@@ -179,7 +180,6 @@ export default function WordPreviewPage() {
 
 	// 当前单词
 	const currentWord = words[currentIndex];
-	const router = useSafeRouter();
 
 	const headerSubtitle = params.category
 		? `${params.category} · ${words.length} 个单词`
@@ -190,7 +190,17 @@ export default function WordPreviewPage() {
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
-					<TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+					<TouchableOpacity
+						style={styles.backButton}
+						onPress={() => {
+							if (router.canGoBack && router.canGoBack()) {
+								router.back();
+							} else {
+								router.replace('/');
+							}
+						}}
+						activeOpacity={0.6}
+					>
 						<FontAwesome6 name="arrow-left" size={18} color="#1F2937" />
 					</TouchableOpacity>
 					<View style={styles.headerLeft}>
