@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform, Dimensions } from 'react-native';
 import { Video } from 'expo-av';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
@@ -1382,10 +1382,13 @@ export default function WordDetailPage() {
 							) : (
 								<ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
 									<View style={styles.categoryWordsGrid}>
-										{categoryModalWords.map((item) => (
+										{categoryModalWords.map((item, idx) => (
 											<TouchableOpacity
 												key={item.id}
-												style={styles.categoryWordCard}
+												style={[
+													styles.categoryWordCard,
+													(idx + 1) % 3 === 0 && styles.categoryWordCardThird,
+												]}
 												onPress={() => {
 													setCategoryModalVisible(false);
 													const tableMap: Record<string, string> = { words_x: params.from === 'mindmap' ? 'x1' : 'words_x', words_y: params.from === 'mindmap' ? 'y1' : 'words_y', words_z: params.from === 'mindmap' ? 'z1' : 'words_z' };
@@ -1721,7 +1724,9 @@ const styles = StyleSheet.create({
 		backgroundColor: '#FFFFFF',
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
-		maxHeight: '80%',
+		flex: 1,
+		maxHeight: Dimensions.get('window').height * 0.8,
+		minHeight: 280,
 	},
 	modalHeader: {
 		flexDirection: 'row',
@@ -2067,17 +2072,19 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		flexWrap: 'wrap',
 		padding: 12,
-		gap: 10,
 	},
 	categoryWordCard: {
-		width: '30%',
+		width: '31%',
 		aspectRatio: 2.5,
 		backgroundColor: '#F3F4F6',
 		borderRadius: 12,
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginBottom: 8,
-		marginHorizontal: '1.5%',
+		marginBottom: 10,
+		marginRight: '3.5%',
+	},
+	categoryWordCardThird: {
+		marginRight: 0,
 	},
 	categoryWordText: {
 		fontSize: 15,
