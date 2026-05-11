@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { useOfflineWords } from '@/hooks/useOfflineData';
 import { API_BASE_URL } from '@/utils/apiConfig';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = API_BASE_URL;
@@ -17,33 +16,20 @@ interface Word {
   example?: string;
   example_translation?: string;
   image_url?: string;
-  example_image_url?: string;
-  translation?: string;
 }
 
 export default function WordListPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ table?: string }>();
   const table = params.table || 'words_b';
-
-  const { words: offlineWords, loading: offlineLoading } = useOfflineWords(table);
+  
   const [words, setWords] = useState<Word[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       const fetchWords = async () => {
-        setLoading(true);
         try {
-          // 优先使用离线数据
-          if (offlineWords.length > 0) {
-            setWords(offlineWords);
-            setLoading(false);
-            return;
-          }
-
-          // 离线无数据，回退到远程API
           const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
           const data = await response.json();
           if (Array.isArray(data)) {
@@ -51,15 +37,13 @@ export default function WordListPage() {
           }
         } catch (error) {
           console.error('Failed to fetch words:', error);
-        } finally {
-          setLoading(false);
         }
       };
       fetchWords();
-    }, [table, offlineWords.length])
+    }, [table])
   );
 
-  const filteredWords = words.filter(word =>
+  const filteredWords = words.filter(word => 
     word.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
     word.meaning.includes(searchQuery)
   );
@@ -72,8 +56,8 @@ export default function WordListPage() {
         phonetic: word.phonetic || '',
         meaning: word.meaning,
         example: word.example || '',
-        example_translation: word.example_translation || word.translation || '',
-        image_url: word.image_url || word.example_image_url || ''
+        example_translation: word.example_translation || '',
+        image_url: word.image_url || ''
       }),
       table: table
     });
@@ -102,37 +86,32 @@ export default function WordListPage() {
           />
         </View>
 
-        {/* Loading */}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-          </View>
-        )}
-
         {/* Word List */}
-        {!loading && (
-          <ScrollView style={styles.listContainer}>
-            {filteredWords.length > 0 ? (
-              filteredWords.map((word) => (
-                <TouchableOpacity
-                  key={word.id}
-                  style={styles.wordItem}
-                  onPress={() => handleWordPress(word)}
-                >
-                  <View style={styles.wordRow}>
-                    <Text style={styles.wordText}>{word.word}</Text>
-                    {word.phonetic && (
-                      <Text style={styles.phoneticText}>{word.phonetic}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.meaningText}>{word.meaning}</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>暂无单词</Text>
-            )}
-          </ScrollView>
-        )}
+        <ScrollView style={styles.listContainer}>
+          {filteredWords.length > 0 ? (
+            filteredWords.map((word) => (
+              <TouchableOpacity
+                key={word.id}
+                style={styles.wordItem}
+                onPress={() => handleWordPress(word)}
+              >
+                <View style={styles.wordRow}>
+                  <Text style={styles.wordText}>{word.word}</Text>
+                  {word.phonetic && (
+                    <Text style={styles.phoneticText}>{word.phonetic}</Text>
+                  )}
+                </View>
+                <Text style={styles.meaningText}>{word.meaning}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {searchQuery ? '未找到匹配的单词' : '暂无单词'}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       </View>
     </Screen>
   );
@@ -141,88 +120,86 @@ export default function WordListPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#F5F5F5',
   },
   backText: {
-    fontSize: 16,
-    color: '#007AFF',
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'serif',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
     color: '#333333',
+    fontFamily: 'serif',
+    fontWeight: '600',
   },
   placeholder: {
     width: 50,
   },
   searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
     backgroundColor: '#FFFFFF',
+
   },
   searchInput: {
-    height: 40,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 16,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#333333',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    fontFamily: 'serif',
   },
   listContainer: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    padding: 16,
   },
   wordItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#FAFAFA',
     padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+
   },
   wordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
   },
   wordText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333333',
-    marginRight: 8,
+    fontFamily: 'serif',
   },
   phoneticText: {
     fontSize: 14,
     color: '#666666',
+    fontFamily: 'Times New Roman',
+    marginLeft: 8,
   },
   meaningText: {
     fontSize: 14,
     color: '#666666',
-    lineHeight: 20,
+    fontFamily: 'serif',
+    marginTop: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
   },
   emptyText: {
-    textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     color: '#999999',
-    marginTop: 60,
+    fontFamily: 'serif',
   },
 });

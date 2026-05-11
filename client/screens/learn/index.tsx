@@ -6,7 +6,6 @@ import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
-import { getAllWords, getWordCount, initDatabase, moveWordToCategory } from '@/utils/localDatabase';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -126,20 +125,6 @@ export default function LearnPage() {
 	const fetchData = useCallback(async () => {
 		setError(null);
 		try {
-			await initDatabase();
-
-			// 优先从本地数据库读取
-			const localWords = await getAllWords(table);
-			if (localWords.length > 0) {
-				const xCount = await getWordCount('words_x');
-				const yCount = await getWordCount('words_y');
-				const zCount = await getWordCount('words_z');
-				setAllWords(localWords);
-				setCategoryCounts({ x: xCount, y: yCount, z: zCount });
-				return;
-			}
-
-			// 本地无数据，回退到远程API
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
 				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
@@ -184,25 +169,7 @@ export default function LearnPage() {
 			3: 'words_z'
 		};
 		const targetTable = targetTableMap[categoryId];
-		const categoryKey = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
 
-		// 先更新UI
-		setAllWords(prev => prev.filter(w => w.id !== wordId));
-		setCategoryCounts(prev => ({ ...prev, [categoryKey]: prev[categoryKey] + 1 }));
-
-		// 获取要移动的单词文本
-		const wordToMove = allWords.find(w => w.id === wordId);
-		if (wordToMove) {
-			try {
-				// 先更新本地数据库
-				await initDatabase();
-				await moveWordToCategory(wordToMove.word, targetTable);
-			} catch (e) {
-				console.error('Local move failed:', e);
-			}
-		}
-
-		// 尝试同步到远程服务器
 		try {
 			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
 				method: 'POST',
@@ -214,9 +181,16 @@ export default function LearnPage() {
 				}),
 			});
 		} catch (error) {
-			console.error('Remote move failed (will retry later):', error);
+			console.error('Failed to move word:', error);
 		}
-	}, [table, allWords]);
+
+		setAllWords(prev => prev.filter(w => w.id !== wordId));
+		
+		setCategoryCounts(prev => {
+			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
+			return { ...prev, [key]: prev[key] + 1 };
+		});
+	}, [table]);
 
 	const handleWordPress = (word: Word) => {
 		router.push('/word-detail', { 
