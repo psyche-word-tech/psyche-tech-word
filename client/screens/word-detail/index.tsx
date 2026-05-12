@@ -325,6 +325,12 @@ export default function WordDetailPage() {
 		}
 	}, [params.from]);
 
+	// 使用 ref 存储处理函数，避免 handleDropZonePress 因依赖变化而频繁重建导致点击失效
+	const handleDropRef = useRef(handleDrop);
+	const handleDropDoubleTapRef = useRef(handleDropDoubleTap);
+	useEffect(() => { handleDropRef.current = handleDrop; }, [handleDrop]);
+	useEffect(() => { handleDropDoubleTapRef.current = handleDropDoubleTap; }, [handleDropDoubleTap]);
+
 	const handleDropZonePress = useCallback((targetTable: string, status: string) => {
 		const now = Date.now();
 		if (lastDropTapRef.current && lastDropTapRef.current.table === targetTable && now - lastDropTapRef.current.time < 300) {
@@ -334,19 +340,19 @@ export default function WordDetailPage() {
 				dropTapTimerRef.current = null;
 			}
 			lastDropTapRef.current = null;
-			handleDropDoubleTap(targetTable, status);
+			handleDropDoubleTapRef.current(targetTable, status);
 		} else {
 			// 单击（延迟执行）
 			if (dropTapTimerRef.current) {
 				clearTimeout(dropTapTimerRef.current);
 			}
 			dropTapTimerRef.current = setTimeout(() => {
-				handleDrop(targetTable, status);
+				handleDropRef.current(targetTable, status);
 				dropTapTimerRef.current = null;
 			}, 300);
 			lastDropTapRef.current = { table: targetTable, time: now };
 		}
-	}, [handleDrop, handleDropDoubleTap]);
+	}, []);
 
 	// 页面加载时获取单词列表和分类数量
 	useFocusEffect(
