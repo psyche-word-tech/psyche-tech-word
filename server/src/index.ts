@@ -23,6 +23,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 /**
+ * 根路径健康检查 - Railway 默认健康检查
+ */
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'word-voyage-api' });
+});
+
+/**
  * 健康检查接口 - 验证数据库连接
  * Railway 使用此接口判断服务是否健康
  */
