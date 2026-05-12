@@ -49,7 +49,7 @@ router.post("/", upload.single("audio"), async (req, res) => {
     const llmClient = new LLMClient(config);
     const messages = [
       {
-        role: "system",
+        role: "system" as const,
         content: `你是一位专业的英语口语评分老师。请对比学生的朗读文本和标准原文，从以下几个维度给出评分和反馈：
 
 评分维度（每项满分100分）：
@@ -76,7 +76,7 @@ overall = (accuracy + fluency + pronunciation) / 3，取整数。
 wordCorrect 表示学生朗读的文本是否与原文完全一致。`,
       },
       {
-        role: "user",
+        role: "user" as const,
         content: `标准原文："${originalText}"\n学生朗读识别结果："${transcription}"`,
       },
     ];

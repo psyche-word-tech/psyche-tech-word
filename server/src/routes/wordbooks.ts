@@ -3,6 +3,10 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 const router = express.Router();
 
+const VALID_TABLES = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
+const VALID_TABLES_MOVE = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
+const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words'];
+
 /**
  * GET /api/v1/wordbooks
  * 获取所有词汇书列表
@@ -22,6 +26,7 @@ router.get('/', async (req, res) => {
 
     res.json(data || []);
   } catch (error: any) {
+    console.error('Error fetching wordbooks:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -66,55 +71,21 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
- * GET /api/v1/wordbooks/:table
- * 获取指定表的单词列表
- */
-router.get('/:table', async (req, res) => {
-  try {
-    const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
-    
-    if (!validTables.includes(table)) {
-      res.status(400).json({ error: 'Invalid table name' });
-      return;
-    }
-
-    const client = getSupabaseClient();
-    const { data, error } = await client
-      .from(table)
-      .select('*')
-      .order('id');
-
-    if (error) {
-      res.status(500).json({ error: error.message });
-      return;
-    }
-
-    res.json(data || []);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
  * POST /api/v1/wordbooks/purchase
  * 购买词汇书：将源数据库的单词复制到目标数据库
- * Body: { sourceTable: 'words_a', targetTable: 'words_b' }
  */
 router.post('/purchase', async (req, res) => {
   try {
     const { sourceTable, targetTable } = req.body;
 
-    // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
-    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+    if (!VALID_TABLES_MOVE.includes(sourceTable) || !VALID_TABLES_MOVE.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
     }
 
     // 禁止从 words_a 复制到 words_b（切断联系）
     if (sourceTable === 'words_a' && targetTable === 'words_b') {
-      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed. The tables are now independent.' });
+      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed.' });
       return;
     }
 
@@ -165,29 +136,25 @@ router.post('/purchase', async (req, res) => {
 
 /**
  * POST /api/v1/wordbooks/copy
- * 复制词汇书：将源数据库的单词复制到目标数据库，同时标记词汇书为已购买
- * Body: { sourceTable: 'words_a', targetTable: 'words_b', bookId: 1 }
+ * 复制词汇书
  */
 router.post('/copy', async (req, res) => {
   try {
     const { sourceTable, targetTable, bookId } = req.body;
 
-    // 禁止从 words_a 复制到 words_b（切断联系）
     if (sourceTable === 'words_a' && targetTable === 'words_b') {
-      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed. The tables are now independent.' });
+      res.status(403).json({ error: 'Copying from words_a to words_b is not allowed.' });
       return;
     }
 
-    // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e', 'x1', 'y1', 'z1'];
-    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+    const validCopyTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e', 'x1', 'y1', 'z1'];
+    if (!validCopyTables.includes(sourceTable) || !validCopyTables.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
     }
 
     const client = getSupabaseClient();
 
-    // 从源表获取所有单词
     const { data: sourceWords, error: fetchError } = await client
       .from(sourceTable)
       .select('*');
@@ -202,13 +169,10 @@ router.post('/copy', async (req, res) => {
       return;
     }
 
-    // 清空目标表
     await client.from(targetTable).delete().neq('id', 0);
 
-    // 准备插入数据（移除 id 让数据库自动生成）
     const wordsToInsert = sourceWords.map(({ id, ...rest }) => rest);
 
-    // 插入到目标表
     const { data: insertedWords, error: insertError } = await client
       .from(targetTable)
       .insert(wordsToInsert)
@@ -219,7 +183,6 @@ router.post('/copy', async (req, res) => {
       return;
     }
 
-    // 如果提供了 bookId，标记词汇书为已购买
     if (bookId) {
       await client
         .from('wordbooks')
@@ -240,16 +203,13 @@ router.post('/copy', async (req, res) => {
 
 /**
  * POST /api/v1/wordbooks/move
- * 将单词移动到目标表（已会/模糊/不会）
- * Body: { sourceTable: 'words_b', targetTable: 'words_x', wordId: 1 }
+ * 将单词移动到目标表
  */
 router.post('/move', async (req, res) => {
   try {
     const { sourceTable, targetTable, wordId } = req.body;
 
-    // 验证参数
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
-    if (!validTables.includes(sourceTable) || !validTables.includes(targetTable)) {
+    if (!VALID_TABLES_MOVE.includes(sourceTable) || !VALID_TABLES_MOVE.includes(targetTable)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
     }
@@ -261,7 +221,6 @@ router.post('/move', async (req, res) => {
 
     const client = getSupabaseClient();
 
-    // 从源表获取单词
     const { data: word, error: fetchError } = await client
       .from(sourceTable)
       .select('*')
@@ -278,10 +237,8 @@ router.post('/move', async (req, res) => {
       return;
     }
 
-    // 准备插入数据（移除 id，让数据库自动生成）
     const { id, ...wordData } = word;
 
-    // 插入到目标表
     const { error: insertError } = await client
       .from(targetTable)
       .insert(wordData);
@@ -291,13 +248,9 @@ router.post('/move', async (req, res) => {
       return;
     }
 
-    // 从源表删除
     await client.from(sourceTable).delete().eq('id', wordId);
 
-    res.json({
-      success: true,
-      message: `Word moved to ${targetTable}`
-    });
+    res.json({ success: true, message: `Word moved to ${targetTable}` });
   } catch (err) {
     console.error('Error moving word:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -307,13 +260,13 @@ router.post('/move', async (req, res) => {
 /**
  * GET /api/v1/wordbooks/:table/count
  * 获取指定词汇表的单词数量
+ * NOTE: 必须放在 /:table 之前！
  */
 router.get('/:table/count', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words'];
 
-    if (!validTables.includes(table)) {
+    if (!VALID_TABLES_COUNT.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
     }
@@ -338,13 +291,13 @@ router.get('/:table/count', async (req, res) => {
 /**
  * GET /api/v1/wordbooks/:table
  * 获取指定词汇表的所有单词
+ * NOTE: 动态路由放在最后！
  */
 router.get('/:table', async (req, res) => {
   try {
     const { table } = req.params;
-    const validTables = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
 
-    if (!validTables.includes(table)) {
+    if (!VALID_TABLES.includes(table)) {
       res.status(400).json({ error: 'Invalid table name' });
       return;
     }
@@ -368,5 +321,3 @@ router.get('/:table', async (req, res) => {
 });
 
 export default router;
-
-

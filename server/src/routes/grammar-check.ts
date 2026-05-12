@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
 
     const messages = [
       {
-        role: "system",
+        role: "system" as const,
         content: `你是一位专业的英语老师。请全面检测用户输入的英文句子，包括语法和逻辑两个方面。
 
 检测要求：
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
 只返回JSON，不要有其他解释文字。`
       },
       {
-        role: "user",
+        role: "user" as const,
         content: `请检测以下英文句子的语法：\n${text}`
       }
     ];

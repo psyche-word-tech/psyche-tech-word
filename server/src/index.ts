@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import { checkDatabaseHealth, startKeepAlive, resetSupabaseClient } from "./storage/database/supabase-client";
 import wordsRouter from "./routes/words";
 import userWordsRouter from "./routes/user-words";
 import wordbooksRouter from "./routes/wordbooks";
@@ -21,14 +22,30 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-app.get('/api/v1/health', (req, res) => {
-  console.log('Health check success');
-  res.status(200).json({ status: 'ok' });
+/**
+ * 健康检查接口 - 验证数据库连接
+ * Railway 使用此接口判断服务是否健康
+ */
+app.get('/api/v1/health', async (req, res) => {
+  const result = await checkDatabaseHealth();
+  if (result.healthy) {
+    res.status(200).json({ status: 'ok', db: 'connected' });
+  } else {
+    console.error('Health check failed:', result.error);
+    res.status(503).json({ status: 'error', db: 'disconnected', error: result.error });
+  }
+});
+
+/**
+ * 重置数据库连接接口（用于手动恢复）
+ */
+app.post('/api/v1/health/reset', (req, res) => {
+  resetSupabaseClient();
+  res.status(200).json({ status: 'ok', message: 'Database connection reset' });
 });
 
 // 返回 API 配置信息给前端
 app.get('/api/v1/config', (req, res) => {
-  // 优先使用环境变量，其次使用请求来源
   const baseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 
                   `${req.protocol}://${req.get('host')}`;
   res.json({ 
@@ -48,7 +65,9 @@ app.use('/api/v1/grammar-check', grammarCheckRouter);
 app.use('/api/v1/speech-eval', speechEvalRouter);
 app.use('/api/v1/tts', ttsRouter);
 
-
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}/`);
+  // 启动数据库连接保活（每60秒检查一次）
+  startKeepAlive(60000);
+  console.log('Database keep-alive started');
 });
