@@ -95,20 +95,19 @@ export default function SubcategoryWordsPage() {
         </View>
       </View>
 
-      {/* Enter Mindmap Study Button */}
-      {!loading && words.length > 0 && (
+      {/* Enter Mindmap Study Button - only show when there are unclassified words */}
+      {!loading && words.length > 0 && words.some((w) => w.status === 'none') && (
         <View className="px-4 pb-3 bg-white">
           <TouchableOpacity
             onPress={() => {
               // 找到第一个未分类的单词（status === 'none'）
               const firstUnclassified = words.find((w) => w.status === 'none');
-              const targetWord = firstUnclassified || words[0];
-              if (targetWord) {
+              if (firstUnclassified) {
                 router.push('/word-detail', {
-                  word: JSON.stringify(targetWord),
+                  word: JSON.stringify(firstUnclassified),
                   table,
                   from: 'mindmap',
-                  index: words.indexOf(targetWord).toString(),
+                  index: words.indexOf(firstUnclassified).toString(),
                 });
               }
             }}
@@ -119,6 +118,21 @@ export default function SubcategoryWordsPage() {
             <FontAwesome6 name="brain" size={18} color="#fff" style={{ marginRight: 8 }} />
             <Text className="text-white font-bold text-base">看词分类</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Show "all classified" hint when no unclassified words */}
+      {!loading && words.length > 0 && !words.some((w) => w.status === 'none') && (
+        <View className="px-4 pb-3 bg-white">
+          <View
+            className="flex-row items-center justify-center py-3 rounded-xl"
+            style={{ backgroundColor: '#ECFDF5' }}
+          >
+            <FontAwesome6 name="circle-check" size={18} color='#059669' style={{ marginRight: 8 }} />
+            <Text className="font-bold text-base" style={{ color: '#059669' }}>
+              全部已分类
+            </Text>
+          </View>
         </View>
       )}
 
