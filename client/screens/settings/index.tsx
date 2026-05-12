@@ -11,26 +11,12 @@ export default function SettingsScreen() {
   const [elderMode, setElderMode] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      '退出登录',
-      '确定要退出登录吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确定',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/login');
-            } catch (error) {
-              console.error('退出登录失败:', error);
-              Alert.alert('错误', '退出登录失败，请重试');
-            }
-          },
-        },
-      ]
-    );
+    logout().then(() => {
+      router.replace('/login');
+    }).catch((error) => {
+      console.error('退出登录失败:', error);
+      Alert.alert('错误', '退出登录失败，请重试');
+    });
   };
 
   const settingsItems = [
