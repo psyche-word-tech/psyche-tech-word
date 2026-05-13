@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('wordbooks')
-      .select('*')
+      .select('id,name,purchased')
       .order('id');
 
     if (error) {
@@ -41,22 +41,23 @@ router.get('/stats', async (req, res) => {
     const tables = ['words_b', 'words_x', 'words_y', 'words_z'];
     const labels = ['learning', 'known', 'vague', 'unknown'];
 
+    // 并行查询所有表，而不是串行
+    const results = await Promise.all(
+      tables.map((table) =>
+        client
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .then(({ count, error }) => ({ count: count || 0, error }))
+      )
+    );
+
     const stats: Record<string, number> = {};
-
-    for (let i = 0; i < tables.length; i++) {
-      const table = tables[i];
-      const label = labels[i];
-      const { count, error } = await client
-        .from(table)
-        .select('*', { count: 'exact', head: true });
-
-      if (error) {
-        console.error(`Error counting ${table}:`, error);
-        stats[label] = 0;
-      } else {
-        stats[label] = count || 0;
+    results.forEach((result, i) => {
+      if (result.error) {
+        console.error(`Error counting ${tables[i]}:`, result.error);
       }
-    }
+      stats[labels[i]] = result.count;
+    });
 
     res.json({
       learning: stats.learning || 0,
@@ -305,8 +306,7 @@ router.get('/:table', async (req, res) => {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from(table)
-      .select('*')
-      .order('id');
+      .select('id,word,meaning,phonetic,example,type,star')
 
     if (error) {
       res.status(500).json({ error: error.message });
