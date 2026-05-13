@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "pnpm start",
-    "healthcheckPath": "/",
+    "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 60
   }
 }
