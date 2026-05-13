@@ -17,14 +17,6 @@ const DysmsapiClient = (DysmsapiModule as any).default as typeof DysmsapiModule;
 function getClient() {
   const accessKeyId = process.env.ALIBABA_CLOUD_ACCESS_KEY_ID || '';
   const accessKeySecret = process.env.ALIBABA_CLOUD_ACCESS_KEY_SECRET || '';
-  const signName = process.env.ALIBABA_CLOUD_SMS_SIGN_NAME || '';
-  const templateCode = process.env.ALIBABA_CLOUD_SMS_TEMPLATE_CODE || '';
-
-  console.log('[SMS Debug] accessKeyId exists:', !!accessKeyId, 'length:', accessKeyId.length);
-  console.log('[SMS Debug] accessKeySecret exists:', !!accessKeySecret, 'length:', accessKeySecret.length);
-  console.log('[SMS Debug] signName exists:', !!signName, 'value:', signName);
-  console.log('[SMS Debug] templateCode exists:', !!templateCode, 'value:', templateCode);
-
   return new (DysmsapiClient as any)({
     accessKeyId,
     accessKeySecret,
