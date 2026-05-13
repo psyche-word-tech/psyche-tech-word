@@ -113,7 +113,7 @@ export async function queryWithRetry<T>(
     }
   }
 
-  return result;}
+  return result;
 }
 
 /**
