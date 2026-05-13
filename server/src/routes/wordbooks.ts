@@ -3,6 +3,22 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 const router = express.Router();
 
+// 简单内存缓存
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟
+const cache: Record<string, { data: any; expiry: number }> = {};
+
+function getCache(key: string) {
+  const item = cache[key];
+  if (item && item.expiry > Date.now()) {
+    return item.data;
+  }
+  return null;
+}
+
+function setCache(key: string, data: any) {
+  cache[key] = { data, expiry: Date.now() + CACHE_TTL };
+}
+
 const VALID_TABLES = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
 const VALID_TABLES_MOVE = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
 const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words'];
@@ -13,6 +29,12 @@ const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x
  */
 router.get('/', async (req, res) => {
   try {
+    const cached = getCache('wordbooks:list');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const client = getSupabaseClient();
     const { data, error } = await client
       .from('wordbooks')
@@ -24,7 +46,9 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    res.json(data || []);
+    const result = data || [];
+    setCache('wordbooks:list', result);
+    res.json(result);
   } catch (error: any) {
     console.error('Error fetching wordbooks:', error);
     res.status(500).json({ error: error.message });
@@ -37,6 +61,12 @@ router.get('/', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
+    const cached = getCache('wordbooks:stats');
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const client = getSupabaseClient();
     const tables = ['words_b', 'words_x', 'words_y', 'words_z'];
     const labels = ['learning', 'known', 'vague', 'unknown'];
@@ -59,12 +89,14 @@ router.get('/stats', async (req, res) => {
       stats[labels[i]] = result.count;
     });
 
-    res.json({
+    const result = {
       learning: stats.learning || 0,
       known: stats.known || 0,
       vague: stats.vague || 0,
       unknown: stats.unknown || 0,
-    });
+    };
+    setCache('wordbooks:stats', result);
+    res.json(result);
   } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -264,28 +296,38 @@ router.post('/move', async (req, res) => {
  * NOTE: 必须放在 /:table 之前！
  */
 router.get('/:table/count', async (req, res) => {
+  const table = req.params.table;
+  const cacheKey = `wordbooks:${table}:count`;
+  const cached = getCache(cacheKey);
+  if (cached) {
+    res.json(cached);
+    return;
+  }
+
+  const tableWhitelist = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e', 'words_f', 'words_g', 'words_h', 'words_i', 'words_j', 'words_k', 'words_l', 'words_m', 'words_n', 'words_o', 'words_p', 'words_q', 'words_r', 'words_s', 'words_t', 'words_u', 'words_v', 'words_w', 'words_x', 'words_y', 'words_z'];
+  if (!tableWhitelist.includes(table)) {
+    res.status(400).json({ error: 'Invalid table name' });
+    return;
+  }
+
   try {
-    const { table } = req.params;
-
-    if (!VALID_TABLES_COUNT.includes(table)) {
-      res.status(400).json({ error: 'Invalid table name' });
-      return;
-    }
-
     const client = getSupabaseClient();
     const { count, error } = await client
       .from(table)
       .select('*', { count: 'exact', head: true });
 
     if (error) {
+      console.error(`Error counting table ${table}:`, error);
       res.status(500).json({ error: error.message });
       return;
     }
 
-    res.json({ table, count: count || 0 });
-  } catch (err) {
-    console.error('Error counting words:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    const result = { table, count: count || 0 };
+    setCache(cacheKey, result);
+    res.json(result);
+  } catch (error: any) {
+    console.error(`Error counting table ${table}:`, error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -303,16 +345,27 @@ router.get('/:table', async (req, res) => {
       return;
     }
 
+    // Cache check
+    const cacheKey = `words:${table}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      console.log(`[Cache Hit] ${cacheKey}`);
+      res.json(cached);
+      return;
+    }
+
     const client = getSupabaseClient();
     const { data, error } = await client
       .from(table)
-      .select('id,word,meaning,phonetic,example,type,star')
+      .select('id,word,meaning,phonetic,example,type,star');
 
     if (error) {
       res.status(500).json({ error: error.message });
       return;
     }
 
+    cache.set(cacheKey, data || []);
+    console.log(`[Cache Set] ${cacheKey}, items: ${(data || []).length}`);
     res.json(data || []);
   } catch (err) {
     console.error('Error fetching words:', err);
