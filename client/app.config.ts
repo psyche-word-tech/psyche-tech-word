@@ -36,6 +36,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // 关键：将后端地址注入到 extra 中，供运行时使用
     "extra": {
       ...config.extra,
+      "eas": {
+        "projectId": "fe451a1b-dbcb-4d2b-b929-f2404fbd892c"
+      },
       "backendBaseUrl": backendBaseUrl || 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site'
     },
     "plugins": [
