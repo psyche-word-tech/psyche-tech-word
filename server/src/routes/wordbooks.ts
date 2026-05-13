@@ -347,7 +347,7 @@ router.get('/:table', async (req, res) => {
 
     // Cache check
     const cacheKey = `words:${table}`;
-    const cached = cache.get(cacheKey);
+    const cached = getCache(cacheKey);
     if (cached) {
       console.log(`[Cache Hit] ${cacheKey}`);
       res.json(cached);
@@ -357,14 +357,14 @@ router.get('/:table', async (req, res) => {
     const client = getSupabaseClient();
     const { data, error } = await client
       .from(table)
-      .select('id,word,meaning,phonetic,example,type,star');
+      .select('*');
 
     if (error) {
       res.status(500).json({ error: error.message });
       return;
     }
 
-    cache.set(cacheKey, data || []);
+    setCache(cacheKey, data || []);
     console.log(`[Cache Set] ${cacheKey}, items: ${(data || []).length}`);
     res.json(data || []);
   } catch (err) {
