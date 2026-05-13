@@ -302,6 +302,9 @@ importers:
       drizzle-zod:
         specifier: ^0.8.3
         version: 0.8.3(drizzle-orm@0.45.2(@types/pg@8.20.0)(pg@8.20.0))(zod@4.3.6)
+      esbuild:
+        specifier: 0.27.2
+        version: 0.27.2
       express:
         specifier: ^4.22.1
         version: 4.22.1
@@ -336,9 +339,6 @@ importers:
       drizzle-kit:
         specifier: ^0.31.8
         version: 0.31.10
-      esbuild:
-        specifier: 0.27.2
-        version: 0.27.2
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
