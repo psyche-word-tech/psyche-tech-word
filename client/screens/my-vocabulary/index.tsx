@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Ale
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 interface WordBook {
   id: number;
@@ -28,10 +29,7 @@ export default function MyVocabularyPage() {
         setErrorMsg('');
         
         try {
-          const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          });
+          const response = await fetchWithRetry(`/api/v1/wordbooks`);
           
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);

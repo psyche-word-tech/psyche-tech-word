@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -126,10 +127,10 @@ export default function LearnPage() {
 		setError(null);
 		try {
 			const [wordsRes, xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/${table}`),
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_x`),
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_y`),
-				fetch(`${API_BASE_URL}/api/v1/wordbooks/words_z`)
+				fetchWithRetry(`/api/v1/wordbooks/${table}`),
+				fetchWithRetry(`/api/v1/wordbooks/words_x`),
+				fetchWithRetry(`/api/v1/wordbooks/words_y`),
+				fetchWithRetry(`/api/v1/wordbooks/words_z`)
 			]);
 
 			const wordsData = await wordsRes.json();

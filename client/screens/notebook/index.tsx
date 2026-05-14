@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 interface NotebookWord {
   id: number;
@@ -23,7 +24,7 @@ export default function NotebookPage() {
 
   const fetchWords = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/words/notebook`);
+      const response = await fetchWithRetry(`/api/v1/words/notebook`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setWords(data);
@@ -46,7 +47,7 @@ export default function NotebookPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/words/notebook`, {
+      const response = await fetchWithRetry(`/api/v1/words/notebook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,7 +80,7 @@ export default function NotebookPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await fetch(`${API_BASE_URL}/api/v1/words/notebook/${id}`, {
+              await fetchWithRetry(`/api/v1/words/notebook/${id}`, {
                 method: 'DELETE',
               });
               fetchWords();

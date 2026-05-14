@@ -13,6 +13,7 @@ import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -270,7 +271,7 @@ export default function TreeDiagramPage() {
     setModalTitle(title);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
+      const response = await fetchWithRetry(`/api/v1/wordbooks/${tableName}`);
       const data = await response.json();
       if (!Array.isArray(data)) {
         setModalWords([]);
@@ -281,9 +282,9 @@ export default function TreeDiagramPage() {
       // 111 表过滤掉已在 x1/y1/z1 中分类的单词
       if (tableName === '111') {
         const [x1Res, y1Res, z1Res] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
-          fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
-          fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+          fetchWithRetry(`/api/v1/wordbooks/x1`),
+          fetchWithRetry(`/api/v1/wordbooks/y1`),
+          fetchWithRetry(`/api/v1/wordbooks/z1`),
         ]);
         const [x1Data, y1Data, z1Data] = await Promise.all([
           x1Res.json(),

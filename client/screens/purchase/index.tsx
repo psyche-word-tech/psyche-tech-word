@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -79,7 +80,7 @@ export default function PurchasePage() {
       // 逐本购买
       for (const bookId of selectedBooks) {
         const bookConfig = BOOK_TABLE_MAP[bookId];
-        const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/copy`, {
+        const response = await fetchWithRetry(`/api/v1/wordbooks/copy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

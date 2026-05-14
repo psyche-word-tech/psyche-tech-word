@@ -4,6 +4,7 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 interface Word {
 	id: number;
@@ -28,7 +29,7 @@ export default function WordCategoryPage() {
 	const fetchWords = useCallback(async () => {
 		setIsLoading(true);
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/${tableName}`);
+			const response = await fetchWithRetry(`/api/v1/user-words/category/${tableName}`);
 			const data = await response.json();
 			if (Array.isArray(data)) {
 				setWords(data);

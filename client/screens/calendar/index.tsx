@@ -49,6 +49,7 @@ const mockSegments: DaySegment[] = getLast7Days();
 
 const MAX_VALUE = 25;
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 type RoutePath = '/known-words' | '/vague-words' | '/unknown-words';
 
@@ -98,7 +99,7 @@ export default function CalendarPage() {
     let cancelled = false;
     const fetchStats = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/stats`);
+        const response = await fetchWithRetry(`/api/v1/wordbooks/stats`);
         const data = await response.json();
         if (!cancelled) {
           setStats(data);

@@ -13,6 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -46,7 +47,7 @@ export default function WordPreviewPage() {
 			setIsLoading(true);
 			setError(null);
 
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
+			const response = await fetchWithRetry(`/api/v1/user-words/category/words_b`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -65,9 +66,9 @@ export default function WordPreviewPage() {
 	const fetchCategoryCounts = useCallback(async () => {
 		try {
 			const [xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_x/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
+				fetchWithRetry(`/api/v1/user-words/category/words_x/count`),
+				fetchWithRetry(`/api/v1/user-words/category/words_y/count`),
+				fetchWithRetry(`/api/v1/user-words/category/words_z/count`),
 			]);
 
 			const [xData, yData, zData] = await Promise.all([
@@ -105,7 +106,7 @@ export default function WordPreviewPage() {
 	// 移动单词到分类
 	const handleMoveWord = useCallback(async (word: Word, targetTable: string) => {
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/user-words/move`, {
+			const response = await fetchWithRetry(`/api/v1/user-words/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

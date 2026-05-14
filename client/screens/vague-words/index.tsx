@@ -4,6 +4,7 @@ import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 interface Word {
   id: number;
@@ -24,7 +25,7 @@ export default function VagueWordsPage() {
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetch(`${apiBaseUrl}/api/v1/wordbooks/words_y`);
+          const response = await fetchWithRetry(`/api/v1/wordbooks/words_y`);
           const data = await response.json();
           if (Array.isArray(data)) {
             setWords(data);
