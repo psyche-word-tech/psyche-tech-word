@@ -446,12 +446,12 @@ export default function WordDetailPage() {
 
 		setIsCheckingGrammar(true);
 		try {
-			/**
+				/**
 			 * 服务端文件：server/src/routes/grammar-check.ts
 			 * 接口：POST /api/v1/grammar-check
 			 * Body参数：text: string, language?: string
 			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/grammar-check`, {
+			const response = await fetchWithRetry(`/api/v1/grammar-check`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
