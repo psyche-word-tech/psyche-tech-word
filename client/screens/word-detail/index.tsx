@@ -1,16 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions } from 'react-native';
 import { Video } from 'expo-av';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
+
 import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 import { createFormDataFile } from '@/utils/createFormDataFile';
 
 interface Word {
@@ -664,48 +665,11 @@ export default function WordDetailPage() {
 		};
 	}, []);
 
-	// 发音功能
+	// 发音功能：统一走后端 TTS，手机端和电脑端效果一致
 	const playPronunciation = async (text?: string) => {
 		const playText = text || word?.word || '';
 		if (!playText) return;
-
-		if (Platform.OS === 'web') {
-			// Web 端使用 Web Speech API
-			try {
-				const utterance = new (globalThis as any).SpeechSynthesisUtterance(playText);
-				utterance.lang = 'en-US';
-				utterance.rate = 0.9;
-				setIsPlaying(true);
-				utterance.onend = () => setIsPlaying(false);
-				utterance.onerror = () => {
-					setIsPlaying(false);
-					console.error('Speech synthesis error');
-				};
-				(globalThis as any).speechSynthesis.speak(utterance);
-			} catch {
-				setIsPlaying(false);
-			}
-		} else {
-			// 移动端：尝试系统 TTS，失败则尝试下载播放
-			setIsPlaying(true);
-			try {
-				// 先尝试系统 TTS（最可靠的方式）
-				Speech.speak(playText, {
-					language: 'en-US',
-					rate: 0.9,
-					onDone: () => setIsPlaying(false),
-					onError: (err) => {
-						console.error('expo-speech error:', err);
-						setIsPlaying(false);
-						// fallback: 下载在线音频
-						playDownloadedTTS(playText);
-					},
-				});
-			} catch {
-				setIsPlaying(false);
-				playDownloadedTTS(playText);
-			}
-		}
+		playDownloadedTTS(playText);
 	};
 
 	// 下载在线音频并播放
@@ -721,9 +685,7 @@ export default function WordDetailPage() {
 				shouldDuckAndroid: true,
 			});
 			const encoded = encodeURIComponent(text);
-			const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encoded}`;
-
-			const response = await fetch(audioUrl);
+			const response = await fetchWithRetry(`/api/v1/tts?text=${encoded}`);
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}`);
 			}
