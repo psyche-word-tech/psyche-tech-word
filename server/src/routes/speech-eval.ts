@@ -186,10 +186,22 @@ router.post("/", upload.single("audio"), async (req, res) => {
 
     if (!transcription) {
       const hasBaiduKey = !!(process.env.BAIDU_ASR_API_KEY && process.env.BAIDU_ASR_SECRET_KEY);
+      // 临时测试：直接尝试获取token并返回
+      let tokenTest = "not_tested";
+      try {
+        const testRes = await fetch(
+          `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${process.env.BAIDU_ASR_API_KEY}&client_secret=${process.env.BAIDU_ASR_SECRET_KEY}`,
+          { method: "POST" }
+        );
+        const testData = await testRes.json() as any;
+        tokenTest = testData.access_token ? `ok(${testData.access_token.substring(0, 10)}...)` : `fail:${JSON.stringify(testData).substring(0, 200)}`;
+      } catch (e: any) {
+        tokenTest = `error:${e.message}`;
+      }
       return res.status(400).json({
         error: "未能识别到语音内容，请重新录音",
-        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : (hasBaiduKey ? "百度ASR初始化失败，请检查Key配置" : "未配置百度ASR密钥"),
-        debug: { hasBaiduKey, asrMethod, wavSize: wavBuffer?.length },
+        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : (hasBaiduKey ? "百度ASR初始化失败" : "未配置百度ASR密钥"),
+        debug: { hasBaiduKey, asrMethod, wavSize: wavBuffer?.length, tokenTest },
       });
     }
 
