@@ -171,6 +171,7 @@ router.post("/", upload.single("audio"), async (req, res) => {
 
       // 2b. 内置 ASR 失败，尝试百度 ASR（Railway 环境）
       const baiduToken = await getBaiduAccessToken();
+      console.log(`[SpeechEval] Baidu token: ${baiduToken ? "ok" : "null"}`);
       if (baiduToken) {
         try {
           const baiduStart = Date.now();
