@@ -156,6 +156,7 @@ router.post("/", upload.single("audio"), async (req, res) => {
     let transcription = "";
     const asrStart = Date.now();
     let asrMethod = "";
+    let asrError = ""; // 记录ASR错误信息
 
     // 2a. 先尝试内置 ASR（沙箱环境）
     try {
@@ -169,6 +170,7 @@ router.post("/", upload.single("audio"), async (req, res) => {
       asrMethod = "builtin";
       console.log(`[SpeechEval] Built-in ASR done in ${Date.now() - asrStart}ms, text="${transcription}"`);
     } catch (builtinErr: any) {
+      asrError = `builtin: ${builtinErr.message}`;
       console.error(`[SpeechEval] Built-in ASR failed: ${builtinErr.message}`);
 
       // 2b. 内置 ASR 失败，尝试百度 ASR（Railway 环境）
@@ -181,6 +183,7 @@ router.post("/", upload.single("audio"), async (req, res) => {
           asrMethod = "baidu";
           console.log(`[SpeechEval] Baidu ASR done in ${Date.now() - baiduStart}ms, text="${transcription}"`);
         } catch (baiduErr: any) {
+          asrError += ` | baidu: ${baiduErr.message}`;
           console.error(`[SpeechEval] Baidu ASR failed: ${baiduErr.message}`);
         }
       }
@@ -202,8 +205,8 @@ router.post("/", upload.single("audio"), async (req, res) => {
       }
       return res.status(400).json({
         error: "未能识别到语音内容，请重新录音",
-        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : (hasBaiduKey ? "百度ASR初始化失败" : "未配置百度ASR密钥"),
-        debug: { hasBaiduKey, asrMethod, wavSize: wavBuffer?.length, tokenTest },
+        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : (hasBaiduKey ? `百度ASR失败: ${asrError}` : "未配置百度ASR密钥"),
+        debug: { hasBaiduKey, asrMethod, asrError, wavSize: wavBuffer?.length, tokenTest },
       });
     }
 
