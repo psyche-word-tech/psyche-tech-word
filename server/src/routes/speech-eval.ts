@@ -184,9 +184,11 @@ router.post("/", upload.single("audio"), async (req, res) => {
     }
 
     if (!transcription) {
+      const hasBaiduKey = !!(process.env.BAIDU_ASR_API_KEY && process.env.BAIDU_ASR_SECRET_KEY);
       return res.status(400).json({
         error: "未能识别到语音内容，请重新录音",
-        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : "无可用的语音识别服务",
+        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : (hasBaiduKey ? "百度ASR初始化失败，请检查Key配置" : "未配置百度ASR密钥"),
+        debug: { hasBaiduKey, asrMethod, wavSize: wavBuffer?.length },
       });
     }
 
