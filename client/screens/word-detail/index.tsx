@@ -740,10 +740,14 @@ export default function WordDetailPage() {
 		}
 	};
 
-	// 播放预录制的例句音频
+	// 播放预录制的例句音频，失败时自动 fallback 到 TTS 朗读
 	const playExampleAudio = async () => {
-		const audioUrl = (word.example_audio_url as string) || "https://bj.bcebos.com/v1/coze-coding-dev-bj/word-audio/gut_example.mp4?authorization=bce-auth-v1%2Ff647a41038142e8a7f0a830e771862%2F2025-06-17T09%3A15%3A36Z%2F-1%2Fhost%2Fa06c0c86b29016f62752e826001b48d3762171a1547560bc9e439264f2464f2407612e5f627b8764576592d00b7192204";
-		if (!audioUrl) return;
+		const audioUrl = word.example_audio_url as string;
+		if (!audioUrl) {
+			// 没有预录制音频，直接用 TTS 朗读例句
+			playPronunciation(word.example);
+			return;
+		}
 
 		// Web端直接用浏览器Audio播放
 		if (typeof document !== 'undefined') {
@@ -753,9 +757,13 @@ export default function WordDetailPage() {
 			audio.onended = () => setIsAudioPlaying(false);
 			audio.onerror = () => {
 				setIsAudioPlaying(false);
-				console.error('Web example audio error');
+				console.error('Web example audio error, fallback to TTS');
+				playPronunciation(word.example);
 			};
-			audio.play().catch(() => setIsAudioPlaying(false));
+			audio.play().catch(() => {
+				setIsAudioPlaying(false);
+				playPronunciation(word.example);
+			});
 			return;
 		}
 
@@ -780,15 +788,20 @@ export default function WordDetailPage() {
 			);
 
 			soundRef.current = sound;
-			sound.setOnPlaybackStatusUpdate((status) => {
+			sound.setOnPlaybackStatusUpdate((status: any) => {
 				if (status.isLoaded && status.didJustFinish) {
 					setIsAudioPlaying(false);
+				}
+				if (status.error) {
+					setIsAudioPlaying(false);
+					playPronunciation(word.example);
 				}
 			});
 		} catch (error: any) {
 			console.error("Example audio play error:", error);
 			setIsAudioPlaying(false);
-			Alert.alert("播放失败", `无法播放例句: ${error?.message || "未知错误"}`);
+			// fallback 到 TTS 朗读例句
+			playPronunciation(word.example);
 		}
 	};
 
