@@ -1,9 +1,41 @@
 import { Router } from "express";
 import multer from "multer";
 import { LLMClient, Config, ASRClient } from "coze-coding-dev-sdk";
+import * as fs from "fs";
+import * as path from "path";
+import { execSync } from "child_process";
+import ffmpegStatic from "ffmpeg-static";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
+
+// 使用 ffmpeg-static 转换音频为 WAV (16kHz, 单声道, 16bit PCM)
+async function convertToWav(inputBuffer: Buffer, inputExt: string): Promise<Buffer> {
+  const tmpDir = "/tmp";
+  const inputFile = path.join(tmpDir, `speech_in_${Date.now()}${inputExt}`);
+  const outputFile = path.join(tmpDir, `speech_out_${Date.now()}.wav`);
+
+  try {
+    // 写入输入文件
+    fs.writeFileSync(inputFile, inputBuffer);
+
+    // 使用 ffmpeg-static 或系统 ffmpeg
+    const ffmpegPath = ffmpegStatic || "ffmpeg";
+
+    // 转换为 WAV: 16kHz, 单声道, 16bit PCM
+    execSync(
+      `${ffmpegPath} -i "${inputFile}" -ar 16000 -ac 1 -sample_fmt s16 -y "${outputFile}" 2>/dev/null`,
+      { timeout: 30000 }
+    );
+
+    const wavBuffer = fs.readFileSync(outputFile);
+    return wavBuffer;
+  } finally {
+    // 清理临时文件
+    try { fs.unlinkSync(inputFile); } catch {}
+    try { fs.unlinkSync(outputFile); } catch {}
+  }
+}
 
 // 发音评分
 router.post("/", upload.single("audio"), async (req, res) => {
@@ -21,11 +53,23 @@ router.post("/", upload.single("audio"), async (req, res) => {
 
     const config = new Config();
 
-    // Step 1: ASR 语音识别
+    // Step 1: 转换音频为 WAV 格式 (ASR 只支持 WAV)
+    let wavBuffer: Buffer;
+    try {
+      const inputExt = file.originalname?.match(/\.\w+$/)?.[0] || ".m4a";
+      wavBuffer = await convertToWav(file.buffer, inputExt);
+      console.log(`Audio converted: ${file.buffer.length} bytes -> ${wavBuffer.length} bytes WAV`);
+    } catch (convErr: any) {
+      console.error("Audio conversion failed:", convErr.message);
+      // 转换失败时尝试直接使用原文件（可能已经是 WAV）
+      wavBuffer = file.buffer;
+    }
+
+    // Step 2: ASR 语音识别
     let transcription = "";
     try {
       const asrClient = new ASRClient(config);
-      const audioBase64 = file.buffer.toString("base64");
+      const audioBase64 = wavBuffer.toString("base64");
       const asrResult = await asrClient.recognize({
         uid: "speech-eval",
         base64Data: audioBase64,

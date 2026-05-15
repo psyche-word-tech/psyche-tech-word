@@ -103,6 +103,8 @@ export default function WordDetailPage() {
 	const recordingRef = useRef<Audio.Recording | null>(null);
 	const [recordingVolume, setRecordingVolume] = useState<number[]>(new Array(20).fill(0));
 	const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+	const recordedChunksRef = useRef<Blob[]>([]);
 
 	// 双击按钮显示分类单词弹窗
 	const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -814,6 +816,23 @@ export default function WordDetailPage() {
 	// 录音评分功能
 	const startRecording = async () => {
 		try {
+			// Web 端使用浏览器 MediaRecorder API
+			if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				const mediaRecorder = new MediaRecorder(stream);
+				mediaRecorderRef.current = mediaRecorder;
+				recordedChunksRef.current = [];
+				mediaRecorder.ondataavailable = (event) => {
+					if (event.data.size > 0) {
+						recordedChunksRef.current.push(event.data);
+					}
+				};
+				mediaRecorder.start();
+				setIsRecording(true);
+				return;
+			}
+
+			// 移动端使用 expo-av
 			const { status } = await Audio.requestPermissionsAsync();
 			if (status !== 'granted') {
 				Alert.alert('权限不足', '需要麦克风权限才能录音');
@@ -858,8 +877,50 @@ export default function WordDetailPage() {
 				clearInterval(meteringIntervalRef.current);
 				meteringIntervalRef.current = null;
 			}
-			if (!recordingRef.current) return;
 
+			// Web 端：使用 MediaRecorder 上传 Blob
+			if (mediaRecorderRef.current) {
+				const mediaRecorder = mediaRecorderRef.current;
+				mediaRecorder.stop();
+				// 等待数据收集完成
+				await new Promise<void>((resolve) => {
+					mediaRecorder.onstop = () => resolve();
+				});
+
+				// 停止所有 track
+				if (mediaRecorder.stream) {
+					mediaRecorder.stream.getTracks().forEach(track => track.stop());
+				}
+				mediaRecorderRef.current = null;
+
+				if (!word.example) return;
+
+				setIsEvaluating(true);
+				const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+				recordedChunksRef.current = [];
+
+				// 上传音频到后端进行评分
+				const formData = new FormData();
+				formData.append('audio', blob, 'recording.webm');
+				formData.append('originalText', word.example);
+
+				const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
+					method: 'POST',
+					body: formData,
+				});
+
+				const result = await response.json();
+				if (!response.ok) {
+					throw new Error(result.error || '评分失败');
+				}
+
+				setEvaluationResult(result);
+				setShowEvalModal(true);
+				return;
+			}
+
+			// 移动端：使用 expo-av
+			if (!recordingRef.current) return;
 			await recordingRef.current.stopAndUnloadAsync();
 			const uri = recordingRef.current.getURI();
 			recordingRef.current = null;
@@ -873,11 +934,6 @@ export default function WordDetailPage() {
 			formData.append('audio', createFormDataFile(uri, 'recording.m4a', 'audio/m4a'));
 			formData.append('originalText', word.example);
 
-			/**
-			 * 服务端文件：server/src/routes/speech-eval.ts
-			 * 接口：POST /api/v1/speech-eval
-			 * Body参数：audio: File, originalText: string
-			 */
 			const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
 				method: 'POST',
 				body: formData,

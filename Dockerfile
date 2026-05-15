@@ -2,8 +2,8 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# 安装 pnpm
-RUN npm install -g pnpm
+# 安装 pnpm 和 ffmpeg
+RUN npm install -g pnpm && apk add --no-cache ffmpeg
 
 # 复制 package 文件
 COPY server/package*.json ./
