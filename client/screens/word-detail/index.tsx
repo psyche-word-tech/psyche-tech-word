@@ -745,6 +745,20 @@ export default function WordDetailPage() {
 		const audioUrl = (word.example_audio_url as string) || "https://bj.bcebos.com/v1/coze-coding-dev-bj/word-audio/gut_example.mp4?authorization=bce-auth-v1%2Ff647a41038142e8a7f0a830e771862%2F2025-06-17T09%3A15%3A36Z%2F-1%2Fhost%2Fa06c0c86b29016f62752e826001b48d3762171a1547560bc9e439264f2464f2407612e5f627b8764576592d00b7192204";
 		if (!audioUrl) return;
 
+		// Web端直接用浏览器Audio播放
+		if (typeof document !== 'undefined') {
+			setIsAudioPlaying(true);
+			const audio = document.createElement('audio');
+			audio.src = audioUrl;
+			audio.onended = () => setIsAudioPlaying(false);
+			audio.onerror = () => {
+				setIsAudioPlaying(false);
+				console.error('Web example audio error');
+			};
+			audio.play().catch(() => setIsAudioPlaying(false));
+			return;
+		}
+
 		try {
 			if (soundRef.current) {
 				await soundRef.current.unloadAsync();
