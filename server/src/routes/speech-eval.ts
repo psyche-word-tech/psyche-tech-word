@@ -98,22 +98,21 @@ async function getBaiduAccessToken(): Promise<string | null> {
 async function baiduAsrRecognize(wavBuffer: Buffer, token: string): Promise<string> {
   const base64Audio = wavBuffer.toString("base64");
 
-  const res = await fetch(
-    `https://vop.baidu.com/server_api?dev_pid=1737&cuid=wordvoyage&token=${token}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        format: "wav",
-        rate: 16000,
-        channel: 1,
-        cuid: "wordvoyage",
-        token: token,
-        len: wavBuffer.length,
-        speech: base64Audio,
-      }),
-    }
-  );
+  // 百度ASR REST API：所有参数放在JSON body中，URL不加查询参数
+  const res = await fetch("https://vop.baidu.com/server_api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      format: "wav",
+      rate: 16000,
+      channel: 1,
+      cuid: "wordvoyage",
+      token: token,
+      dev_pid: 1737,
+      len: wavBuffer.length,
+      speech: base64Audio,
+    }),
+  });
 
   const data = await res.json() as any;
   console.log("[BaiduASR] Response:", JSON.stringify(data));
