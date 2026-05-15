@@ -107,6 +107,7 @@ export default function WordDetailPage() {
 	// 录音评分相关状态
 	const [isRecording, setIsRecording] = useState(false);
 	const [isEvaluating, setIsEvaluating] = useState(false);
+	const [evalStep, setEvalStep] = useState('');
 	const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
 	const [showEvalModal, setShowEvalModal] = useState(false);
 	const recordingRef = useRef<Audio.Recording | null>(null);
@@ -851,8 +852,9 @@ export default function WordDetailPage() {
 				allowsRecordingIOS: true,
 				playsInSilentModeIOS: true,
 			});
+			// 使用 LOW_QUALITY 预设减小文件大小，加快上传和转换速度
 			const { recording } = await Audio.Recording.createAsync(
-				Audio.RecordingOptionsPresets.HIGH_QUALITY
+				Audio.RecordingOptionsPresets.LOW_QUALITY
 			);
 			recordingRef.current = recording;
 			setIsRecording(true);
@@ -905,6 +907,7 @@ export default function WordDetailPage() {
 				if (!word.example) return;
 
 				setIsEvaluating(true);
+				setEvalStep('正在上传音频...');
 				const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
 				recordedChunksRef.current = [];
 
@@ -913,11 +916,13 @@ export default function WordDetailPage() {
 				formData.append('audio', blob, 'recording.webm');
 				formData.append('originalText', word.example);
 
+				setEvalStep('正在识别语音...');
 				const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
 					method: 'POST',
 					body: formData,
 				});
 
+				setEvalStep('正在评分...');
 				const result = await response.json();
 				if (!response.ok) {
 					throw new Error(result.error || '评分失败');
@@ -925,6 +930,7 @@ export default function WordDetailPage() {
 
 				setEvaluationResult(result);
 				setShowEvalModal(true);
+				setEvalStep('');
 				return;
 			}
 
@@ -937,17 +943,20 @@ export default function WordDetailPage() {
 			if (!uri || !word.example) return;
 
 			setIsEvaluating(true);
+			setEvalStep('正在上传音频...');
 
 			// 上传音频到后端进行评分
 			const formData = new FormData();
 			formData.append('audio', createFormDataFile(uri, 'recording.m4a', 'audio/m4a'));
 			formData.append('originalText', word.example);
 
+			setEvalStep('正在识别语音...');
 			const response = await fetch(`${API_BASE_URL}/api/v1/speech-eval`, {
 				method: 'POST',
 				body: formData,
 			});
 
+			setEvalStep('正在评分...');
 			const result = await response.json();
 			if (!response.ok) {
 				throw new Error(result.error || '评分失败');
@@ -955,11 +964,13 @@ export default function WordDetailPage() {
 
 			setEvaluationResult(result);
 			setShowEvalModal(true);
+			setEvalStep('');
 		} catch (error: any) {
 			console.error('Evaluation error:', error);
 			Alert.alert('评分失败', error.message || '无法完成评分，请重试');
 		} finally {
 			setIsEvaluating(false);
+			setEvalStep('');
 		}
 	};
 
@@ -1172,6 +1183,9 @@ export default function WordDetailPage() {
 									</TouchableOpacity>
 								</View>
 							</View>
+								{isEvaluating && evalStep ? (
+									<Text style={styles.evalStepText}>{evalStep}</Text>
+								) : null}
 							{(word.example_translation || word.translation) && (
 								<Text style={styles.exampleTranslation}>{word.example_translation || word.translation}</Text>
 							)}
@@ -1646,6 +1660,13 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 		marginTop: 8,
 		paddingLeft: 4,
+	},
+	evalStepText: {
+		fontSize: 12,
+		color: '#059669',
+		marginTop: 6,
+		textAlign: 'center',
+		fontStyle: 'italic',
 	},
 	exampleImageContainer: {
 		marginTop: 12,

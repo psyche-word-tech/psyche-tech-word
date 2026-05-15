@@ -1,44 +1,58 @@
 import { Router } from "express";
 import multer from "multer";
 import { LLMClient, Config, ASRClient } from "coze-coding-dev-sdk";
-import * as fs from "fs";
-import * as path from "path";
-import { execSync } from "child_process";
+import { spawn } from "child_process";
 import ffmpegStatic from "ffmpeg-static";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// 使用 ffmpeg-static 转换音频为 WAV (16kHz, 单声道, 16bit PCM)
-async function convertToWav(inputBuffer: Buffer, inputExt: string): Promise<Buffer> {
-  const tmpDir = "/tmp";
-  const inputFile = path.join(tmpDir, `speech_in_${Date.now()}${inputExt}`);
-  const outputFile = path.join(tmpDir, `speech_out_${Date.now()}.wav`);
-
-  try {
-    // 写入输入文件
-    fs.writeFileSync(inputFile, inputBuffer);
-
-    // 使用 ffmpeg-static 或系统 ffmpeg
+// 使用 ffmpeg 内存管道转换音频为 WAV (16kHz, 单声道, 16bit PCM)
+// 避免磁盘 I/O，直接 stdin -> stdout
+function convertToWavBuffer(inputBuffer: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
     const ffmpegPath = ffmpegStatic || "ffmpeg";
+    const chunks: Buffer[] = [];
 
-    // 转换为 WAV: 16kHz, 单声道, 16bit PCM
-    execSync(
-      `${ffmpegPath} -i "${inputFile}" -ar 16000 -ac 1 -sample_fmt s16 -y "${outputFile}" 2>/dev/null`,
-      { timeout: 30000 }
-    );
+    const proc = spawn(ffmpegPath, [
+      "-i", "pipe:0",      // 从 stdin 读取
+      "-ar", "16000",      // 采样率 16kHz
+      "-ac", "1",          // 单声道
+      "-sample_fmt", "s16", // 16bit PCM
+      "-f", "wav",         // 输出格式 WAV
+      "pipe:1"            // 输出到 stdout
+    ], {
+      stdio: ["pipe", "pipe", "pipe"]
+    });
 
-    const wavBuffer = fs.readFileSync(outputFile);
-    return wavBuffer;
-  } finally {
-    // 清理临时文件
-    try { fs.unlinkSync(inputFile); } catch {}
-    try { fs.unlinkSync(outputFile); } catch {}
-  }
+    proc.stdin.write(inputBuffer);
+    proc.stdin.end();
+
+    proc.stdout.on("data", (chunk) => {
+      chunks.push(chunk as Buffer);
+    });
+
+    proc.stderr.on("data", () => {
+      // ffmpeg 的进度信息输出到 stderr，忽略
+    });
+
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`ffmpeg exited with code ${code}`));
+        return;
+      }
+      resolve(Buffer.concat(chunks as any));
+    });
+
+    proc.on("error", (err) => {
+      reject(err);
+    });
+  });
 }
 
 // 发音评分
 router.post("/", upload.single("audio"), async (req, res) => {
+  const startTime = Date.now();
   try {
     const file = req.file;
     const originalText = req.body.originalText;
@@ -54,19 +68,20 @@ router.post("/", upload.single("audio"), async (req, res) => {
     const config = new Config();
 
     // Step 1: 转换音频为 WAV 格式 (ASR 只支持 WAV)
+    // 使用内存管道，避免磁盘 I/O
     let wavBuffer: Buffer;
     try {
-      const inputExt = file.originalname?.match(/\.\w+$/)?.[0] || ".m4a";
-      wavBuffer = await convertToWav(file.buffer, inputExt);
-      console.log(`Audio converted: ${file.buffer.length} bytes -> ${wavBuffer.length} bytes WAV`);
+      wavBuffer = await convertToWavBuffer(file.buffer);
+      console.log(`[SpeechEval] Audio converted in ${Date.now() - startTime}ms: ${file.buffer.length} bytes -> ${wavBuffer.length} bytes WAV`);
     } catch (convErr: any) {
-      console.error("Audio conversion failed:", convErr.message);
+      console.error("[SpeechEval] Audio conversion failed:", convErr.message);
       // 转换失败时尝试直接使用原文件（可能已经是 WAV）
       wavBuffer = file.buffer;
     }
 
     // Step 2: ASR 语音识别
     let transcription = "";
+    const asrStart = Date.now();
     try {
       const asrClient = new ASRClient(config);
       const audioBase64 = wavBuffer.toString("base64");
@@ -75,8 +90,9 @@ router.post("/", upload.single("audio"), async (req, res) => {
         base64Data: audioBase64,
       });
       transcription = asrResult.text || "";
+      console.log(`[SpeechEval] ASR done in ${Date.now() - asrStart}ms, text="${transcription}"`);
     } catch (asrError: any) {
-      console.error("ASR error:", asrError.message);
+      console.error("[SpeechEval] ASR error:", asrError.message);
       return res.status(500).json({
         error: "语音识别失败",
         details: asrError.message,
@@ -89,7 +105,8 @@ router.post("/", upload.single("audio"), async (req, res) => {
       });
     }
 
-    // Step 2: LLM 评分
+    // Step 3: LLM 评分
+    const llmStart = Date.now();
     const llmClient = new LLMClient(config);
     const messages = [
       {
@@ -98,43 +115,37 @@ router.post("/", upload.single("audio"), async (req, res) => {
 
 评分维度（每项满分100分）：
 1. 准确度（Accuracy）：学生朗读内容与原文的匹配程度
-2. 流利度（Fluency）：朗读的连贯性和自然程度（从识别文本的流畅性推断）
-3. 发音（Pronunciation）：发音的准确程度（从识别结果推断，如果识别准确说明发音较好）
-
-反馈要求：
-- 给出总体评价（中文）
-- 指出主要问题和改进建议
-- 如果准确度低于80分，指出哪些单词读错了或漏读了
+2. 流利度（Fluency）：朗读的流畅程度（通过ASR识别结果的完整性判断）
+3. 发音（Pronunciation）：根据识别准确率推断发音质量
 
 请按以下JSON格式返回结果（不要包含任何其他内容）：
 {
-  "accuracy": 85,
-  "fluency": 80,
-  "pronunciation": 82,
-  "overall": 82,
-  "feedback": "中文评语...",
-  "wordCorrect": true/false
+  "accuracy": 0-100,
+  "fluency": 0-100,
+  "pronunciation": 0-100,
+  "overall": 0-100,
+  "wordCorrect": true/false,
+  "feedback": "中文评价反馈，指出优点和需要改进的地方"
 }
 
-overall = (accuracy + fluency + pronunciation) / 3，取整数。
-wordCorrect 表示学生朗读的文本是否与原文完全一致。`,
+只返回JSON，不要有其他解释文字。`
       },
       {
         role: "user" as const,
-        content: `标准原文："${originalText}"\n学生朗读识别结果："${transcription}"`,
-      },
+        content: `标准原文：${originalText}\n学生朗读（ASR识别结果）：${transcription}\n\n请给出评分。`
+      }
     ];
 
-    const response = await llmClient.invoke(messages, {
+    const llmResponse = await llmClient.invoke(messages, {
       model: "doubao-seed-2-0-lite-260215",
-      temperature: 0.3,
+      temperature: 0.3
     });
 
     let result;
     try {
-      result = JSON.parse(response.content);
+      result = JSON.parse(llmResponse.content);
     } catch (parseError) {
-      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      const jsonMatch = llmResponse.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         result = JSON.parse(jsonMatch[0]);
       } else {
@@ -142,24 +153,18 @@ wordCorrect 表示学生朗读的文本是否与原文完全一致。`,
       }
     }
 
+    console.log(`[SpeechEval] LLM scoring done in ${Date.now() - llmStart}ms, total=${Date.now() - startTime}ms`);
+
     res.json({
       success: true,
       transcription,
-      accuracy: Math.min(100, Math.max(0, Math.round(result.accuracy || 0))),
-      fluency: Math.min(100, Math.max(0, Math.round(result.fluency || 0))),
-      pronunciation: Math.min(
-        100,
-        Math.max(0, Math.round(result.pronunciation || 0))
-      ),
-      overall: Math.min(100, Math.max(0, Math.round(result.overall || 0))),
-      feedback: result.feedback || "朗读完成",
-      wordCorrect: result.wordCorrect || false,
+      ...result
     });
   } catch (error: any) {
-    console.error("Speech evaluation error:", error.message);
+    console.error(`[SpeechEval] Error after ${Date.now() - startTime}ms:`, error.message);
     res.status(500).json({
-      error: "评分失败，请稍后重试",
-      details: error.message,
+      error: "评分失败",
+      details: error.message
     });
   }
 });

@@ -2,6 +2,37 @@ import express from "express";
 
 const router = express.Router();
 
+// TTS 内存缓存: text -> { buffer, timestamp }
+const ttsCache = new Map<string, { buffer: Buffer; timestamp: number }>();
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 小时
+const MAX_CACHE_SIZE = 500; // 最多缓存 500 个音频
+
+function getCachedTTS(text: string): Buffer | null {
+  const entry = ttsCache.get(text);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    ttsCache.delete(text);
+    return null;
+  }
+  return entry.buffer;
+}
+
+function setCachedTTS(text: string, buffer: Buffer) {
+  // LRU: 如果缓存满了，删除最旧的
+  if (ttsCache.size >= MAX_CACHE_SIZE) {
+    let oldestKey = "";
+    let oldestTime = Infinity;
+    for (const [key, val] of ttsCache) {
+      if (val.timestamp < oldestTime) {
+        oldestTime = val.timestamp;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) ttsCache.delete(oldestKey);
+  }
+  ttsCache.set(text, { buffer, timestamp: Date.now() });
+}
+
 router.get("/", async (req, res) => {
   const startTime = Date.now();
   try {
@@ -13,6 +44,16 @@ router.get("/", async (req, res) => {
       return res.status(400).json({ error: "Missing text parameter" });
     }
 
+    // 检查缓存
+    const cached = getCachedTTS(text);
+    if (cached) {
+      console.log(`[TTS] Cache HIT, size=${cached.length}, time=${Date.now() - startTime}ms`);
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Cache-Control", "public, max-age=86400");
+      res.set("X-Cache", "HIT");
+      return res.send(cached);
+    }
+
     // 先尝试有道词典（单词发音效果好）
     const youdaoUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`;
     console.log(`[TTS] Trying Youdao: ${youdaoUrl}`);
@@ -22,7 +63,7 @@ router.get("/", async (req, res) => {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+      const timeout = setTimeout(() => controller.abort(), 5000); // 缩短到 5 秒
       const response = await fetch(youdaoUrl, {
         signal: controller.signal,
         headers: {
@@ -52,7 +93,7 @@ router.get("/", async (req, res) => {
 
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 5000); // 缩短到 5 秒
         const response = await fetch(baiduUrl, {
           signal: controller.signal,
           headers: {
@@ -80,13 +121,16 @@ router.get("/", async (req, res) => {
       return res.status(502).json({ error: "All TTS sources failed" });
     }
 
-    res.set("Content-Type", "audio/mpeg");
-    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.set("Pragma", "no-cache");
-    res.set("Access-Control-Allow-Origin", "*");
+    // 存入缓存
+    const buf = Buffer.from(audioBuffer);
+    setCachedTTS(text, buf);
 
-    console.log(`[TTS] Audio size: ${audioBuffer.byteLength} bytes, time: ${Date.now() - startTime}ms`);
-    res.send(Buffer.from(audioBuffer));
+    console.log(`[TTS] Audio size: ${buf.length} bytes, time: ${Date.now() - startTime}ms`);
+
+    res.set("Content-Type", "audio/mpeg");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.set("X-Cache", "MISS");
+    res.send(buf);
   } catch (error: any) {
     console.error(`[TTS] Error after ${Date.now() - startTime}ms:`, error.message || error);
     res.status(500).json({ error: "Failed to fetch TTS audio", detail: error.message });
