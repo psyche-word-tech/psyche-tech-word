@@ -7,20 +7,19 @@ import ffmpegStatic from "ffmpeg-static";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// 使用 ffmpeg 内存管道转换音频为 WAV (16kHz, 单声道, 16bit PCM)
-// 避免磁盘 I/O，直接 stdin -> stdout
+// ====== ffmpeg 内存管道转换音频为 WAV (16kHz, 单声道, 16bit PCM) ======
 function convertToWavBuffer(inputBuffer: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const ffmpegPath = ffmpegStatic || "ffmpeg";
     const chunks: Buffer[] = [];
 
     const proc = spawn(ffmpegPath, [
-      "-i", "pipe:0",      // 从 stdin 读取
-      "-ar", "16000",      // 采样率 16kHz
-      "-ac", "1",          // 单声道
-      "-sample_fmt", "s16", // 16bit PCM
-      "-f", "wav",         // 输出格式 WAV
-      "pipe:1"            // 输出到 stdout
+      "-i", "pipe:0",
+      "-ar", "16000",
+      "-ac", "1",
+      "-sample_fmt", "s16",
+      "-f", "wav",
+      "pipe:1"
     ], {
       stdio: ["pipe", "pipe", "pipe"]
     });
@@ -33,7 +32,7 @@ function convertToWavBuffer(inputBuffer: Buffer): Promise<Buffer> {
     });
 
     proc.stderr.on("data", () => {
-      // ffmpeg 的进度信息输出到 stderr，忽略
+      // ffmpeg progress info to stderr, ignore
     });
 
     proc.on("close", (code) => {
@@ -50,7 +49,81 @@ function convertToWavBuffer(inputBuffer: Buffer): Promise<Buffer> {
   });
 }
 
-// 发音评分
+// ====== 百度语音识别 (Baidu ASR) ======
+
+interface BaiduTokenCache {
+  token: string;
+  expiresAt: number;
+}
+
+let baiduTokenCache: BaiduTokenCache | null = null;
+
+/** 获取百度 access_token（带缓存） */
+async function getBaiduAccessToken(): Promise<string | null> {
+  const API_KEY = process.env.BAIDU_ASR_API_KEY;
+  const SECRET_KEY = process.env.BAIDU_ASR_SECRET_KEY;
+
+  if (!API_KEY || !SECRET_KEY) {
+    return null;
+  }
+
+  // 缓存未过期直接返回
+  if (baiduTokenCache && Date.now() < baiduTokenCache.expiresAt) {
+    return baiduTokenCache.token;
+  }
+
+  try {
+    const res = await fetch(
+      `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${API_KEY}&client_secret=${SECRET_KEY}`,
+      { method: "POST" }
+    );
+    const data = await res.json() as any;
+    if (data.access_token) {
+      // expires_in 单位是秒，提前 10 分钟过期
+      baiduTokenCache = {
+        token: data.access_token,
+        expiresAt: Date.now() + (data.expires_in - 600) * 1000,
+      };
+      return data.access_token;
+    }
+  } catch (err: any) {
+    console.error("[BaiduASR] Get token failed:", err.message);
+  }
+  return null;
+}
+
+/** 调用百度语音识别 API */
+async function baiduAsrRecognize(wavBuffer: Buffer, token: string): Promise<string> {
+  const base64Audio = wavBuffer.toString("base64");
+
+  const res = await fetch(
+    `https://vop.baidu.com/server_api?dev_pid=1737&cuid=wordvoyage&token=${token}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        format: "wav",
+        rate: 16000,
+        channel: 1,
+        cuid: "wordvoyage",
+        token: token,
+        len: wavBuffer.length,
+        speech: base64Audio,
+      }),
+    }
+  );
+
+  const data = await res.json() as any;
+  console.log("[BaiduASR] Response:", JSON.stringify(data));
+
+  if (data.err_no !== 0) {
+    throw new Error(`Baidu ASR error: ${data.err_msg || data.err_no}`);
+  }
+
+  return data.result?.[0] || "";
+}
+
+// ====== 评分路由 ======
 router.post("/", upload.single("audio"), async (req, res) => {
   const startTime = Date.now();
   try {
@@ -67,21 +140,22 @@ router.post("/", upload.single("audio"), async (req, res) => {
 
     const config = new Config();
 
-    // Step 1: 转换音频为 WAV 格式 (ASR 只支持 WAV)
-    // 使用内存管道，避免磁盘 I/O
+    // Step 1: 转换音频为 WAV
     let wavBuffer: Buffer;
     try {
       wavBuffer = await convertToWavBuffer(file.buffer);
-      console.log(`[SpeechEval] Audio converted in ${Date.now() - startTime}ms: ${file.buffer.length} bytes -> ${wavBuffer.length} bytes WAV`);
+      console.log(`[SpeechEval] Audio converted: ${file.buffer.length} bytes -> ${wavBuffer.length} bytes WAV (${Date.now() - startTime}ms)`);
     } catch (convErr: any) {
       console.error("[SpeechEval] Audio conversion failed:", convErr.message);
-      // 转换失败时尝试直接使用原文件（可能已经是 WAV）
       wavBuffer = file.buffer;
     }
 
     // Step 2: ASR 语音识别
     let transcription = "";
     const asrStart = Date.now();
+    let asrMethod = "";
+
+    // 2a. 先尝试内置 ASR（沙箱环境）
     try {
       const asrClient = new ASRClient(config);
       const audioBase64 = wavBuffer.toString("base64");
@@ -90,18 +164,29 @@ router.post("/", upload.single("audio"), async (req, res) => {
         base64Data: audioBase64,
       });
       transcription = asrResult.text || "";
-      console.log(`[SpeechEval] ASR done in ${Date.now() - asrStart}ms, text="${transcription}"`);
-    } catch (asrError: any) {
-      console.error("[SpeechEval] ASR error:", asrError.message);
-      return res.status(500).json({
-        error: "语音识别失败",
-        details: asrError.message,
-      });
+      asrMethod = "builtin";
+      console.log(`[SpeechEval] Built-in ASR done in ${Date.now() - asrStart}ms, text="${transcription}"`);
+    } catch (builtinErr: any) {
+      console.error(`[SpeechEval] Built-in ASR failed: ${builtinErr.message}`);
+
+      // 2b. 内置 ASR 失败，尝试百度 ASR（Railway 环境）
+      const baiduToken = await getBaiduAccessToken();
+      if (baiduToken) {
+        try {
+          const baiduStart = Date.now();
+          transcription = await baiduAsrRecognize(wavBuffer, baiduToken);
+          asrMethod = "baidu";
+          console.log(`[SpeechEval] Baidu ASR done in ${Date.now() - baiduStart}ms, text="${transcription}"`);
+        } catch (baiduErr: any) {
+          console.error(`[SpeechEval] Baidu ASR failed: ${baiduErr.message}`);
+        }
+      }
     }
 
     if (!transcription) {
       return res.status(400).json({
         error: "未能识别到语音内容，请重新录音",
+        details: asrMethod ? `ASR(${asrMethod}) 未返回结果` : "无可用的语音识别服务",
       });
     }
 
@@ -153,11 +238,12 @@ router.post("/", upload.single("audio"), async (req, res) => {
       }
     }
 
-    console.log(`[SpeechEval] LLM scoring done in ${Date.now() - llmStart}ms, total=${Date.now() - startTime}ms`);
+    console.log(`[SpeechEval] LLM scoring done in ${Date.now() - llmStart}ms, total=${Date.now() - startTime}ms, ASR=${asrMethod}`);
 
     res.json({
       success: true,
       transcription,
+      _asrMethod: asrMethod,
       ...result
     });
   } catch (error: any) {
