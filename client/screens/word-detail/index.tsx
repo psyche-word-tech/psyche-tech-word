@@ -680,11 +680,15 @@ export default function WordDetailPage() {
 				audio.onended = () => setIsPlaying(false);
 				audio.onerror = () => {
 					setIsPlaying(false);
-					console.error('Web audio play error');
+					(window as any).alert?.('发音失败: 音频无法加载，请检查网络或稍后重试');
 				};
-				audio.play();
+				audio.play().catch(() => {
+					setIsPlaying(false);
+					(window as any).alert?.('发音失败: 音频播放被阻止或后端未响应');
+				});
 			} catch {
 				setIsPlaying(false);
+				(window as any).alert?.('发音失败: 网络请求异常');
 			}
 		} else {
 			// 移动端：下载到本地后播放
