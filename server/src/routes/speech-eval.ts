@@ -60,6 +60,31 @@ interface BaiduTokenCache {
 
 let baiduTokenCache: BaiduTokenCache | null = null;
 
+/** 计算两个字符串的相似度（0-1），基于最长公共子序列 */
+function calculateSimilarity(a: string, b: string): number {
+  const s1 = a.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+  const s2 = b.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+  if (!s1 && !s2) return 1;
+  if (!s1 || !s2) return 0;
+
+  // Levenshtein距离
+  const m = s1.length, n = s2.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1;
+      }
+    }
+  }
+  const maxLen = Math.max(m, n);
+  return maxLen === 0 ? 1 : 1 - dp[m][n] / maxLen;
+}
+
 /** 获取百度 access_token（带缓存） */
 async function getBaiduAccessToken(): Promise<string | null> {
   const API_KEY = process.env.BAIDU_ASR_API_KEY;
@@ -209,13 +234,16 @@ router.post("/", upload.single("audio"), async (req, res) => {
       });
     }
 
-    // Step 3: LLM 评分
-    const llmStart = Date.now();
-    const llmClient = new LLMClient(config);
-    const messages = [
-      {
-        role: "system" as const,
-        content: `你是一位专业的英语口语评分老师。请对比学生的朗读文本和标准原文，从以下几个维度给出评分和反馈：
+    // Step 3: LLM 评分（带fallback）
+    let result: any;
+    let scoreMethod = "llm";
+    try {
+      const llmStart = Date.now();
+      const llmClient = new LLMClient(config);
+      const messages = [
+        {
+          role: "system" as const,
+          content: `你是一位专业的英语口语评分老师。请对比学生的朗读文本和标准原文，从以下几个维度给出评分和反馈：
 
 评分维度（每项满分100分）：
 1. 准确度（Accuracy）：学生朗读内容与原文的匹配程度
@@ -233,36 +261,54 @@ router.post("/", upload.single("audio"), async (req, res) => {
 }
 
 只返回JSON，不要有其他解释文字。`
-      },
-      {
-        role: "user" as const,
-        content: `标准原文：${originalText}\n学生朗读（ASR识别结果）：${transcription}\n\n请给出评分。`
-      }
-    ];
+        },
+        {
+          role: "user" as const,
+          content: `标准原文：${originalText}\n学生朗读（ASR识别结果）：${transcription}\n\n请给出评分。`
+        }
+      ];
 
-    const llmResponse = await llmClient.invoke(messages, {
-      model: "doubao-seed-2-0-lite-260215",
-      temperature: 0.3
-    });
+      const llmResponse = await llmClient.invoke(messages, {
+        model: "doubao-seed-2-0-lite-260215",
+        temperature: 0.3
+      });
 
-    let result;
-    try {
-      result = JSON.parse(llmResponse.content);
-    } catch (parseError) {
-      const jsonMatch = llmResponse.content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("AI返回格式错误");
+      try {
+        result = JSON.parse(llmResponse.content);
+      } catch (parseError) {
+        const jsonMatch = llmResponse.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("AI返回格式错误");
+        }
       }
+      console.log(`[SpeechEval] LLM scoring done in ${Date.now() - llmStart}ms`);
+    } catch (llmErr: any) {
+      console.error("[SpeechEval] LLM scoring failed:", llmErr.message);
+      // Fallback: 基于文本相似度评分
+      scoreMethod = "similarity";
+      const similarity = calculateSimilarity(originalText, transcription);
+      const isCorrect = similarity >= 0.7;
+      result = {
+        accuracy: Math.round(similarity * 100),
+        fluency: Math.round(similarity * 90 + 10),
+        pronunciation: Math.round(similarity * 85 + 15),
+        overall: Math.round(similarity * 100),
+        wordCorrect: isCorrect,
+        feedback: isCorrect
+          ? `识别结果「${transcription}」与原文「${originalText}」匹配度较高，发音良好。`
+          : `识别结果「${transcription}」与原文「${originalText}」有差异，建议多听标准发音后重读。`
+      };
     }
 
-    console.log(`[SpeechEval] LLM scoring done in ${Date.now() - llmStart}ms, total=${Date.now() - startTime}ms, ASR=${asrMethod}`);
+    console.log(`[SpeechEval] Scoring done, method=${scoreMethod}, total=${Date.now() - startTime}ms, ASR=${asrMethod}`);
 
     res.json({
       success: true,
       transcription,
       _asrMethod: asrMethod,
+      _scoreMethod: scoreMethod,
       ...result
     });
   } catch (error: any) {
