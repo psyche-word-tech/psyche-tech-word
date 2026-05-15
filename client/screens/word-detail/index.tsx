@@ -43,6 +43,15 @@ interface GrammarIssue {
 	replacements: string[];
 }
 
+// 跨平台 alert 辅助函数（Web 端 Alert.alert 可能不显示）
+function showAlert(title: string, message: string) {
+	if (typeof window !== 'undefined' && window.alert) {
+		window.alert(`${title}\n${message}`);
+	} else {
+		Alert.alert(title, message);
+	}
+}
+
 interface GrammarResult {
 	success: boolean;
 	text: string;
@@ -440,7 +449,7 @@ export default function WordDetailPage() {
 	// 语法检测函数
 	const checkGrammar = useCallback(async () => {
 		if (!commentText.trim()) {
-			Alert.alert('提示', '请输入句子');
+			showAlert('提示', '请输入句子');
 			return;
 		}
 
@@ -486,10 +495,10 @@ export default function WordDetailPage() {
 					
 					setCommentText('');
 					fetchComments(word.id);
-					Alert.alert('成功', '笔记已发布');
+					showAlert('成功', '笔记已发布');
 				} catch (error) {
 					console.error('Failed to submit comment:', error);
-					Alert.alert('错误', '发布失败');
+					showAlert('错误', '发布失败');
 				} finally {
 					setIsSubmitting(false);
 				}
@@ -500,11 +509,11 @@ export default function WordDetailPage() {
 			}
 		} catch (error: any) {
 			console.error('Grammar check error:', error);
-			Alert.alert('错误', error.message || '语法检测失败，请稍后重试');
+			showAlert('错误', error.message || '语法检测失败，请稍后重试');
 		} finally {
 			setIsCheckingGrammar(false);
 		}
-	}, [commentText]);
+	}, [commentText, word?.id, word?.word]);
 
 	// 发布评论
 	const submitComment = useCallback(async () => {
@@ -536,10 +545,10 @@ export default function WordDetailPage() {
 			setShowResultModal(false);
 			setGrammarResult(null);
 			fetchComments(word.id);
-			Alert.alert('成功', '笔记已发布');
+			showAlert('成功', '笔记已发布');
 		} catch (error) {
 			console.error('Failed to submit comment:', error);
-			Alert.alert('错误', '发布失败');
+			showAlert('错误', '发布失败');
 		} finally {
 			setIsSubmitting(false);
 		}
