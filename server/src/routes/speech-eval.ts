@@ -10,7 +10,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 // ====== ffmpeg 内存管道转换音频为 WAV (16kHz, 单声道, 16bit PCM) ======
 function convertToWavBuffer(inputBuffer: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const ffmpegPath = ffmpegStatic || "ffmpeg";
+    // Railway 上使用系统 ffmpeg（Dockerfile 已安装）
+    // 避免 ffmpeg-static 可能的路径/权限问题
+    const ffmpegPath = process.env.RAILWAY_ENVIRONMENT ? "ffmpeg" : (ffmpegStatic || "ffmpeg");
     const chunks: Buffer[] = [];
 
     const proc = spawn(ffmpegPath, [
