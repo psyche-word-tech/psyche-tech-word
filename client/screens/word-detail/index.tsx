@@ -669,12 +669,31 @@ export default function WordDetailPage() {
 	const playPronunciation = async (text?: string) => {
 		const playText = text || word?.word || '';
 		if (!playText) return;
-		playDownloadedTTS(playText);
+		setIsPlaying(true);
+
+		if (typeof document !== 'undefined') {
+			// Web 端：直接用浏览器 Audio 元素播放后端 URL
+			try {
+				const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encodeURIComponent(playText)}`;
+				const audio = document.createElement('audio');
+				audio.src = audioUrl;
+				audio.onended = () => setIsPlaying(false);
+				audio.onerror = () => {
+					setIsPlaying(false);
+					console.error('Web audio play error');
+				};
+				audio.play();
+			} catch {
+				setIsPlaying(false);
+			}
+		} else {
+			// 移动端：下载到本地后播放
+			playDownloadedTTS(playText);
+		}
 	};
 
-	// 下载在线音频并播放
+	// 下载在线音频并播放（移动端专用）
 	const playDownloadedTTS = async (text: string) => {
-		setIsPlaying(true);
 		try {
 			if (soundRef.current) {
 				await soundRef.current.unloadAsync();
