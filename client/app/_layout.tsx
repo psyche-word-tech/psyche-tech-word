@@ -4,6 +4,7 @@ import { LogBox } from 'react-native';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import AnimatedSplash from '@/components/AnimatedSplash';
 
 import '../global.css';
 
@@ -16,6 +17,7 @@ export default function RootLayout() {
     <ApiConfigProvider>
       <AuthProvider>
         <Provider>
+          <AnimatedSplash />
           <StatusBar style="dark" />
           <Stack
           screenOptions={{
