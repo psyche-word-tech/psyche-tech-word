@@ -63,16 +63,14 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
       animateBlock(bottomLeftX, bottomLeftY, scale3, 400),
       animateBlock(bottomRightX, bottomRightY, scale4, 600),
     ]).start(() => {
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setVisible(false);
-          onAnimationComplete?.();
-        });
-      }, 600);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setVisible(false);
+        onAnimationComplete?.();
+      });
     });
   }, []);
 
@@ -81,15 +79,13 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.logoContainer}>
-        {/* Top-left block: upper-wide, lower-narrow */}
+        {/* Top-left parallelogram */}
         <Animated.View
           style={[
-            styles.blockOuter,
+            styles.blockWrapper,
             {
               top: 0,
               left: 4,
-              width: 64,
-              height: 74,
               transform: [
                 { translateX: topLeftX },
                 { translateY: topLeftY },
@@ -98,24 +94,16 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={[styles.innerShape, {
-            width: 90,
-            height: 90,
-            marginLeft: -18,
-            marginTop: -8,
-            transform: [{ rotate: '-18deg' }],
-          }]} />
+          <View style={[styles.parallelogram, styles.topLeftShape]} />
         </Animated.View>
 
-        {/* Top-right block: mirror */}
+        {/* Top-right parallelogram */}
         <Animated.View
           style={[
-            styles.blockOuter,
+            styles.blockWrapper,
             {
               top: 0,
               right: 4,
-              width: 64,
-              height: 74,
               transform: [
                 { translateX: topRightX },
                 { translateY: topRightY },
@@ -124,24 +112,16 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={[styles.innerShape, {
-            width: 90,
-            height: 90,
-            marginLeft: -8,
-            marginTop: -8,
-            transform: [{ rotate: '18deg' }],
-          }]} />
+          <View style={[styles.parallelogram, styles.topRightShape]} />
         </Animated.View>
 
-        {/* Bottom-left block: lower-wide, upper-narrow */}
+        {/* Bottom-left parallelogram */}
         <Animated.View
           style={[
-            styles.blockOuter,
+            styles.blockWrapper,
             {
               bottom: 4,
               left: 8,
-              width: 56,
-              height: 60,
               transform: [
                 { translateX: bottomLeftX },
                 { translateY: bottomLeftY },
@@ -150,24 +130,16 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={[styles.innerShape, {
-            width: 85,
-            height: 85,
-            marginLeft: -22,
-            marginTop: -18,
-            transform: [{ rotate: '20deg' }],
-          }]} />
+          <View style={[styles.parallelogram, styles.bottomLeftShape]} />
         </Animated.View>
 
-        {/* Bottom-right block: mirror */}
+        {/* Bottom-right parallelogram */}
         <Animated.View
           style={[
-            styles.blockOuter,
+            styles.blockWrapper,
             {
               bottom: 4,
               right: 8,
-              width: 56,
-              height: 60,
               transform: [
                 { translateX: bottomRightX },
                 { translateY: bottomRightY },
@@ -176,13 +148,7 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={[styles.innerShape, {
-            width: 85,
-            height: 85,
-            marginLeft: -7,
-            marginTop: -18,
-            transform: [{ rotate: '-20deg' }],
-          }]} />
+          <View style={[styles.parallelogram, styles.bottomRightShape]} />
         </Animated.View>
       </View>
     </Animated.View>
@@ -202,11 +168,35 @@ const styles = StyleSheet.create({
     height: 160,
     position: 'relative',
   },
-  blockOuter: {
+  blockWrapper: {
     position: 'absolute',
+    width: 60,
+    height: 70,
     overflow: 'hidden',
   },
-  innerShape: {
+  parallelogram: {
+    width: 70,
+    height: 80,
     backgroundColor: '#000000',
+  },
+  topLeftShape: {
+    transform: [{ skewX: '-25deg' }, { rotate: '-8deg' }],
+    marginLeft: -8,
+    marginTop: -4,
+  },
+  topRightShape: {
+    transform: [{ skewX: '25deg' }, { rotate: '8deg' }],
+    marginLeft: -2,
+    marginTop: -4,
+  },
+  bottomLeftShape: {
+    transform: [{ skewX: '25deg' }, { rotate: '8deg' }],
+    marginLeft: -6,
+    marginTop: -6,
+  },
+  bottomRightShape: {
+    transform: [{ skewX: '-25deg' }, { rotate: '-8deg' }],
+    marginLeft: -4,
+    marginTop: -6,
   },
 });
