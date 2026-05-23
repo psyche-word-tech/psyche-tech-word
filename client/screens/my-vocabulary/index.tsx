@@ -87,7 +87,14 @@ export default function MyVocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity onPress={() => {
+            if (typeof window !== 'undefined') {
+              const splash = document.getElementById('splash-preview');
+              if (splash) splash.classList.add('active');
+            }
+          }}>
+            <Text style={styles.previewText}>预览</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Word Books Grid */}
@@ -185,6 +192,11 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 50,
+  },
+  previewText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: 'serif',
   },
   oldSchoolButton: {
     backgroundColor: '#4CAF50',
