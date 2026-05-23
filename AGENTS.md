@@ -259,3 +259,36 @@ import { Screen } from '../../../components/Screen';
 ## 本地开发
 
 `coze dev`：用来首次启动前后端服务，也可以用来重启前后端服务（该命令会先尝试杀掉占用端口的进程，再启动服务）
+
+## 预览链路
+
+### 预览方案
+- 项目类型：Web 预览型（React Native / Expo Web）
+- 预览方式：静态导出 + Python 静态服务器
+- 技术栈：预导出静态文件 (`client/web-static/`) + `serve-static.py`
+
+### 预览配置
+- 工作区根目录：`/workspace/projects`
+- 技术项目目录：`/workspace/projects/client`
+- 预览脚本：`scripts/coze-preview-run.sh`
+- 预览端口：`5000`（IPv4 全接口 `0.0.0.0:5000`）
+
+### 预览入口
+```bash
+# 构建
+bash scripts/coze-preview-build.sh
+
+# 运行
+bash scripts/coze-preview-run.sh
+```
+
+### 静态文件更新
+当修改前端代码后，需要重新导出静态文件：
+```bash
+cd client && npx expo export --platform web
+```
+
+### 注意事项
+- 后端服务运行在 `9091` 端口，不影响前端预览
+- 前端预览使用预导出的静态文件，无需启动 Metro bundler
+
