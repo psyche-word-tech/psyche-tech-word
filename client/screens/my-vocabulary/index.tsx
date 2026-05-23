@@ -88,9 +88,8 @@ export default function MyVocabularyPage() {
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
           <TouchableOpacity onPress={() => {
-            if (typeof window !== 'undefined') {
-              const splash = document.getElementById('splash-preview');
-              if (splash) splash.classList.add('active');
+            if (typeof window !== 'undefined' && window.showSplash) {
+              window.showSplash();
             }
           }}>
             <Text style={styles.previewText}>预览</Text>
