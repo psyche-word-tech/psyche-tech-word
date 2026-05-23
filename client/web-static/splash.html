@@ -71,8 +71,11 @@
   }
 
   function goBack() {
-    const backUrl = getBackUrl();
-    window.location.href = backUrl;
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
   }
 </script>
 </html>
