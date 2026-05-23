@@ -32,6 +32,28 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
+    
+    <!-- Splash Preview Overlay -->
+    <div id="splash-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#ffffff; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+      <div style="position:absolute; top:50%; left:calc(50% + 200px); transform:translate(-50%, -50%);">
+        <img src="/splash-icon.png" style="width:200px; height:auto;" />
+      </div>
+      <div id="splash-hint" style="position:absolute; bottom:120px; color:#999; font-size:14px; font-family:-apple-system, BlinkMacSystemFont, sans-serif;">点击任意处关闭</div>
+      <button id="close-splash" style="position:absolute; bottom:40px; padding:12px 24px; background:#000; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer;">关闭启动画面</button>
+    </div>
+    
+    <script>
+      window.showSplash = function() {
+        document.getElementById('splash-overlay').style.display = 'flex';
+        document.getElementById('root').style.display = 'none';
+      };
+      function hideSplash() {
+        document.getElementById('splash-overlay').style.display = 'none';
+        document.getElementById('root').style.display = 'flex';
+      }
+      document.getElementById('splash-overlay').addEventListener('click', hideSplash);
+      document.getElementById('close-splash').addEventListener('click', hideSplash);
+    </script>
   <script src="/_expo/static/js/web/entry-d02b66ca59b91b6c693ebdbb59fe19f3.js" defer></script>
 </body>
 </html>
