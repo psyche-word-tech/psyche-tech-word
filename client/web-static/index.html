@@ -22,14 +22,13 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        z-index: 9999;
+        z-index: 9998;
       }
       #splash-overlay.active { display: flex; }
       
       .splash-icon {
         width: 200px;
         height: 200px;
-        animation: pulse 2s ease-in-out infinite;
       }
       
       .splash-btn {
@@ -43,15 +42,10 @@
         border-radius: 8px;
         font-size: 14px;
         cursor: pointer;
-        z-index: 10000;
+        z-index: 9999;
       }
       
       .splash-btn:hover { background: #555; }
-      
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.05); opacity: 0.9; }
-      }
       
       /* Butterfly SVG Styles */
       .butterfly {
@@ -103,8 +97,14 @@
     <link rel="preload" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css" as="style"><link rel="stylesheet" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css"><link rel="icon" href="/favicon.ico" /></head>
 
   <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="root"></div>
+    <script src="/_expo/static/js/web/entry-52aa4168dcb41b4e325563ede407e1b8.js" defer></script>
+    
     <!-- Splash Preview Overlay -->
-    <div id="splash-overlay">
+    <div id="splash-overlay" onclick="toggleSplash()">
       <div class="butterfly">
         <div class="wing wing-left-top"></div>
         <div class="wing wing-left-bottom"></div>
@@ -112,25 +112,21 @@
         <div class="wing wing-right-bottom"></div>
         <div class="center"></div>
       </div>
+      <p style="margin-top: 20px; color: #666; font-family: sans-serif;">点击任意处关闭</p>
     </div>
     
     <!-- Splash Preview Button -->
-    <button class="splash-btn" onclick="toggleSplash()">预览启动画面</button>
-
-    <noscript>
-      You need to enable JavaScript to run this app.
-    </noscript>
-    <div id="root"></div>
-    <script src="/_expo/static/js/web/entry-52aa4168dcb41b4e325563ede407e1b8.js" defer></script>
+    <button class="splash-btn" id="splash-btn" onclick="toggleSplash()">预览启动画面</button>
     
     <script>
       function toggleSplash() {
         const overlay = document.getElementById('splash-overlay');
+        const btn = document.getElementById('splash-btn');
         overlay.classList.toggle('active');
         if (overlay.classList.contains('active')) {
-          document.querySelector('.splash-btn').textContent = '关闭启动画面';
+          btn.textContent = '关闭启动画面';
         } else {
-          document.querySelector('.splash-btn').textContent = '预览启动画面';
+          btn.textContent = '预览启动画面';
         }
       }
     </script>
