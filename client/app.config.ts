@@ -3,9 +3,9 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // 从环境变量或 .env 文件获取后端地址
 const backendBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || '';
 
-const appName = 'psyche tech';
+const appName = '单词记';
 const projectId = process.env.COZE_PROJECT_ID || process.env.EXPO_PUBLIC_COZE_PROJECT_ID;
-const slugAppName = projectId ? `app${projectId}` : 'myapp';
+const slugAppName = 'psyche-tech';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": `com.anonymous.x${projectId || '0'}`
+      "package": "com.psychetech.wordbook"
     },
     "web": {
       "bundler": "metro",
