@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Splash 预览</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .butterfly {
+      position: relative;
+      width: 240px;
+      height: 280px;
+    }
+    .wing {
+      position: absolute;
+      background-color: #000000;
+    }
+    .wing-left-top { width: 120px; height: 140px; top: 0; left: 0; border-radius: 50% 0 50% 50%; transform: rotate(-20deg); transform-origin: right bottom; }
+    .wing-left-bottom { width: 100px; height: 120px; bottom: 40px; left: 20px; border-radius: 50% 0 50% 50%; transform: rotate(30deg); transform-origin: right top; }
+    .wing-right-top { width: 120px; height: 140px; top: 0; right: 0; border-radius: 0 50% 50% 50%; transform: rotate(20deg); transform-origin: left bottom; }
+    .wing-right-bottom { width: 100px; height: 120px; bottom: 40px; right: 20px; border-radius: 0 50% 50% 50%; transform: rotate(-30deg); transform-origin: left top; }
+    .center { position: absolute; width: 16px; height: 50px; background-color: #ffffff; border-radius: 8px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    h1 { margin-top: 40px; color: #333; font-size: 24px; }
+    p { margin-top: 20px; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="butterfly">
+    <div class="wing wing-left-top"></div>
+    <div class="wing wing-left-bottom"></div>
+    <div class="wing wing-right-top"></div>
+    <div class="wing wing-right-bottom"></div>
+    <div class="center"></div>
+  </div>
+  <h1>Splash 预览</h1>
+  <p>蝴蝶图标 + 白色背景</p>
+</body>
+</html>
