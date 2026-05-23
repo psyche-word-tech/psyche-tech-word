@@ -87,7 +87,7 @@ export default function MyVocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
-          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') { window.location.href = '/splash.html'; } }}>
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') { window.location.href = '/splash.html?from=' + encodeURIComponent(window.location.pathname); } }}>
             <Text style={styles.backText}>预览</Text>
           </TouchableOpacity>
         </View>
