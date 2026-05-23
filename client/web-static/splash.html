@@ -39,12 +39,21 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      z-index: 100;
     }
     .back-btn:hover {
       background: #333;
     }
     .back-arrow {
       font-size: 18px;
+    }
+    .hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #999;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -53,25 +62,17 @@
     <span class="back-arrow">&larr;</span> 返回
   </button>
   <img src="/splash-icon.png" class="logo" alt="启动画面" />
+  <p class="hint">点击返回按钮回到上一页</p>
 </body>
 <script>
-  // 获取来源页面，默认返回首页
   function getBackUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('from') || '/';
   }
 
   function goBack() {
-    window.location.href = getBackUrl();
+    const backUrl = getBackUrl();
+    window.location.href = backUrl;
   }
-
-  // 2秒后显示返回按钮
-  setTimeout(function() {
-    const banner = document.createElement('div');
-    banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;';
-    banner.textContent = '点击返回上一页';
-    banner.onclick = goBack;
-    document.body.appendChild(banner);
-  }, 2000);
 </script>
 </html>
