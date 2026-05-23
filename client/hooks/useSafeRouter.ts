@@ -125,12 +125,22 @@ export function useSafeRouter() {
     router.setParams({ [PAYLOAD_KEY]: encodedPayload });
   };
 
+  const back = () => {
+    // Web 静态环境下可能无法回退，使用 replace 代替
+    if (typeof window !== 'undefined' && !router.canGoBack?.()) {
+      router.replace('/');
+    } else {
+      router.back();
+    }
+  };
+
   return {
     ...router,
     push,
     replace,
     navigate,
     setParams,
+    back,
   };
 }
 
