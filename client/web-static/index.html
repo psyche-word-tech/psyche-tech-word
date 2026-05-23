@@ -5,106 +5,71 @@
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>单词记</title>
-    <style>
+    <style id="expo-reset">
       html, body { height: 100%; margin: 0; padding: 0; }
       body { overflow: hidden; }
       #root { display: flex; height: 100%; flex: 1; }
-      
-      /* Splash Preview Overlay */
-      #splash-overlay {
+      /* Splash preview styles */
+      #splash-preview {
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-        background: #ffffff;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
         display: none;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-        z-index: 9998;
-      }
-      #splash-overlay.active { display: flex; }
-      
-      .splash-icon {
-        width: 200px;
-        height: 200px;
-      }
-      
-      .splash-btn {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 12px 24px;
-        background: #333;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        cursor: pointer;
+        justify-content: center;
         z-index: 9999;
+        cursor: pointer;
       }
-      
-      .splash-btn:hover { background: #555; }
-      
-      /* Butterfly SVG Styles */
+      #splash-preview.active { display: flex; }
       .butterfly {
         position: relative;
-        width: 200px;
-        height: 200px;
+        width: 240px;
+        height: 280px;
       }
       .wing {
         position: absolute;
         background-color: #000000;
       }
-      .wing-left-top {
-        width: 100px; height: 120px;
-        top: 10px; left: 0;
-        border-radius: 50% 0 50% 50%;
-        transform: rotate(-20deg);
-        transform-origin: right bottom;
+      .wing-left-top { width: 120px; height: 140px; top: 0; left: 0; border-radius: 50% 0 50% 50%; transform: rotate(-20deg); transform-origin: right bottom; }
+      .wing-left-bottom { width: 100px; height: 120px; bottom: 40px; left: 20px; border-radius: 50% 0 50% 50%; transform: rotate(30deg); transform-origin: right top; }
+      .wing-right-top { width: 120px; height: 140px; top: 0; right: 0; border-radius: 0 50% 50% 50%; transform: rotate(20deg); transform-origin: left bottom; }
+      .wing-right-bottom { width: 100px; height: 120px; bottom: 40px; right: 20px; border-radius: 0 50% 50% 50%; transform: rotate(-30deg); transform-origin: left top; }
+      .center { position: absolute; width: 16px; height: 50px; background-color: #ffffff; border-radius: 8px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+      .splash-hint {
+        margin-top: 40px;
+        color: #999;
+        font-size: 14px;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       }
-      .wing-left-bottom {
-        width: 80px; height: 100px;
-        bottom: 30px; left: 15px;
-        border-radius: 50% 0 50% 50%;
-        transform: rotate(30deg);
-        transform-origin: right top;
+      /* Toggle button */
+      #splash-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background-color: #000000;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 10000;
       }
-      .wing-right-top {
-        width: 100px; height: 120px;
-        top: 10px; right: 0;
-        border-radius: 0 50% 50% 50%;
-        transform: rotate(20deg);
-        transform-origin: left bottom;
-      }
-      .wing-right-bottom {
-        width: 80px; height: 100px;
-        bottom: 30px; right: 15px;
-        border-radius: 0 50% 50% 50%;
-        transform: rotate(-30deg);
-        transform-origin: left top;
-      }
-      .center {
-        position: absolute;
-        width: 14px; height: 50px;
-        background-color: #ffffff;
-        border-radius: 7px;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-      }
+      #splash-toggle:hover { background-color: #333333; }
     </style>
-    <link rel="preload" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css" as="style"><link rel="stylesheet" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css"><link rel="icon" href="/favicon.ico" /></head>
-
+    <link rel="preload" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css" as="style">
+    <link rel="stylesheet" href="/_expo/static/css/global-896935b68f3ea002a3405c7c47b758e9.css">
+    <link rel="icon" href="/favicon.ico" />
+  </head>
   <body>
-    <noscript>
-      You need to enable JavaScript to run this app.
-    </noscript>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <script src="/_expo/static/js/web/entry-f86b315d2bfd3cd25bcf6da24b951e07.js" defer></script>
-    
-    <!-- Splash Preview Overlay -->
-    <div id="splash-overlay" onclick="toggleSplash()">
+    <!-- Splash Preview -->
+    <div id="splash-preview">
       <div class="butterfly">
         <div class="wing wing-left-top"></div>
         <div class="wing wing-left-bottom"></div>
@@ -112,23 +77,31 @@
         <div class="wing wing-right-bottom"></div>
         <div class="center"></div>
       </div>
-      <p style="margin-top: 20px; color: #666; font-family: sans-serif;">点击任意处关闭</p>
+      <p class="splash-hint">点击任意处关闭</p>
     </div>
-    
-    <!-- Splash Preview Button -->
-    <button class="splash-btn" id="splash-btn" onclick="toggleSplash()">预览启动画面</button>
-    
+    <button id="splash-toggle">预览启动画面</button>
     <script>
-      function toggleSplash() {
-        const overlay = document.getElementById('splash-overlay');
-        const btn = document.getElementById('splash-btn');
-        overlay.classList.toggle('active');
-        if (overlay.classList.contains('active')) {
-          btn.textContent = '关闭启动画面';
+      const splash = document.getElementById('splash-preview');
+      const toggle = document.getElementById('splash-toggle');
+      let isShown = false;
+      
+      toggle.addEventListener('click', () => {
+        if (isShown) {
+          splash.classList.remove('active');
+          toggle.textContent = '预览启动画面';
         } else {
-          btn.textContent = '预览启动画面';
+          splash.classList.add('active');
+          toggle.textContent = '关闭启动画面';
         }
-      }
+        isShown = !isShown;
+      });
+      
+      splash.addEventListener('click', () => {
+        splash.classList.remove('active');
+        toggle.textContent = '预览启动画面';
+        isShown = false;
+      });
     </script>
+    <script src="/_expo/static/js/web/entry-52aa4168dcb41b4e325563ede407e1b8.js" defer></script>
   </body>
 </html>
