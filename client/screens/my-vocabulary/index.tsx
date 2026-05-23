@@ -87,7 +87,9 @@ export default function MyVocabularyPage() {
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
-          <View style={{ width: 50 }} />
+          <TouchableOpacity onPress={() => { if (typeof window !== 'undefined') { window.location.href = '/splash.html'; } }}>
+            <Text style={styles.backText}>预览</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Word Books Grid */}
