@@ -33,5 +33,47 @@
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
   <script src="/_expo/static/js/web/entry-94f33b91eff93d2463cb1c8b5a12a562.js" defer></script>
-</body>
-</html>
+  <style>
+    #splash-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #ffffff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #splash-overlay.active { display: flex; }
+    #splash-img { width: 200px; height: auto; }
+    #splash-close {
+      position: absolute;
+      top: 20px; left: 20px;
+      background: #000; color: #fff;
+      border: none; border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px; cursor: pointer;
+    }
+    #splash-hint {
+      position: absolute; bottom: 40px;
+      color: #999; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="splash-overlay">
+    <button id="splash-close">← 返回</button>
+    <img id="splash-img" src="/splash-icon.png" alt="splash">
+    <p id="splash-hint">点击返回按钮回到上一页</p>
+  </div>
+  <script>
+    document.getElementById('splash-close').onclick = function() {
+      document.getElementById('splash-overlay').classList.remove('active');
+    };
+    // 监听来自 React 的消息
+    window.addEventListener('message', function(e) {
+      if (e.data === 'showSplash') {
+        document.getElementById('splash-overlay').classList.add('active');
+      }
+    });
+  </script>
