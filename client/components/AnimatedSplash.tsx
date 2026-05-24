@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -6,12 +6,10 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { router } from 'expo-router';
 
-interface AnimatedSplashProps {
-  onAnimationComplete?: () => void;
-}
-
-export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashProps) {
+export default function AnimatedSplash() {
+  const [visible, setVisible] = useState(true);
   // 每个元素独立的动画状态
   const topLeftX = useSharedValue(-300);
   const topLeftY = useSharedValue(-250);
@@ -55,13 +53,16 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
       bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     }, 1200);
 
-    // 全部完成后关闭
+    // 全部完成后隐藏并跳转首页
     const timer = setTimeout(() => {
-      onAnimationComplete?.();
+      setVisible(false);
+      router.replace('/');
     }, 2200);
 
     return () => clearTimeout(timer);
   }, []);
+
+  if (!visible) return null;
 
   const topLeftStyle = useAnimatedStyle(() => ({
     transform: [
