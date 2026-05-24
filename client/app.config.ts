@@ -37,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     "extra": {
       ...config.extra,
       "eas": {
-        "projectId": "fe451a1b-dbcb-4d2b-b929-f2404fbd892c"
+        "projectId": "f2e3c152-161f-4493-bbbe-edb9f7ba9ad0"
       },
       "backendBaseUrl": backendBaseUrl || 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site'
     },
