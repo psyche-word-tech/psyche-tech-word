@@ -4,48 +4,58 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
-  withSequence,
   Easing,
 } from 'react-native-reanimated';
-import { useSpring } from 'react-native-reanimated';
 
 interface AnimatedSplashProps {
   onAnimationComplete?: () => void;
 }
 
 export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashProps) {
-  // 四个角的动画值
-  const topLeftX = useSharedValue(-400);
-  const topLeftY = useSharedValue(-300);
+  // 每个元素独立的动画状态
+  const topLeftX = useSharedValue(-300);
+  const topLeftY = useSharedValue(-250);
+  const topLeftOpacity = useSharedValue(1);
   
-  const topRightX = useSharedValue(400);
-  const topRightY = useSharedValue(-300);
+  const topRightX = useSharedValue(300);
+  const topRightY = useSharedValue(-250);
+  const topRightOpacity = useSharedValue(0);
   
-  const bottomLeftX = useSharedValue(-400);
-  const bottomLeftY = useSharedValue(300);
+  const bottomLeftX = useSharedValue(-300);
+  const bottomLeftY = useSharedValue(250);
+  const bottomLeftOpacity = useSharedValue(0);
   
-  const bottomRightX = useSharedValue(400);
-  const bottomRightY = useSharedValue(300);
+  const bottomRightX = useSharedValue(300);
+  const bottomRightY = useSharedValue(250);
+  const bottomRightOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // 左上角先飞入
-    topLeftX.value = withDelay(0, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    topLeftY.value = withDelay(0, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    // 第一个：左上角飞入
+    topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     
-    // 然后右上角
-    topRightX.value = withDelay(400, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    topRightY.value = withDelay(400, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    // 第二个：左上角完成后再开始右上角
+    setTimeout(() => {
+      topRightOpacity.value = 1;
+      topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 400);
     
-    // 然后左下角
-    bottomLeftX.value = withDelay(800, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    bottomLeftY.value = withDelay(800, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    // 第三个：右上角完成后再开始左下角
+    setTimeout(() => {
+      bottomLeftOpacity.value = 1;
+      bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 800);
     
-    // 最后右下角
-    bottomRightX.value = withDelay(1200, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
-    bottomRightY.value = withDelay(1200, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    // 第四个：左下角完成后再开始右下角
+    setTimeout(() => {
+      bottomRightOpacity.value = 1;
+      bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 1200);
 
-    // 动画完成后关闭
+    // 全部完成后关闭
     const timer = setTimeout(() => {
       onAnimationComplete?.();
     }, 2200);
@@ -53,10 +63,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     return () => clearTimeout(timer);
   }, []);
 
-  // 四个象限的裁剪容器
-  // 原图 400x332，容器 300x249
-  // 上方图形约占60%高度，下方约占40%，所以分割线在约60%处
-  
   const topLeftStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: topLeftX.value },
@@ -69,6 +75,7 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
       { translateX: topRightX.value },
       { translateY: topRightY.value },
     ],
+    opacity: topRightOpacity.value,
   }));
 
   const bottomLeftStyle = useAnimatedStyle(() => ({
@@ -76,6 +83,7 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
       { translateX: bottomLeftX.value },
       { translateY: bottomLeftY.value },
     ],
+    opacity: bottomLeftOpacity.value,
   }));
 
   const bottomRightStyle = useAnimatedStyle(() => ({
@@ -83,50 +91,55 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
       { translateX: bottomRightX.value },
       { translateY: bottomRightY.value },
     ],
+    opacity: bottomRightOpacity.value,
   }));
+
+  // 容器 300x249
+  const topHeight = 150;
+  const bottomHeight = 99;
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        {/* 左上角 - 裁剪显示左上部分 */}
-        <View style={styles.clipTopLeft}>
-          <Animated.View style={[styles.imageWrapperTopLeft, topLeftStyle]}>
+        {/* 左上角 */}
+        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, left: 0 }]}>
+          <Animated.View style={[styles.imageContainer, topLeftStyle]}>
             <Image
               source={require('@/assets/splash-logo.png')}
-              style={styles.fullImage}
+              style={styles.imageTopLeft}
               resizeMode="contain"
             />
           </Animated.View>
         </View>
 
-        {/* 右上角 - 裁剪显示右上部分 */}
-        <View style={styles.clipTopRight}>
-          <Animated.View style={[styles.imageWrapperTopRight, topRightStyle]}>
+        {/* 右上角 */}
+        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, right: 0 }]}>
+          <Animated.View style={[styles.imageContainer, topRightStyle]}>
             <Image
               source={require('@/assets/splash-logo.png')}
-              style={styles.fullImage}
+              style={styles.imageTopRight}
               resizeMode="contain"
             />
           </Animated.View>
         </View>
 
-        {/* 左下角 - 裁剪显示左下部分 */}
-        <View style={styles.clipBottomLeft}>
-          <Animated.View style={[styles.imageWrapperBottomLeft, bottomLeftStyle]}>
+        {/* 左下角 */}
+        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, left: 0 }]}>
+          <Animated.View style={[styles.imageContainer, bottomLeftStyle]}>
             <Image
               source={require('@/assets/splash-logo.png')}
-              style={styles.fullImage}
+              style={styles.imageBottomLeft}
               resizeMode="contain"
             />
           </Animated.View>
         </View>
 
-        {/* 右下角 - 裁剪显示右下部分 */}
-        <View style={styles.clipBottomRight}>
-          <Animated.View style={[styles.imageWrapperBottomRight, bottomRightStyle]}>
+        {/* 右下角 */}
+        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, right: 0 }]}>
+          <Animated.View style={[styles.imageContainer, bottomRightStyle]}>
             <Image
               source={require('@/assets/splash-logo.png')}
-              style={styles.fullImage}
+              style={styles.imageBottomRight}
               resizeMode="contain"
             />
           </Animated.View>
@@ -149,62 +162,38 @@ const styles = StyleSheet.create({
     height: 249,
     position: 'relative',
   },
-  // 裁剪容器 - 横向分割在60%处（上方图形更大）
-  clipTopLeft: {
+  clipContainer: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 150,
-    height: 150,
     overflow: 'hidden',
   },
-  clipTopRight: {
+  imageContainer: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 150,
-    height: 150,
-    overflow: 'hidden',
-  },
-  clipBottomLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 150,
-    height: 99,
-    overflow: 'hidden',
-  },
-  clipBottomRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 150,
-    height: 99,
-    overflow: 'hidden',
-  },
-  // 图片定位 - 让每块显示正确区域
-  imageWrapperTopLeft: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  imageWrapperTopRight: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-  },
-  imageWrapperBottomLeft: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-  },
-  imageWrapperBottomRight: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-  },
-  fullImage: {
     width: 300,
     height: 249,
+  },
+  imageTopLeft: {
+    width: 300,
+    height: 249,
+  },
+  imageTopRight: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: -150,
+    top: 0,
+  },
+  imageBottomLeft: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: 0,
+    top: -150,
+  },
+  imageBottomRight: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: -150,
+    top: -150,
   },
 });
