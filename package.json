@@ -20,9 +20,6 @@
   "pnpm": {
     "overrides": {
       "esbuild": "0.27.2"
-    },
-    "ignoredBuiltDependencies": [
-      "ffmpeg-static"
-    ]
+    }
   }
 }
