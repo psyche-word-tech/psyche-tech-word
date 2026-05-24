@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   withDelay,
   Easing,
+  useAnimatedProps,
 } from 'react-native-reanimated';
 
 export default function AnimatedSplash() {
@@ -26,8 +27,9 @@ export default function AnimatedSplash() {
   const bottomRightY = useSharedValue(250);
   const bottomRightOpacity = useSharedValue(0);
   
-  // 整体淡出
+  // 整体淡出和禁用点击
   const containerOpacity = useSharedValue(1);
+  const containerPointerEvents = useSharedValue<'auto' | 'none'>('auto');
 
   useEffect(() => {
     // 第一个：左上角飞入
@@ -55,9 +57,10 @@ export default function AnimatedSplash() {
       bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     }, 1200);
 
-    // 全部完成后淡出（不跳转，首页已经在显示了）
+    // 全部完成后淡出并禁用点击（不跳转，首页已经在显示了）
     setTimeout(() => {
       containerOpacity.value = withTiming(0, { duration: 300 });
+      containerPointerEvents.value = withTiming('none' as 'auto' | 'none', { duration: 300 });
     }, 2200);
   }, []);
 
@@ -94,6 +97,7 @@ export default function AnimatedSplash() {
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
+    pointerEvents: containerPointerEvents.value as 'auto' | 'none',
   }));
 
   // 容器 300x249
