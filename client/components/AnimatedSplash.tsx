@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { router } from 'expo-router';
 
 export default function AnimatedSplash() {
-  const [visible, setVisible] = useState(true);
   // 每个元素独立的动画状态
   const topLeftX = useSharedValue(-300);
   const topLeftY = useSharedValue(-250);
@@ -26,6 +25,9 @@ export default function AnimatedSplash() {
   const bottomRightX = useSharedValue(300);
   const bottomRightY = useSharedValue(250);
   const bottomRightOpacity = useSharedValue(0);
+  
+  // 整体淡出
+  const containerOpacity = useSharedValue(1);
 
   useEffect(() => {
     // 第一个：左上角飞入
@@ -53,19 +55,11 @@ export default function AnimatedSplash() {
       bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     }, 1200);
 
-    // 全部完成后隐藏并跳转首页
-    const timer = setTimeout(() => {
-      setVisible(false);
-      // 延迟跳转，确保启动页已卸载
-      setTimeout(() => {
-        router.replace('/');
-      }, 100);
+    // 全部完成后淡出（不跳转，首页已经在显示了）
+    setTimeout(() => {
+      containerOpacity.value = withTiming(0, { duration: 300 });
     }, 2200);
-
-    return () => clearTimeout(timer);
   }, []);
-
-  if (!visible) return null;
 
   const topLeftStyle = useAnimatedStyle(() => ({
     transform: [
@@ -98,12 +92,16 @@ export default function AnimatedSplash() {
     opacity: bottomRightOpacity.value,
   }));
 
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
+
   // 容器 300x249
   const topHeight = 150;
   const bottomHeight = 99;
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, containerStyle]}>
       <View style={styles.logoContainer}>
         {/* 左上角 */}
         <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, left: 0 }]}>
@@ -149,7 +147,7 @@ export default function AnimatedSplash() {
           </Animated.View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
