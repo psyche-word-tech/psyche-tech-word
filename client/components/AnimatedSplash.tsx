@@ -1,156 +1,188 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Animated, View, StyleSheet, Dimensions } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
+import React, { useState, useEffect } from 'react';
+import { View, Image, StyleSheet, Text } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+  runOnJS,
+} from 'react-native-reanimated';
 
-const { width, height } = Dimensions.get('window');
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
-interface AnimatedSplashProps {
-  onAnimationComplete?: () => void;
-}
-
-export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashProps) {
+export default function AnimatedSplash() {
   const [visible, setVisible] = useState(true);
-  const fadeAnim = useMemo(() => new Animated.Value(1), []);
+  const [zIndex, setZIndex] = useState(999);
+  const [showText, setShowText] = useState(false);
 
-  const topLeftX = useMemo(() => new Animated.Value(-width * 0.7), []);
-  const topLeftY = useMemo(() => new Animated.Value(-height * 0.7), []);
-  const topRightX = useMemo(() => new Animated.Value(width * 0.7), []);
-  const topRightY = useMemo(() => new Animated.Value(-height * 0.7), []);
-  const bottomLeftX = useMemo(() => new Animated.Value(-width * 0.7), []);
-  const bottomLeftY = useMemo(() => new Animated.Value(height * 0.7), []);
-  const bottomRightX = useMemo(() => new Animated.Value(width * 0.7), []);
-  const bottomRightY = useMemo(() => new Animated.Value(height * 0.7), []);
+  // 每个元素独立的动画状态
+  const topLeftX = useSharedValue(-300);
+  const topLeftY = useSharedValue(-250);
+  
+  const topRightX = useSharedValue(300);
+  const topRightY = useSharedValue(-250);
+  const topRightOpacity = useSharedValue(0);
+  
+  const bottomLeftX = useSharedValue(-300);
+  const bottomLeftY = useSharedValue(250);
+  const bottomLeftOpacity = useSharedValue(0);
+  
+  const bottomRightX = useSharedValue(300);
+  const bottomRightY = useSharedValue(250);
+  const bottomRightOpacity = useSharedValue(0);
 
-  const scale1 = useMemo(() => new Animated.Value(0.5), []);
-  const scale2 = useMemo(() => new Animated.Value(0.5), []);
-  const scale3 = useMemo(() => new Animated.Value(0.5), []);
-  const scale4 = useMemo(() => new Animated.Value(0.5), []);
+  const containerOpacity = useSharedValue(1);
+  const textOpacity = useSharedValue(0);
+
+  const handleAnimationComplete = () => {
+    setVisible(false);
+    setZIndex(-1);
+  };
 
   useEffect(() => {
-    SplashScreen.hideAsync().catch(() => { /* ignore */ });
+    // 第一个：左上角飞入
+    topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    
+    // 第二个：左上角完成后再开始右上角
+    setTimeout(() => {
+      topRightOpacity.value = 1;
+      topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 400);
+    
+    // 第三个：右上角完成后再开始左下角
+    setTimeout(() => {
+      bottomLeftOpacity.value = 1;
+      bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 800);
+    
+    // 第四个：左下角完成后再开始右下角
+    setTimeout(() => {
+      bottomRightOpacity.value = 1;
+      bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 1200);
 
-    const animateBlock = (
-      animX: Animated.Value,
-      animY: Animated.Value,
-      animScale: Animated.Value,
-      delay: number
-    ) => {
-      return Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(animX, {
-            toValue: 0,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animY, {
-            toValue: 0,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animScale, {
-            toValue: 1,
-            duration: 900,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]);
-    };
+    // 四个图形飞入完成后显示文字
+    setTimeout(() => {
+      setShowText(true);
+      textOpacity.value = withTiming(1, { duration: 500 });
+    }, 1600);
 
-    Animated.parallel([
-      animateBlock(topLeftX, topLeftY, scale1, 0),
-      animateBlock(topRightX, topRightY, scale2, 200),
-      animateBlock(bottomLeftX, bottomLeftY, scale3, 400),
-      animateBlock(bottomRightX, bottomRightY, scale4, 600),
-    ]).start(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start(() => {
-        setVisible(false);
-        onAnimationComplete?.();
+    // 显示文字后淡出整个启动页
+    setTimeout(() => {
+      containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+        if (finished) {
+          runOnJS(handleAnimationComplete)();
+        }
       });
-    });
+    }, 3000);
   }, []);
 
-  if (!visible) return null;
+  const topLeftStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: topLeftX.value },
+      { translateY: topLeftY.value },
+    ],
+  }));
+
+  const topRightStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: topRightX.value },
+      { translateY: topRightY.value },
+    ],
+    opacity: topRightOpacity.value,
+  }));
+
+  const bottomLeftStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: bottomLeftX.value },
+      { translateY: bottomLeftY.value },
+    ],
+    opacity: bottomLeftOpacity.value,
+  }));
+
+  const bottomRightStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: bottomRightX.value },
+      { translateY: bottomRightY.value },
+    ],
+    opacity: bottomRightOpacity.value,
+  }));
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
+
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+  }));
+
+  // 容器 300x249
+  const topHeight = 150;
+  const bottomHeight = 99;
+
+  if (!visible) {
+    return null;
+  }
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <Animated.View style={[styles.container, containerStyle, { zIndex }]}>
       <View style={styles.logoContainer}>
-        {/* Top-left parallelogram */}
-        <Animated.View
-          style={[
-            styles.blockWrapper,
-            {
-              top: 0,
-              left: 4,
-              transform: [
-                { translateX: topLeftX },
-                { translateY: topLeftY },
-                { scale: scale1 },
-              ],
-            },
-          ]}
-        >
-          <View style={[styles.parallelogram, styles.topLeftShape]} />
-        </Animated.View>
+        {/* 左上角 */}
+        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, left: 0 }]}>
+          <Animated.View style={[styles.imageContainer, topLeftStyle]}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={styles.imageTopLeft}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
 
-        {/* Top-right parallelogram */}
-        <Animated.View
-          style={[
-            styles.blockWrapper,
-            {
-              top: 0,
-              right: 4,
-              transform: [
-                { translateX: topRightX },
-                { translateY: topRightY },
-                { scale: scale2 },
-              ],
-            },
-          ]}
-        >
-          <View style={[styles.parallelogram, styles.topRightShape]} />
-        </Animated.View>
+        {/* 右上角 */}
+        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, right: 0 }]}>
+          <Animated.View style={[styles.imageContainer, topRightStyle]}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={styles.imageTopRight}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
 
-        {/* Bottom-left parallelogram */}
-        <Animated.View
-          style={[
-            styles.blockWrapper,
-            {
-              bottom: 4,
-              left: 8,
-              transform: [
-                { translateX: bottomLeftX },
-                { translateY: bottomLeftY },
-                { scale: scale3 },
-              ],
-            },
-          ]}
-        >
-          <View style={[styles.parallelogram, styles.bottomLeftShape]} />
-        </Animated.View>
+        {/* 左下角 */}
+        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, left: 0 }]}>
+          <Animated.View style={[styles.imageContainer, bottomLeftStyle]}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={styles.imageBottomLeft}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
 
-        {/* Bottom-right parallelogram */}
-        <Animated.View
-          style={[
-            styles.blockWrapper,
-            {
-              bottom: 4,
-              right: 8,
-              transform: [
-                { translateX: bottomRightX },
-                { translateY: bottomRightY },
-                { scale: scale4 },
-              ],
-            },
-          ]}
-        >
-          <View style={[styles.parallelogram, styles.bottomRightShape]} />
-        </Animated.View>
+        {/* 右下角 */}
+        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, right: 0 }]}>
+          <Animated.View style={[styles.imageContainer, bottomRightStyle]}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={styles.imageBottomRight}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
       </View>
+      
+      {/* 文字：四个图形飞入完成后显示 */}
+      {showText && (
+        <Animated.Text style={[styles.slogan, textStyle]}>
+          To Scientize Learning——Psyche Tech
+        </Animated.Text>
+      )}
     </Animated.View>
   );
 }
@@ -161,42 +193,51 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 999,
   },
   logoContainer: {
-    width: 140,
-    height: 160,
+    width: 300,
+    height: 249,
     position: 'relative',
   },
-  blockWrapper: {
+  slogan: {
+    marginTop: 40,
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#333333',
+    letterSpacing: 1,
+  },
+  clipContainer: {
     position: 'absolute',
-    width: 60,
-    height: 70,
     overflow: 'hidden',
   },
-  parallelogram: {
-    width: 70,
-    height: 80,
-    backgroundColor: '#000000',
+  imageContainer: {
+    position: 'absolute',
+    width: 300,
+    height: 249,
   },
-  topLeftShape: {
-    transform: [{ skewX: '-25deg' }, { rotate: '-8deg' }],
-    marginLeft: -8,
-    marginTop: -4,
+  imageTopLeft: {
+    width: 300,
+    height: 249,
   },
-  topRightShape: {
-    transform: [{ skewX: '25deg' }, { rotate: '8deg' }],
-    marginLeft: -2,
-    marginTop: -4,
+  imageTopRight: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: -150,
+    top: 0,
   },
-  bottomLeftShape: {
-    transform: [{ skewX: '25deg' }, { rotate: '8deg' }],
-    marginLeft: -6,
-    marginTop: -6,
+  imageBottomLeft: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: 0,
+    top: -150,
   },
-  bottomRightShape: {
-    transform: [{ skewX: '-25deg' }, { rotate: '-8deg' }],
-    marginLeft: -4,
-    marginTop: -6,
+  imageBottomRight: {
+    width: 300,
+    height: 249,
+    position: 'absolute',
+    left: -150,
+    top: -150,
   },
 });
