@@ -1,19 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Image, StyleSheet, Animated, Easing } from 'react-native';
 
 interface AnimatedSplashProps {
   onAnimationComplete?: () => void;
 }
 
 export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashProps) {
-  // 动画值：0=初始位置，1=最终位置
   const topLeftAnim = useRef(new Animated.Value(0)).current;
   const topRightAnim = useRef(new Animated.Value(0)).current;
   const bottomLeftAnim = useRef(new Animated.Value(0)).current;
   const bottomRightAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // 依次启动动画：左上 → 右上 → 左下 → 右下
     const animations = Animated.sequence([
       // 左上角飞入
       Animated.timing(topLeftAnim, {
@@ -52,7 +50,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     ]);
 
     animations.start(() => {
-      // 等待一下后关闭
       setTimeout(() => {
         onAnimationComplete?.();
       }, 1000);
@@ -66,7 +63,7 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     };
   }, []);
 
-  // 左上角：从左上方飞入
+  // 飞入动画 - 从四角飞入中心
   const topLeftTranslateX = topLeftAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-400, 0],
@@ -76,7 +73,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     outputRange: [-400, 0],
   });
 
-  // 右上角：从右上方飞入
   const topRightTranslateX = topRightAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [400, 0],
@@ -86,7 +82,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     outputRange: [-400, 0],
   });
 
-  // 左下角：从左下方飞入
   const bottomLeftTranslateX = bottomLeftAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-400, 0],
@@ -96,7 +91,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     outputRange: [400, 0],
   });
 
-  // 右下角：从右下方飞入
   const bottomRightTranslateX = bottomRightAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [400, 0],
@@ -106,13 +100,16 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     outputRange: [400, 0],
   });
 
+  // 原图尺寸: 400x332
+  // 容器内显示尺寸: 300x249 (保持比例)
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        {/* 左上角平行四边形 */}
+        {/* 左上角部分 */}
         <Animated.View
           style={[
-            styles.topLeftContainer,
+            styles.topLeftClip,
             {
               transform: [
                 { translateX: topLeftTranslateX },
@@ -121,13 +118,17 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={styles.topLeftParallelogram} />
+          <Image
+            source={require('@/assets/splash-logo.png')}
+            style={styles.topLeftImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
-        {/* 右上角平行四边形 */}
+        {/* 右上角部分 */}
         <Animated.View
           style={[
-            styles.topRightContainer,
+            styles.topRightClip,
             {
               transform: [
                 { translateX: topRightTranslateX },
@@ -136,13 +137,17 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={styles.topRightParallelogram} />
+          <Image
+            source={require('@/assets/splash-logo.png')}
+            style={styles.topRightImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
-        {/* 左下角平行四边形 */}
+        {/* 左下角部分 */}
         <Animated.View
           style={[
-            styles.bottomLeftContainer,
+            styles.bottomLeftClip,
             {
               transform: [
                 { translateX: bottomLeftTranslateX },
@@ -151,13 +156,17 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={styles.bottomLeftParallelogram} />
+          <Image
+            source={require('@/assets/splash-logo.png')}
+            style={styles.bottomLeftImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
-        {/* 右下角平行四边形 */}
+        {/* 右下角部分 */}
         <Animated.View
           style={[
-            styles.bottomRightContainer,
+            styles.bottomRightClip,
             {
               transform: [
                 { translateX: bottomRightTranslateX },
@@ -166,7 +175,11 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
             },
           ]}
         >
-          <View style={styles.bottomRightParallelogram} />
+          <Image
+            source={require('@/assets/splash-logo.png')}
+            style={styles.bottomRightImage}
+            resizeMode="contain"
+          />
         </Animated.View>
       </View>
     </View>
@@ -180,55 +193,65 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
+    overflow: 'hidden',
   },
   logoContainer: {
     width: 300,
-    height: 190,
+    height: 249,
     position: 'relative',
   },
-  topLeftContainer: {
+  // 使用 clip 裁剪出四个角
+  topLeftClip: {
     position: 'absolute',
-    top: 7.5,
-    left: 32.6,
+    top: 0,
+    left: 0,
+    width: 150,
+    height: 125,
+    overflow: 'hidden',
   },
-  topRightContainer: {
+  topRightClip: {
     position: 'absolute',
-    top: 7.5,
-    right: 32.6,
+    top: 0,
+    right: 0,
+    width: 150,
+    height: 125,
+    overflow: 'hidden',
   },
-  bottomLeftContainer: {
+  bottomLeftClip: {
     position: 'absolute',
-    bottom: 25,
-    left: 65,
+    bottom: 0,
+    left: 0,
+    width: 150,
+    height: 124,
+    overflow: 'hidden',
   },
-  bottomRightContainer: {
+  bottomRightClip: {
     position: 'absolute',
-    bottom: 25,
-    right: 233.8,
+    bottom: 0,
+    right: 0,
+    width: 150,
+    height: 124,
+    overflow: 'hidden',
   },
-  // 平行四边形样式
-  topLeftParallelogram: {
-    width: 85,
-    height: 75,
-    backgroundColor: '#000000',
-    transform: [{ skewX: '28deg' }],
+  // 图片定位到各自的角
+  topLeftImage: {
+    width: 300,
+    height: 249,
   },
-  topRightParallelogram: {
-    width: 85,
-    height: 75,
-    backgroundColor: '#000000',
-    transform: [{ skewX: '-28deg' }],
+  topRightImage: {
+    width: 300,
+    height: 249,
+    marginLeft: -150,
   },
-  bottomLeftParallelogram: {
-    width: 59,
-    height: 52,
-    backgroundColor: '#000000',
-    transform: [{ skewX: '-28deg' }],
+  bottomLeftImage: {
+    width: 300,
+    height: 249,
+    marginTop: -124,
   },
-  bottomRightParallelogram: {
-    width: 59,
-    height: 52,
-    backgroundColor: '#000000',
-    transform: [{ skewX: '28deg' }],
+  bottomRightImage: {
+    width: 300,
+    height: 249,
+    marginLeft: -150,
+    marginTop: -124,
   },
 });
