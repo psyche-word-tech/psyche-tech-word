@@ -179,9 +179,14 @@ export default function AnimatedSplash() {
       
       {/* 文字：四个图形飞入完成后显示 */}
       {showText && (
-        <Animated.Text style={[styles.slogan, textStyle]}>
-          To Scientize Learning——Psyche Tech
-        </Animated.Text>
+        <View style={styles.sloganContainer}>
+          <Animated.Text style={[styles.sloganLine1, textStyle]}>
+            To Scientize Learning
+          </Animated.Text>
+          <Animated.Text style={[styles.sloganLine2, textStyle]}>
+            ——Psyche Tech
+          </Animated.Text>
+        </View>
       )}
     </Animated.View>
   );
@@ -199,10 +204,17 @@ const styles = StyleSheet.create({
     height: 249,
     position: 'relative',
   },
-  slogan: {
+  sloganLine1: {
     marginTop: 40,
-    fontSize: 14,
+    fontSize: 22,
     fontStyle: 'italic',
+    color: '#333333',
+    letterSpacing: 1,
+  },
+  sloganLine2: {
+    marginTop: 8,
+    fontSize: 20,
+    fontStyle: 'normal',
     color: '#333333',
     letterSpacing: 1,
   },
