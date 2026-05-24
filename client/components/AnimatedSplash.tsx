@@ -1,68 +1,84 @@
-import React, { useEffect } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
   Easing,
-  useAnimatedProps,
+  runOnJS,
 } from 'react-native-reanimated';
 
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+
 export default function AnimatedSplash() {
+  const [visible, setVisible] = useState(true);
+  const [zIndex, setZIndex] = useState(999);
+
   // 每个元素独立的动画状态
   const topLeftX = useSharedValue(-300);
   const topLeftY = useSharedValue(-250);
   const topLeftOpacity = useSharedValue(1);
+  const topLeftReady = useSharedValue(0);
   
   const topRightX = useSharedValue(300);
   const topRightY = useSharedValue(-250);
   const topRightOpacity = useSharedValue(0);
+  const topRightReady = useSharedValue(0);
   
   const bottomLeftX = useSharedValue(-300);
   const bottomLeftY = useSharedValue(250);
   const bottomLeftOpacity = useSharedValue(0);
+  const bottomLeftReady = useSharedValue(0);
   
   const bottomRightX = useSharedValue(300);
   const bottomRightY = useSharedValue(250);
   const bottomRightOpacity = useSharedValue(0);
-  
-  // 整体淡出和禁用点击
+  const bottomRightReady = useSharedValue(0);
+
   const containerOpacity = useSharedValue(1);
-  const containerPointerEvents = useSharedValue<'auto' | 'none'>('auto');
 
-  useEffect(() => {
-    // 第一个：左上角飞入
-    topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    
-    // 第二个：左上角完成后再开始右上角
-    setTimeout(() => {
-      topRightOpacity.value = 1;
-      topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 400);
-    
-    // 第三个：右上角完成后再开始左下角
-    setTimeout(() => {
-      bottomLeftOpacity.value = 1;
-      bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 800);
-    
-    // 第四个：左下角完成后再开始右下角
-    setTimeout(() => {
-      bottomRightOpacity.value = 1;
-      bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 1200);
+  const handleAnimationComplete = () => {
+    setVisible(false);
+    setZIndex(-1);
+  };
 
-    // 全部完成后淡出并禁用点击（不跳转，首页已经在显示了）
-    setTimeout(() => {
-      containerOpacity.value = withTiming(0, { duration: 300 });
-      containerPointerEvents.value = withTiming('none' as 'auto' | 'none', { duration: 300 });
-    }, 2200);
-  }, []);
+  // 第一个：左上角飞入
+  topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+  topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+  topLeftReady.value = withTiming(1, { duration: 0 });
+  
+  // 第二个：左上角完成后再开始右上角
+  setTimeout(() => {
+    topRightOpacity.value = 1;
+    topRightReady.value = 1;
+    topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+  }, 400);
+  
+  // 第三个：右上角完成后再开始左下角
+  setTimeout(() => {
+    bottomLeftOpacity.value = 1;
+    bottomLeftReady.value = 1;
+    bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+  }, 800);
+  
+  // 第四个：左下角完成后再开始右下角
+  setTimeout(() => {
+    bottomRightOpacity.value = 1;
+    bottomRightReady.value = 1;
+    bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+  }, 1200);
+
+  // 全部完成后淡出
+  setTimeout(() => {
+    containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+      if (finished) {
+        runOnJS(handleAnimationComplete)();
+      }
+    });
+  }, 2200);
 
   const topLeftStyle = useAnimatedStyle(() => ({
     transform: [
@@ -97,15 +113,18 @@ export default function AnimatedSplash() {
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
-    pointerEvents: containerPointerEvents.value as 'auto' | 'none',
   }));
 
   // 容器 300x249
   const topHeight = 150;
   const bottomHeight = 99;
 
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <Animated.View style={[styles.container, containerStyle]}>
+    <Animated.View style={[styles.container, containerStyle, { zIndex }]}>
       <View style={styles.logoContainer}>
         {/* 左上角 */}
         <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, left: 0 }]}>
@@ -161,7 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 999,
   },
   logoContainer: {
     width: 300,
