@@ -9,44 +9,46 @@
     body {
       width: 100vw;
       height: 100vh;
+      background-color: #ffffff;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background-color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
     }
-    .splash-logo {
-      width: 200px;
-      height: 200px;
-      object-fit: contain;
+    .logo {
+      width: 120px;
+      height: auto;
     }
     .back-btn {
       position: fixed;
       top: 20px;
       left: 20px;
-      padding: 10px 20px;
-      background-color: #000;
-      color: #fff;
+      background-color: #000000;
+      color: #ffffff;
       border: none;
+      padding: 10px 20px;
       border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
+      z-index: 100;
     }
-    .back-btn:active {
-      opacity: 0.8;
+    .back-btn:hover {
+      background-color: #333333;
     }
     .hint {
       position: fixed;
-      bottom: 20px;
-      color: #999;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #999999;
       font-size: 14px;
     }
   </style>
 </head>
 <body>
   <button class="back-btn" onclick="window.close()">← 返回</button>
-  <img src="splash-icon.png" alt="Logo" class="splash-logo">
+  <img class="logo" src="splash-icon.png" alt="Logo" />
   <p class="hint">点击返回按钮关闭</p>
 </body>
 </html>
