@@ -6,30 +6,32 @@ interface AnimatedSplashProps {
 }
 
 export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashProps) {
+  // 上方两个图形动画
   const topLeftAnim = useRef(new Animated.Value(0)).current;
   const topRightAnim = useRef(new Animated.Value(0)).current;
+  
+  // 下方两个图形动画
   const bottomLeftAnim = useRef(new Animated.Value(0)).current;
   const bottomRightAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const animations = Animated.sequence([
-      // 左上角飞入
-      Animated.timing(topLeftAnim, {
-        toValue: 1,
-        duration: 400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      // 右上角飞入
+      // 第一步：上方两个图形飞入（只飞入70%，留下30%的缺口）
       Animated.parallel([
+        Animated.timing(topLeftAnim, {
+          toValue: 0.7,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
         Animated.timing(topRightAnim, {
-          toValue: 1,
+          toValue: 0.7,
           duration: 400,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
-      // 左下角飞入
+      // 第二步：下方两个图形飞入，先填补上方的缺口
       Animated.parallel([
         Animated.timing(bottomLeftAnim, {
           toValue: 1,
@@ -37,9 +39,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]),
-      // 右下角飞入
-      Animated.parallel([
         Animated.timing(bottomRightAnim, {
           toValue: 1,
           duration: 400,
@@ -63,45 +62,43 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     };
   }, []);
 
-  // 飞入动画 - 从四角飞入中心
-  const topLeftTranslateX = topLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
+  // 上方图形飞入 - 从上方飞入
   const topLeftTranslateY = topLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
+    inputRange: [0, 0.7, 1],
+    outputRange: [-400, -120, -120], // 先飞入70%，然后停在-120
+  });
+  const topLeftTranslateX = topLeftAnim.interpolate({
+    inputRange: [0, 0.7, 1],
+    outputRange: [-400, -10, -10], // 稍微有一点水平移动
   });
 
-  const topRightTranslateX = topRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
   const topRightTranslateY = topRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
+    inputRange: [0, 0.7, 1],
+    outputRange: [-400, -120, -120],
+  });
+  const topRightTranslateX = topRightAnim.interpolate({
+    inputRange: [0, 0.7, 1],
+    outputRange: [400, 10, 10],
   });
 
-  const bottomLeftTranslateX = bottomLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
+  // 下方图形飞入 - 从下方飞入，先填补上方缺口
   const bottomLeftTranslateY = bottomLeftAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [400, 0],
   });
-
-  const bottomRightTranslateX = bottomRightAnim.interpolate({
+  const bottomLeftTranslateX = bottomLeftAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [400, 0],
+    outputRange: [-100, 0], // 先水平移动填补缺口
   });
+
   const bottomRightTranslateY = bottomRightAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [400, 0],
   });
-
-  // 原图尺寸: 400x332
-  // 容器内显示尺寸: 300x249 (保持比例)
+  const bottomRightTranslateX = bottomRightAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [100, 0],
+  });
 
   return (
     <View style={styles.container}>
@@ -200,7 +197,6 @@ const styles = StyleSheet.create({
     height: 249,
     position: 'relative',
   },
-  // 使用 clip 裁剪出四个角
   topLeftClip: {
     position: 'absolute',
     top: 0,
@@ -233,7 +229,6 @@ const styles = StyleSheet.create({
     height: 124,
     overflow: 'hidden',
   },
-  // 图片定位到各自的角
   topLeftImage: {
     width: 300,
     height: 249,
