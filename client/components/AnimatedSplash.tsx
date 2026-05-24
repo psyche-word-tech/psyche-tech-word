@@ -56,7 +56,10 @@ export default function AnimatedSplash() {
     // 全部完成后隐藏并跳转首页
     const timer = setTimeout(() => {
       setVisible(false);
-      router.replace('/');
+      // 延迟跳转，确保启动页已卸载
+      setTimeout(() => {
+        router.replace('/');
+      }, 100);
     }, 2200);
 
     return () => clearTimeout(timer);
