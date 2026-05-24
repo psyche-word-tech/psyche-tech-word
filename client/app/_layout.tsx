@@ -15,6 +15,7 @@ export default function RootLayout() {
     <ApiConfigProvider>
       <AuthProvider>
         <Provider>
+          <AnimatedSplash />
           <StatusBar style="dark" />
           <Stack
           screenOptions={{
