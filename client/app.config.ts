@@ -10,6 +10,7 @@ const slugAppName = 'psyche-tech';
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
+    "owner": "psychetech",
     "name": appName,
     "slug": slugAppName,
     "version": "1.0.0",
