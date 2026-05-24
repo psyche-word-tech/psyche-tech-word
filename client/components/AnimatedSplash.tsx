@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Image, StyleSheet, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withDelay,
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
@@ -13,72 +14,73 @@ const AnimatedImage = Animated.createAnimatedComponent(Image);
 export default function AnimatedSplash() {
   const [visible, setVisible] = useState(true);
   const [zIndex, setZIndex] = useState(999);
+  const [showText, setShowText] = useState(false);
 
   // 每个元素独立的动画状态
   const topLeftX = useSharedValue(-300);
   const topLeftY = useSharedValue(-250);
-  const topLeftOpacity = useSharedValue(1);
-  const topLeftReady = useSharedValue(0);
   
   const topRightX = useSharedValue(300);
   const topRightY = useSharedValue(-250);
   const topRightOpacity = useSharedValue(0);
-  const topRightReady = useSharedValue(0);
   
   const bottomLeftX = useSharedValue(-300);
   const bottomLeftY = useSharedValue(250);
   const bottomLeftOpacity = useSharedValue(0);
-  const bottomLeftReady = useSharedValue(0);
   
   const bottomRightX = useSharedValue(300);
   const bottomRightY = useSharedValue(250);
   const bottomRightOpacity = useSharedValue(0);
-  const bottomRightReady = useSharedValue(0);
 
   const containerOpacity = useSharedValue(1);
+  const textOpacity = useSharedValue(0);
 
   const handleAnimationComplete = () => {
     setVisible(false);
     setZIndex(-1);
   };
 
-  // 第一个：左上角飞入
-  topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-  topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-  topLeftReady.value = withTiming(1, { duration: 0 });
-  
-  // 第二个：左上角完成后再开始右上角
-  setTimeout(() => {
-    topRightOpacity.value = 1;
-    topRightReady.value = 1;
-    topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-  }, 400);
-  
-  // 第三个：右上角完成后再开始左下角
-  setTimeout(() => {
-    bottomLeftOpacity.value = 1;
-    bottomLeftReady.value = 1;
-    bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-  }, 800);
-  
-  // 第四个：左下角完成后再开始右下角
-  setTimeout(() => {
-    bottomRightOpacity.value = 1;
-    bottomRightReady.value = 1;
-    bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-  }, 1200);
+  useEffect(() => {
+    // 第一个：左上角飞入
+    topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    
+    // 第二个：左上角完成后再开始右上角
+    setTimeout(() => {
+      topRightOpacity.value = 1;
+      topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 400);
+    
+    // 第三个：右上角完成后再开始左下角
+    setTimeout(() => {
+      bottomLeftOpacity.value = 1;
+      bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 800);
+    
+    // 第四个：左下角完成后再开始右下角
+    setTimeout(() => {
+      bottomRightOpacity.value = 1;
+      bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+    }, 1200);
 
-  // 全部完成后淡出
-  setTimeout(() => {
-    containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
-      if (finished) {
-        runOnJS(handleAnimationComplete)();
-      }
-    });
-  }, 2200);
+    // 四个图形飞入完成后显示文字
+    setTimeout(() => {
+      setShowText(true);
+      textOpacity.value = withTiming(1, { duration: 500 });
+    }, 1600);
+
+    // 显示文字后淡出整个启动页
+    setTimeout(() => {
+      containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+        if (finished) {
+          runOnJS(handleAnimationComplete)();
+        }
+      });
+    }, 3000);
+  }, []);
 
   const topLeftStyle = useAnimatedStyle(() => ({
     transform: [
@@ -113,6 +115,10 @@ export default function AnimatedSplash() {
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
+  }));
+
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
   }));
 
   // 容器 300x249
@@ -170,6 +176,13 @@ export default function AnimatedSplash() {
           </Animated.View>
         </View>
       </View>
+      
+      {/* 文字：四个图形飞入完成后显示 */}
+      {showText && (
+        <Animated.Text style={[styles.slogan, textStyle]}>
+          To Scientize Learning—— psyche tech
+        </Animated.Text>
+      )}
     </Animated.View>
   );
 }
@@ -185,6 +198,12 @@ const styles = StyleSheet.create({
     width: 300,
     height: 249,
     position: 'relative',
+  },
+  slogan: {
+    marginTop: 40,
+    fontSize: 14,
+    color: '#333333',
+    letterSpacing: 1,
   },
   clipContainer: {
     position: 'absolute',
