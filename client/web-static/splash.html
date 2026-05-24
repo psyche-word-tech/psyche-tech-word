@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>启动画面</title>
+  <title>启动画面预览</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -14,68 +14,39 @@
       align-items: center;
       justify-content: center;
       background-color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      position: relative;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .logo {
+    .splash-logo {
       width: 200px;
-      height: auto;
-      position: absolute;
-      top: 50%;
-      left: calc(50% + 200px);
-      transform: translate(-50%, -50%);
+      height: 200px;
+      object-fit: contain;
     }
     .back-btn {
-      position: absolute;
+      position: fixed;
       top: 20px;
       left: 20px;
       padding: 10px 20px;
-      background: #000;
+      background-color: #000;
       color: #fff;
       border: none;
       border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      z-index: 100;
     }
-    .back-btn:hover {
-      background: #333;
-    }
-    .back-arrow {
-      font-size: 18px;
+    .back-btn:active {
+      opacity: 0.8;
     }
     .hint {
       position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 20px;
       color: #999;
       font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <button class="back-btn" onclick="goBack()">
-    <span class="back-arrow">&larr;</span> 返回
-  </button>
-  <img src="/splash-icon.png" class="logo" alt="启动画面" />
-  <p class="hint">点击返回按钮回到上一页</p>
+  <button class="back-btn" onclick="window.close()">← 返回</button>
+  <img src="splash-icon.png" alt="Logo" class="splash-logo">
+  <p class="hint">点击返回按钮关闭</p>
 </body>
-<script>
-  function getBackUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('from') || '/';
-  }
-
-  function goBack() {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = '/';
-    }
-  }
-</script>
 </html>
