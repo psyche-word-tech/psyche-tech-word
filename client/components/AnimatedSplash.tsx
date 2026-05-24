@@ -13,14 +13,12 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
 
   useEffect(() => {
     const animations = Animated.sequence([
-      // 左上角飞入
       Animated.timing(topLeftAnim, {
         toValue: 1,
         duration: 400,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      // 右上角飞入
       Animated.parallel([
         Animated.timing(topRightAnim, {
           toValue: 1,
@@ -29,7 +27,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
           useNativeDriver: true,
         }),
       ]),
-      // 左下角飞入
       Animated.parallel([
         Animated.timing(bottomLeftAnim, {
           toValue: 1,
@@ -38,7 +35,6 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
           useNativeDriver: true,
         }),
       ]),
-      // 右下角飞入
       Animated.parallel([
         Animated.timing(bottomRightAnim, {
           toValue: 1,
@@ -63,123 +59,108 @@ export default function AnimatedSplash({ onAnimationComplete }: AnimatedSplashPr
     };
   }, []);
 
-  // 飞入动画 - 从四角飞入中心
-  const topLeftTranslateX = topLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
-  const topLeftTranslateY = topLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
-
-  const topRightTranslateX = topRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
-  const topRightTranslateY = topRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
-
-  const bottomLeftTranslateX = bottomLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-400, 0],
-  });
-  const bottomLeftTranslateY = bottomLeftAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
-
-  const bottomRightTranslateX = bottomRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
-  const bottomRightTranslateY = bottomRightAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
-
-  // 原图尺寸: 400x332
-  // 容器内显示尺寸: 300x249 (保持比例)
+  // 原图尺寸 400x332，容器 300x249 (保持比例)
+  // 每个象限的大小
+  const quadrantW = 150;
+  const quadrantH = 124.5;
 
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        {/* 左上角部分 */}
+        {/* 左上角 */}
         <Animated.View
           style={[
-            styles.topLeftClip,
+            styles.quadrant,
             {
+              left: 0,
+              top: 0,
+              opacity: topLeftAnim,
               transform: [
-                { translateX: topLeftTranslateX },
-                { translateY: topLeftTranslateY },
+                { translateX: topLeftAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0] }) },
+                { translateY: topLeftAnim.interpolate({ inputRange: [0, 1], outputRange: [-250, 0] }) },
               ],
             },
           ]}
         >
-          <Image
-            source={require('@/assets/splash-logo.png')}
-            style={styles.topLeftImage}
-            resizeMode="contain"
-          />
+          <View style={styles.clipContainer}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={[styles.fullImage, { left: 0, top: 0 }]}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
 
-        {/* 右上角部分 */}
+        {/* 右上角 */}
         <Animated.View
           style={[
-            styles.topRightClip,
+            styles.quadrant,
             {
+              right: 0,
+              top: 0,
+              opacity: topRightAnim,
               transform: [
-                { translateX: topRightTranslateX },
-                { translateY: topRightTranslateY },
+                { translateX: topRightAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) },
+                { translateY: topRightAnim.interpolate({ inputRange: [0, 1], outputRange: [-250, 0] }) },
               ],
             },
           ]}
         >
-          <Image
-            source={require('@/assets/splash-logo.png')}
-            style={styles.topRightImage}
-            resizeMode="contain"
-          />
+          <View style={styles.clipContainer}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={[styles.fullImage, { right: 0, top: 0, left: 'auto' }]}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
 
-        {/* 左下角部分 */}
+        {/* 左下角 */}
         <Animated.View
           style={[
-            styles.bottomLeftClip,
+            styles.quadrant,
             {
+              left: 0,
+              bottom: 0,
+              opacity: bottomLeftAnim,
               transform: [
-                { translateX: bottomLeftTranslateX },
-                { translateY: bottomLeftTranslateY },
+                { translateX: bottomLeftAnim.interpolate({ inputRange: [0, 1], outputRange: [-300, 0] }) },
+                { translateY: bottomLeftAnim.interpolate({ inputRange: [0, 1], outputRange: [250, 0] }) },
               ],
             },
           ]}
         >
-          <Image
-            source={require('@/assets/splash-logo.png')}
-            style={styles.bottomLeftImage}
-            resizeMode="contain"
-          />
+          <View style={styles.clipContainer}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={[styles.fullImage, { left: 0, bottom: 0, top: 'auto' }]}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
 
-        {/* 右下角部分 */}
+        {/* 右下角 */}
         <Animated.View
           style={[
-            styles.bottomRightClip,
+            styles.quadrant,
             {
+              right: 0,
+              bottom: 0,
+              opacity: bottomRightAnim,
               transform: [
-                { translateX: bottomRightTranslateX },
-                { translateY: bottomRightTranslateY },
+                { translateX: bottomRightAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] }) },
+                { translateY: bottomRightAnim.interpolate({ inputRange: [0, 1], outputRange: [250, 0] }) },
               ],
             },
           ]}
         >
-          <Image
-            source={require('@/assets/splash-logo.png')}
-            style={styles.bottomRightImage}
-            resizeMode="contain"
-          />
+          <View style={styles.clipContainer}>
+            <Image
+              source={require('@/assets/splash-logo.png')}
+              style={[styles.fullImage, { right: 0, bottom: 0, left: 'auto', top: 'auto' }]}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.View>
       </View>
     </View>
@@ -193,65 +174,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
-    overflow: 'hidden',
   },
   logoContainer: {
     width: 300,
     height: 249,
     position: 'relative',
   },
-  // 使用 clip 裁剪出四个角
-  topLeftClip: {
+  quadrant: {
     position: 'absolute',
-    top: 0,
-    left: 0,
     width: 150,
-    height: 125,
+    height: 124.5,
     overflow: 'hidden',
   },
-  topRightClip: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
+  clipContainer: {
     width: 150,
-    height: 125,
+    height: 124.5,
     overflow: 'hidden',
   },
-  bottomLeftClip: {
+  fullImage: {
+    width: 300,
+    height: 249,
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 150,
-    height: 124,
-    overflow: 'hidden',
-  },
-  bottomRightClip: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 150,
-    height: 124,
-    overflow: 'hidden',
-  },
-  // 图片定位到各自的角
-  topLeftImage: {
-    width: 300,
-    height: 249,
-  },
-  topRightImage: {
-    width: 300,
-    height: 249,
-    marginLeft: -150,
-  },
-  bottomLeftImage: {
-    width: 300,
-    height: 249,
-    marginTop: -124,
-  },
-  bottomRightImage: {
-    width: 300,
-    height: 249,
-    marginLeft: -150,
-    marginTop: -124,
   },
 });
