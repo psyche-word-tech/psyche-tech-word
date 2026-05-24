@@ -10,7 +10,6 @@ const slugAppName = 'psyche-tech';
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
-    "owner": "psychetech",
     "name": appName,
     "slug": slugAppName,
     "version": "1.0.0",
@@ -38,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     "extra": {
       ...config.extra,
       "eas": {
-        "projectId": "f2e3c152-161f-4493-bbbe-edb9f7ba9ad0"
+        "projectId": "fe451a1b-dbcb-4d2b-b929-f2404fbd892c"
       },
       "backendBaseUrl": backendBaseUrl || 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site'
     },
