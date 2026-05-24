@@ -6,8 +6,6 @@ import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import AnimatedSplash from '@/components/AnimatedSplash';
 
-import '../global.css';
-
 LogBox.ignoreLogs([
   "TurboModuleRegistry.getEnforcing(...): 'RNMapsAirModule' could not be found",
 ]);
@@ -17,7 +15,6 @@ export default function RootLayout() {
     <ApiConfigProvider>
       <AuthProvider>
         <Provider>
-          <AnimatedSplash />
           <StatusBar style="dark" />
           <Stack
           screenOptions={{
