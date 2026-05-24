@@ -180,7 +180,7 @@ export default function AnimatedSplash() {
       {/* 文字：四个图形飞入完成后显示 */}
       {showText && (
         <Animated.Text style={[styles.slogan, textStyle]}>
-          To Scientize Learning—— psyche tech
+          To Scientize Learning——Psyche Tech
         </Animated.Text>
       )}
     </Animated.View>
@@ -202,6 +202,7 @@ const styles = StyleSheet.create({
   slogan: {
     marginTop: 40,
     fontSize: 14,
+    fontStyle: 'italic',
     color: '#333333',
     letterSpacing: 1,
   },
