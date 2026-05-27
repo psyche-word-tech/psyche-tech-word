@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -11,6 +12,9 @@ import '../global.css';
 LogBox.ignoreLogs([
   "TurboModuleRegistry.getEnforcing(...): 'RNMapsAirModule' could not be found",
 ]);
+
+// 阻止系统原生启动页自动隐藏，由 AnimatedSplash 接管控制
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   return (
