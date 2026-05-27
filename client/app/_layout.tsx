@@ -1,13 +1,12 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
+import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import AnimatedSplash from '@/components/AnimatedSplash';
-
-import '../global.css';
 
 LogBox.ignoreLogs([
   "TurboModuleRegistry.getEnforcing(...): 'RNMapsAirModule' could not be found",
@@ -54,6 +53,7 @@ export default function RootLayout() {
           <Stack.Screen name="calendar" options={{ title: "" }} />
           <Stack.Screen name="tree-diagram" options={{ title: "" }} />
           <Stack.Screen name="subcategory-words" options={{ title: "" }} />
+          <Stack.Screen name="splash-preview" options={{ title: "" }} />
         </Stack>
       </Provider>
       </AuthProvider>
