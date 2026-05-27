@@ -3,7 +3,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // 从环境变量或 .env 文件获取后端地址
 const backendBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || '';
 
-const appName = '单词记';
+const appName = 'Psyche Tech';
 const projectId = process.env.COZE_PROJECT_ID || process.env.EXPO_PUBLIC_COZE_PROJECT_ID;
 const slugAppName = 'psyche-tech';
 

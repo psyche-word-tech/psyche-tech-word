@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Text } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -41,6 +42,9 @@ export default function AnimatedSplash() {
   };
 
   useEffect(() => {
+    // 立即隐藏系统原生启动页，让自定义飞入动画接管
+    SplashScreen.hideAsync().catch(() => {});
+
     // 第一个：左上角飞入
     topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
