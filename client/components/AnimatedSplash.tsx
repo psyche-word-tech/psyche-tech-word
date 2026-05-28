@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, Text, Animated, Easing } from 'react-native';
 
-export default function AnimatedSplash() {
+export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (status: string) => void }) {
   const [visible, setVisible] = useState(true);
+
+  const report = (msg: string) => {
+    console.log('[AnimatedSplash]', msg);
+    onStatusChange?.(msg);
+  };
 
   // 使用 React Native 内置 Animated API，不依赖 reanimated
   const topLeftX = useRef(new Animated.Value(-300)).current;
@@ -24,6 +29,8 @@ export default function AnimatedSplash() {
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    report('useEffect executed – animation starting');
+
     const flyIn = (x: Animated.Value, y: Animated.Value, delay: number) =>
       Animated.parallel([
         Animated.timing(x, {
@@ -76,13 +83,16 @@ export default function AnimatedSplash() {
     ]);
 
     sequence.start(({ finished }) => {
+      report(`animation finished=${finished}`);
       if (finished) {
         setVisible(false);
+        report('visible=false via animation finish');
       }
     });
 
     // 安全兜底：即使动画系统异常，4 秒后强制进入主页
     const safety = setTimeout(() => {
+      report('SAFETY TIMEOUT fired – forcing visible=false');
       setVisible(false);
     }, 4000);
 
