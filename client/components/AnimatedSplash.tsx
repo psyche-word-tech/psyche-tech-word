@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, Text, Animated, Easing } from 'react-native';
 
-export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (status: string) => void }) {
+export default function AnimatedSplash() {
   const [visible, setVisible] = useState(true);
 
   const report = (msg: string) => {
