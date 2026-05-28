@@ -1,9 +1,11 @@
 import { API_BASE_URL } from './apiConfig';
+import { getOfflineData } from './offlineData';
 
 /**
- * 带超时和自动重试的 fetch 包装
+ * 带超时、自动重试和离线 fallback 的 fetch 包装
  * - 超时: 15 秒
  * - 重试: 失败/502/504 时自动重试 2 次
+ * - 离线: 后端不可用时自动返回预置的本地 JSON 数据
  */
 export async function fetchWithRetry(
   path: string,
@@ -44,8 +46,28 @@ export async function fetchWithRetry(
         continue;
       }
 
+      // 所有重试失败，尝试离线数据
+      const offlineData = getOfflineData(path);
+      if (offlineData !== null) {
+        console.log(`[fetchRetry] Using offline data for ${path}`);
+        return new Response(JSON.stringify(offlineData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       throw err;
     }
+  }
+
+  // 兜底：尝试离线数据
+  const offlineData = getOfflineData(path);
+  if (offlineData !== null) {
+    console.log(`[fetchRetry] Using offline data for ${path}`);
+    return new Response(JSON.stringify(offlineData), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   throw new Error(`Request failed after ${maxRetries + 1} attempts`);

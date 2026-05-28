@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "word": "serendipity",
+    "phonetic": "/ˌserənˈdɪpɪti/",
+    "meaning": "意外发现美好事物的运气；机缘巧合",
+    "created_at": "2026-04-23T16:07:17.192555",
+    "example": "Finding that book was pure serendipity.",
+    "example_translation": "找到那本书纯属意外之喜。"
+  },
+  {
+    "id": 2,
+    "word": "ephemeral",
+    "phonetic": "/ɪˈfemərəl/",
+    "meaning": "短暂的；瞬息的",
+    "created_at": "2026-04-23T16:07:17.192555",
+    "example": "Fame is ephemeral.",
+    "example_translation": "名声是短暂的。"
+  },
+  {
+    "id": 3,
+    "word": "eloquent",
+    "phonetic": "/ˈeləkwənt/",
+    "meaning": "雄辩的；口才好的",
+    "created_at": "2026-04-23T16:07:17.192555",
+    "example": "She gave an eloquent speech.",
+    "example_translation": "她发表了一篇雄辩的演讲。"
+  }
+]

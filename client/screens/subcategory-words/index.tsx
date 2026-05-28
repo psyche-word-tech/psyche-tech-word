@@ -4,6 +4,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 interface WordItem {
   id: number;
@@ -32,8 +33,8 @@ export default function SubcategoryWordsPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/wordbooks/${table}`
+        const response = await fetchWithRetry(
+          `/api/v1/wordbooks/${table}`
         );
         const data = await response.json();
         if (!Array.isArray(data)) {
@@ -44,9 +45,9 @@ export default function SubcategoryWordsPage() {
         // For table 111, fetch x1/y1/z1 to mark classification status
         if (table === '111') {
           const [x1Res, y1Res, z1Res] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
-            fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+            fetchWithRetry(`/api/v1/wordbooks/x1`),
+            fetchWithRetry(`/api/v1/wordbooks/y1`),
+            fetchWithRetry(`/api/v1/wordbooks/z1`),
           ]);
           const [x1Data, y1Data, z1Data] = await Promise.all([
             x1Res.json(),

@@ -156,10 +156,10 @@ export default function WordDetailPage() {
 				try {
 					// 重新获取最新的过滤列表
 					const [listRes, x1Res, y1Res, z1Res] = await Promise.all([
-						fetch(`${API_BASE_URL}/api/v1/wordbooks/${params.table || '111'}`),
-						fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
-						fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
-						fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+						fetchWithRetry(`/api/v1/wordbooks/${params.table || '111'}`),
+						fetchWithRetry(`/api/v1/wordbooks/x1`),
+						fetchWithRetry(`/api/v1/wordbooks/y1`),
+						fetchWithRetry(`/api/v1/wordbooks/z1`),
 					]);
 					const [listData, x1Data, y1Data, z1Data] = await Promise.all([
 						listRes.json(), x1Res.json(), y1Res.json(), z1Res.json(),
@@ -218,7 +218,7 @@ export default function WordDetailPage() {
 			 * 接口：POST /api/v1/wordbooks/move
 			 * Body参数：sourceTable: string, targetTable: string, wordId: number
 			 */
-			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
+			const response = await fetchWithRetry(`/api/v1/wordbooks/move`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -323,7 +323,7 @@ export default function WordDetailPage() {
 		setCategoryModalWords([]);
 
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${tableName}`);
+			const response = await fetchWithRetry(`/api/v1/wordbooks/${tableName}`);
 			const data = await response.json();
 			if (Array.isArray(data)) {
 				setCategoryModalWords(data);
@@ -376,7 +376,7 @@ export default function WordDetailPage() {
 					 * 服务端文件：server/src/routes/wordbooks.ts
 					 * 接口：GET /api/v1/wordbooks/:table
 					 */
-					const response = await fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`);
+					const response = await fetchWithRetry(`/api/v1/wordbooks/${sourceTable}`);
 					const data = await response.json();
 					if (Array.isArray(data) && data.length > 0 && !isInitialized.current) {
 						setWordsList(data);
@@ -386,9 +386,9 @@ export default function WordDetailPage() {
 					// 导图模式：获取过滤后的列表（111中但不在x1/y1/z1中的单词）
 					if (params.from === 'mindmap' && sourceTable === '111') {
 						const [x1Res, y1Res, z1Res] = await Promise.all([
-							fetch(`${API_BASE_URL}/api/v1/wordbooks/x1`),
-							fetch(`${API_BASE_URL}/api/v1/wordbooks/y1`),
-							fetch(`${API_BASE_URL}/api/v1/wordbooks/z1`),
+							fetchWithRetry(`/api/v1/wordbooks/x1`),
+							fetchWithRetry(`/api/v1/wordbooks/y1`),
+							fetchWithRetry(`/api/v1/wordbooks/z1`),
 						]);
 						const [x1Data, y1Data, z1Data] = await Promise.all([
 							x1Res.json(), y1Res.json(), z1Res.json(),
@@ -583,7 +583,7 @@ export default function WordDetailPage() {
 		// 重新从后端获取完整单词数据，确保包含 example_audio_url
 		useEffect(() => {
 			if (!word.id) return;
-			fetch(`${API_BASE_URL}/api/v1/wordbooks/${sourceTable}`)
+			fetchWithRetry(`/api/v1/wordbooks/${sourceTable}`)
 				.then(response => response.json())
 				.then(data => {
 					if (Array.isArray(data)) {

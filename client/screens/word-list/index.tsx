@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { API_BASE_URL } from '@/utils/apiConfig';
+import { fetchWithRetry } from '@/utils/apiClient';
 
 const EXPO_PUBLIC_BACKEND_BASE_URL = API_BASE_URL;
 
@@ -30,7 +31,7 @@ export default function WordListPage() {
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
+          const response = await fetchWithRetry(`/api/v1/wordbooks/${table}`);
           const data = await response.json();
           if (Array.isArray(data)) {
             setWords(data);
