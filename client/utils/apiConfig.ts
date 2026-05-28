@@ -1,18 +1,40 @@
 import Constants from 'expo-constants';
 
-// 线上生产环境地址（硬编码兜底，确保手机端永远可用）
+// 线上生产环境地址（兜底）
 const PROD_API_URL = 'https://word-voyage-api-production.up.railway.app';
 
 function isValidApiUrl(url: string | undefined): url is string {
   return !!url && !url.includes('localhost') && !url.includes('railway.app');
 }
 
-// 强制使用有数据的后端地址，避免生产环境自动注入的空数据库域名
-const API_BASE_URL = PROD_API_URL;
+// 根据环境自动选择 API 地址
+function getApiBaseUrl(): string {
+  // 1. 环境变量最高优先级（构建时注入）
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl) return envUrl;
+
+  // 2. Web 环境自动推断（沙箱预览 / 本地开发）
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location;
+    // 本地开发
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:9091';
+    }
+    // 沙箱或其他部署环境：同域名，端口改为 9091
+    return `${protocol}//${hostname}:9091`;
+  }
+
+  // 3. Native 环境：优先从 manifest 读取，否则兜底 Railway
+  const manifestUrl = Constants.expoConfig?.extra?.apiBaseUrl as string | undefined;
+  if (manifestUrl) return manifestUrl;
+
+  return PROD_API_URL;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 console.log('[API_BASE_URL]', API_BASE_URL);
 
-// 导出兼容函数
 export const fetchApiConfig = async (): Promise<string> => {
   return API_BASE_URL;
 };
