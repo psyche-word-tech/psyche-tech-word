@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import React from 'react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions } from 'react-native';
 import { Video } from 'expo-av';
@@ -71,7 +72,7 @@ interface EvaluationResult {
 	wordCorrect: boolean;
 }
 
-export default function WordDetailPage() {
+function WordDetailPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ word: string; table?: string; from?: string; index?: string }>();
 	
@@ -2197,3 +2198,40 @@ const styles = StyleSheet.create({
 		fontFamily: 'serif',
 	},
 });
+
+// Error Boundary to catch render errors and display them instead of white screen
+class WordDetailErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean; error: Error | null}> {
+	constructor(props: any) {
+		super(props);
+		this.state = { hasError: false, error: null };
+	}
+
+	static getDerivedStateFromError(error: Error) {
+		return { hasError: true, error };
+	}
+
+	componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+		console.error('WordDetail ErrorBoundary caught:', error, errorInfo);
+	}
+
+	render() {
+		if (this.state.hasError) {
+			return (
+				<View style={{flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#fff'}}>
+					<Text style={{color: '#EF4444', fontSize: 18, fontWeight: 'bold', marginBottom: 10}}>页面渲染出错</Text>
+					<Text style={{color: '#333', fontSize: 14, textAlign: 'center'}}>{this.state.error?.message}</Text>
+					<Text style={{color: '#666', fontSize: 12, marginTop: 20}}>请截图此错误信息反馈</Text>
+				</View>
+			);
+		}
+		return this.props.children;
+	}
+}
+
+export default function WordDetailPageWithErrorBoundary() {
+	return (
+		<WordDetailErrorBoundary>
+			<WordDetailPage />
+		</WordDetailErrorBoundary>
+	);
+}

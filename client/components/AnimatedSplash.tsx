@@ -9,7 +9,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
     onStatusChange?.(msg);
   };
 
-  // 四个碎片分别从屏幕四角飞入的偏移量
   const topLeftX = useRef(new Animated.Value(-300)).current;
   const topLeftY = useRef(new Animated.Value(-250)).current;
 
@@ -29,67 +28,67 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    report('useEffect executed – animation starting');
+    report('useEffect executed');
 
-    const flyIn = (x: Animated.Value, y: Animated.Value, delay: number) =>
+    const timers: number[] = [];
+
+    // Step 1: top-left fly in
+    timers.push(setTimeout(() => {
       Animated.parallel([
-        Animated.timing(x, {
-          toValue: 0,
-          duration: 400,
-          delay,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(y, {
-          toValue: 0,
-          duration: 400,
-          delay,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]);
+        Animated.timing(topLeftX, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(topLeftY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }, 0));
 
-    const fadeIn = (value: Animated.Value, delay: number) =>
-      Animated.timing(value, {
-        toValue: 1,
-        duration: 50,
-        delay,
-        useNativeDriver: true,
+    // Step 2: top-right fade in + fly in
+    timers.push(setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(topRightOpacity, { toValue: 1, duration: 50, useNativeDriver: true }),
+        Animated.timing(topRightX, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(topRightY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }, 400));
+
+    // Step 3: bottom-left fade in + fly in
+    timers.push(setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(bottomLeftOpacity, { toValue: 1, duration: 50, useNativeDriver: true }),
+        Animated.timing(bottomLeftX, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(bottomLeftY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }, 800));
+
+    // Step 4: bottom-right fade in + fly in
+    timers.push(setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(bottomRightOpacity, { toValue: 1, duration: 50, useNativeDriver: true }),
+        Animated.timing(bottomRightX, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(bottomRightY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }, 1200));
+
+    // Step 5: text fade in
+    timers.push(setTimeout(() => {
+      Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    }, 1600));
+
+    // Step 6: container fade out
+    timers.push(setTimeout(() => {
+      Animated.timing(containerOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(({ finished }) => {
+        if (finished) {
+          setVisible(false);
+          report('visible=false via fadeOut');
+        }
       });
-
-    const sequence = Animated.sequence([
-      flyIn(topLeftX, topLeftY, 0),
-      Animated.parallel([fadeIn(topRightOpacity, 0), flyIn(topRightX, topRightY, 0)]),
-      Animated.parallel([fadeIn(bottomLeftOpacity, 0), flyIn(bottomLeftX, bottomLeftY, 0)]),
-      Animated.parallel([fadeIn(bottomRightOpacity, 0), flyIn(bottomRightX, bottomRightY, 0)]),
-      Animated.timing(textOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.delay(1500),
-      Animated.timing(containerOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    sequence.start(({ finished }) => {
-      report(`animation finished=${finished}`);
-      if (finished) {
-        setVisible(false);
-        report('visible=false via animation finish');
-      }
-    });
+    }, 3600));
 
     const safety = setTimeout(() => {
-      report('SAFETY TIMEOUT fired – forcing visible=false');
+      report('SAFETY TIMEOUT fired');
       setVisible(false);
-    }, 8000);
+    }, 5000);
 
     return () => {
-      sequence.stop();
+      timers.forEach(clearTimeout);
       clearTimeout(safety);
     };
   }, []);
@@ -101,7 +100,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <View style={styles.logoContainer}>
-        {/* 左上角：imageContainer 固定在 clipContainer 左上 */}
         <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, left: 0 }]}>
           <Animated.View
             style={[
@@ -113,7 +111,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
           </Animated.View>
         </View>
 
-        {/* 右上角：imageContainer 固定在 clipContainer 右上 */}
         <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, right: 0 }]}>
           <Animated.View
             style={[
@@ -125,7 +122,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
           </Animated.View>
         </View>
 
-        {/* 左下角：imageContainer 固定在 clipContainer 左下 */}
         <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, left: 0 }]}>
           <Animated.View
             style={[
@@ -137,7 +133,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
           </Animated.View>
         </View>
 
-        {/* 右下角：imageContainer 固定在 clipContainer 右下 */}
         <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, right: 0 }]}>
           <Animated.View
             style={[
