@@ -23,7 +23,7 @@ if (typeof g !== 'undefined' && g.ErrorUtils) {
 }
 
 export default function RootLayout() {
-  const [diagnostics, setDiagnostics] = useState('JS loaded. Waiting for splash...');
+  const [diagnostics, setDiagnostics] = useState('JS loaded [BUILD v2025-05-29]. Waiting for splash...');
 
   useEffect(() => {
     setDiagnostics('RootLayout mounted. Splash should start soon.');
