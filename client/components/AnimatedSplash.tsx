@@ -1,158 +1,112 @@
-import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Text } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
-
-const AnimatedImage = Animated.createAnimatedComponent(Image);
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Image, StyleSheet, Text, Animated, Easing } from 'react-native';
 
 export default function AnimatedSplash() {
   const [visible, setVisible] = useState(true);
-  const [zIndex, setZIndex] = useState(999);
-  const [showText, setShowText] = useState(false);
 
-  // 每个元素独立的动画状态
-  const topLeftX = useSharedValue(-300);
-  const topLeftY = useSharedValue(-250);
-  
-  const topRightX = useSharedValue(300);
-  const topRightY = useSharedValue(-250);
-  const topRightOpacity = useSharedValue(0);
-  
-  const bottomLeftX = useSharedValue(-300);
-  const bottomLeftY = useSharedValue(250);
-  const bottomLeftOpacity = useSharedValue(0);
-  
-  const bottomRightX = useSharedValue(300);
-  const bottomRightY = useSharedValue(250);
-  const bottomRightOpacity = useSharedValue(0);
+  // 使用 React Native 内置 Animated API，不依赖 reanimated
+  const topLeftX = useRef(new Animated.Value(-300)).current;
+  const topLeftY = useRef(new Animated.Value(-250)).current;
 
-  const containerOpacity = useSharedValue(1);
-  const textOpacity = useSharedValue(0);
+  const topRightX = useRef(new Animated.Value(300)).current;
+  const topRightY = useRef(new Animated.Value(-250)).current;
+  const topRightOpacity = useRef(new Animated.Value(0)).current;
 
-  const handleAnimationComplete = () => {
-    setVisible(false);
-    setZIndex(-1);
-  };
+  const bottomLeftX = useRef(new Animated.Value(-300)).current;
+  const bottomLeftY = useRef(new Animated.Value(250)).current;
+  const bottomLeftOpacity = useRef(new Animated.Value(0)).current;
+
+  const bottomRightX = useRef(new Animated.Value(300)).current;
+  const bottomRightY = useRef(new Animated.Value(250)).current;
+  const bottomRightOpacity = useRef(new Animated.Value(0)).current;
+
+  const containerOpacity = useRef(new Animated.Value(1)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    let timeoutIds: NodeJS.Timeout[] = [];
+    const flyIn = (x: Animated.Value, y: Animated.Value, delay: number) =>
+      Animated.parallel([
+        Animated.timing(x, {
+          toValue: 0,
+          duration: 400,
+          delay,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(y, {
+          toValue: 0,
+          duration: 400,
+          delay,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]);
 
-    const startAnimation = () => {
-      // 第一个：左上角飞入
-      topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-
-      timeoutIds.push(setTimeout(() => {
-        topRightOpacity.value = 1;
-        topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-        topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      }, 400));
-
-      timeoutIds.push(setTimeout(() => {
-        bottomLeftOpacity.value = 1;
-        bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-        bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      }, 800));
-
-      timeoutIds.push(setTimeout(() => {
-        bottomRightOpacity.value = 1;
-        bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-        bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      }, 1200));
-
-      timeoutIds.push(setTimeout(() => {
-        setShowText(true);
-        textOpacity.value = withTiming(1, { duration: 500 });
-      }, 1600));
-
-      timeoutIds.push(setTimeout(() => {
-        containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
-          if (finished) {
-            runOnJS(handleAnimationComplete)();
-          }
-        });
-      }, 3000));
-    };
-
-    // 先隐藏系统原生启动页，等待完成后再开始动画
-    SplashScreen.hideAsync()
-      .catch(() => {})
-      .finally(() => {
-        // 无论 hideAsync 成功还是失败，都延迟一小段时间确保原生层已释放
-        setTimeout(startAnimation, 100);
+    const fadeIn = (value: Animated.Value, delay: number) =>
+      Animated.timing(value, {
+        toValue: 1,
+        duration: 50,
+        delay,
+        useNativeDriver: true,
       });
 
-    // 安全兜底：即使 reanimated 崩溃或动画卡住，5 秒后强制进入主页
-    const safetyTimeout = setTimeout(() => {
-      handleAnimationComplete();
-    }, 5000);
-    timeoutIds.push(safetyTimeout);
+    const sequence = Animated.sequence([
+      // 左上角
+      flyIn(topLeftX, topLeftY, 0),
+      // 右上角淡入 + 飞入
+      Animated.parallel([fadeIn(topRightOpacity, 0), flyIn(topRightX, topRightY, 0)]),
+      // 左下角
+      Animated.parallel([fadeIn(bottomLeftOpacity, 0), flyIn(bottomLeftX, bottomLeftY, 0)]),
+      // 右下角
+      Animated.parallel([fadeIn(bottomRightOpacity, 0), flyIn(bottomRightX, bottomRightY, 0)]),
+      // 文字显示
+      Animated.timing(textOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      // 停留 1.5 秒
+      Animated.delay(1500),
+      // 容器淡出
+      Animated.timing(containerOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    sequence.start(({ finished }) => {
+      if (finished) {
+        setVisible(false);
+      }
+    });
+
+    // 安全兜底：即使动画系统异常，4 秒后强制进入主页
+    const safety = setTimeout(() => {
+      setVisible(false);
+    }, 4000);
 
     return () => {
-      timeoutIds.forEach(id => clearTimeout(id));
+      sequence.stop();
+      clearTimeout(safety);
     };
   }, []);
-
-  const topLeftStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: topLeftX.value },
-      { translateY: topLeftY.value },
-    ],
-  }));
-
-  const topRightStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: topRightX.value },
-      { translateY: topRightY.value },
-    ],
-    opacity: topRightOpacity.value,
-  }));
-
-  const bottomLeftStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: bottomLeftX.value },
-      { translateY: bottomLeftY.value },
-    ],
-    opacity: bottomLeftOpacity.value,
-  }));
-
-  const bottomRightStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: bottomRightX.value },
-      { translateY: bottomRightY.value },
-    ],
-    opacity: bottomRightOpacity.value,
-  }));
-
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-  }));
-
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-  }));
-
-  // 容器 300x249
-  const topHeight = 150;
-  const bottomHeight = 99;
 
   if (!visible) {
     return null;
   }
 
   return (
-    <Animated.View style={[styles.container, containerStyle, { zIndex }]}>
+    <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <View style={styles.logoContainer}>
         {/* 左上角 */}
-        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, left: 0 }]}>
-          <Animated.View style={[styles.imageContainer, topLeftStyle]}>
+        <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, left: 0 }]}>
+          <Animated.View
+            style={[
+              styles.imageContainer,
+              { transform: [{ translateX: topLeftX }, { translateY: topLeftY }] },
+            ]}
+          >
             <Image
               source={require('@/assets/splash-logo.png')}
               style={styles.imageTopLeft}
@@ -162,8 +116,13 @@ export default function AnimatedSplash() {
         </View>
 
         {/* 右上角 */}
-        <View style={[styles.clipContainer, { width: 150, height: topHeight, top: 0, right: 0 }]}>
-          <Animated.View style={[styles.imageContainer, topRightStyle]}>
+        <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, right: 0 }]}>
+          <Animated.View
+            style={[
+              styles.imageContainer,
+              { opacity: topRightOpacity, transform: [{ translateX: topRightX }, { translateY: topRightY }] },
+            ]}
+          >
             <Image
               source={require('@/assets/splash-logo.png')}
               style={styles.imageTopRight}
@@ -173,8 +132,13 @@ export default function AnimatedSplash() {
         </View>
 
         {/* 左下角 */}
-        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, left: 0 }]}>
-          <Animated.View style={[styles.imageContainer, bottomLeftStyle]}>
+        <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, left: 0 }]}>
+          <Animated.View
+            style={[
+              styles.imageContainer,
+              { opacity: bottomLeftOpacity, transform: [{ translateX: bottomLeftX }, { translateY: bottomLeftY }] },
+            ]}
+          >
             <Image
               source={require('@/assets/splash-logo.png')}
               style={styles.imageBottomLeft}
@@ -184,8 +148,13 @@ export default function AnimatedSplash() {
         </View>
 
         {/* 右下角 */}
-        <View style={[styles.clipContainer, { width: 150, height: bottomHeight, bottom: 0, right: 0 }]}>
-          <Animated.View style={[styles.imageContainer, bottomRightStyle]}>
+        <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, right: 0 }]}>
+          <Animated.View
+            style={[
+              styles.imageContainer,
+              { opacity: bottomRightOpacity, transform: [{ translateX: bottomRightX }, { translateY: bottomRightY }] },
+            ]}
+          >
             <Image
               source={require('@/assets/splash-logo.png')}
               style={styles.imageBottomRight}
@@ -194,13 +163,10 @@ export default function AnimatedSplash() {
           </Animated.View>
         </View>
       </View>
-      
-      {/* 文字：四个图形飞入完成后显示 */}
-      {showText && (
-        <Animated.Text style={[styles.slogan, textStyle]}>
-          To Scientize Learning——Psyche Tech
-        </Animated.Text>
-      )}
+
+      <Animated.Text style={[styles.slogan, { opacity: textOpacity }]}>
+        To Scientize Learning——Psyche Tech
+      </Animated.Text>
     </Animated.View>
   );
 }
@@ -211,51 +177,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 999,
   },
   logoContainer: {
     width: 300,
     height: 249,
     position: 'relative',
   },
-  slogan: {
-    marginTop: 40,
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: '#333333',
-    letterSpacing: 1,
-  },
   clipContainer: {
     position: 'absolute',
     overflow: 'hidden',
   },
   imageContainer: {
-    position: 'absolute',
     width: 300,
     height: 249,
+    position: 'absolute',
   },
   imageTopLeft: {
     width: 300,
     height: 249,
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   imageTopRight: {
     width: 300,
     height: 249,
     position: 'absolute',
-    left: -150,
     top: 0,
+    right: 0,
   },
   imageBottomLeft: {
     width: 300,
     height: 249,
     position: 'absolute',
+    bottom: 0,
     left: 0,
-    top: -150,
   },
   imageBottomRight: {
     width: 300,
     height: 249,
     position: 'absolute',
-    left: -150,
-    top: -150,
+    bottom: 0,
+    right: 0,
+  },
+  slogan: {
+    marginTop: 24,
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
 });

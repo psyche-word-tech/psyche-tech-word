@@ -1,8 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
-import { useEffect } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -13,12 +11,6 @@ LogBox.ignoreLogs([
 ]);
 
 export default function RootLayout() {
-  useEffect(() => {
-    // 在组件 mount 时阻止系统原生启动页自动隐藏
-    // 模块级别调用在 APK 中不可靠
-    SplashScreen.preventAutoHideAsync().catch(() => {});
-  }, []);
-
   return (
     <ApiConfigProvider>
       <AuthProvider>
