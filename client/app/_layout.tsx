@@ -28,8 +28,8 @@ export default function RootLayout() {
   useEffect(() => {
     setDiagnostics('RootLayout mounted. Splash should start soon.');
     const t1 = setTimeout(() => {
-      setDiagnostics((prev) => prev + '\n[TIMEOUT] Splash not finished after 6s');
-    }, 6000);
+      setDiagnostics((prev) => prev + '\n[TIMEOUT] Splash not finished after 10s');
+    }, 10000);
     return () => clearTimeout(t1);
   }, []);
 

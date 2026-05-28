@@ -90,11 +90,11 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
       }
     });
 
-    // 安全兜底：即使动画系统异常，4 秒后强制进入主页
+    // 安全兜底：即使动画系统异常，8 秒后强制进入主页
     const safety = setTimeout(() => {
       report('SAFETY TIMEOUT fired – forcing visible=false');
       setVisible(false);
-    }, 4000);
+    }, 8000);
 
     return () => {
       sequence.stop();
@@ -197,6 +197,8 @@ const styles = StyleSheet.create({
   clipContainer: {
     position: 'absolute',
     overflow: 'hidden',
+    // borderRadius forces Android to properly clip absolutely-positioned children
+    borderRadius: 1,
   },
   imageContainer: {
     width: 300,
