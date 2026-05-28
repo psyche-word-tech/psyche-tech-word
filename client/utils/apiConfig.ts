@@ -13,15 +13,9 @@ function getApiBaseUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl) return envUrl;
 
-  // 2. Web 环境自动推断（沙箱预览 / 本地开发）
+  // 2. Web 环境：使用相对路径，由静态服务器代理到后端
   if (typeof window !== 'undefined') {
-    const { protocol, hostname, port } = window.location;
-    // 本地开发
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:9091';
-    }
-    // 沙箱或其他部署环境：同域名，端口改为 9091
-    return `${protocol}//${hostname}:9091`;
+    return '';
   }
 
   // 3. Native 环境：优先从 manifest 读取，否则兜底 Railway

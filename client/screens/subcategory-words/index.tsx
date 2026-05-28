@@ -70,22 +70,6 @@ export default function SubcategoryWordsPage() {
         }
       } catch (error) {
         console.error('Error fetching words:', error);
-        // 后端不可用时显示演示数据
-        const demoWords: WordItem[] = table === '111'
-          ? [
-              { id: 1, word: 'head', phonetic: '/hed/', meaning: '头部；头脑', status: 'none' },
-              { id: 2, word: 'brain', phonetic: '/breɪn/', meaning: '大脑；脑力', status: 'none' },
-              { id: 3, word: 'dream', phonetic: '/driːm/', meaning: '梦、梦想', status: 'none' },
-              { id: 4, word: 'hair', phonetic: '/her/', meaning: '头发、毛发', status: 'none' },
-              { id: 5, word: 'eye', phonetic: '/aɪ/', meaning: '眼睛；目光', status: 'none' },
-              { id: 6, word: 'nose', phonetic: '/noʊz/', meaning: '鼻子；嗅觉', status: 'none' },
-              { id: 7, word: 'mouth', phonetic: '/maʊθ/', meaning: '口、嘴', status: 'none' },
-              { id: 8, word: 'ear', phonetic: '/ɪr/', meaning: '耳朵；听觉', status: 'none' },
-            ]
-          : [
-              { id: 1, word: 'demo', phonetic: '/ˈdemoʊ/', meaning: '演示数据（后端不可用时显示）', status: 'none' },
-            ];
-        setWords(demoWords);
       } finally {
         setLoading(false);
       }
