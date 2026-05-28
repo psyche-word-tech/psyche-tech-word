@@ -48,15 +48,8 @@ export default function MyVocabularyPage() {
           
           setBoughtBooks(purchasedBooks);
         } catch (error: any) {
-          console.error('[MyVocabulary] 加载失败，使用演示数据:', error);
-          // 后端不可用时显示演示数据，保证界面正常展示
-          setBoughtBooks([
-            { id: 1, name: '四级词汇' },
-            { id: 2, name: '六级词汇' },
-            { id: 3, name: '考研词汇' },
-            { id: 4, name: '雅思词汇' },
-          ]);
-          setErrorMsg('');
+          console.error('[MyVocabulary] 加载失败:', error);
+          setErrorMsg(error.message || '加载失败，请检查网络连接');
         } finally {
           setIsLoading(false);
         }
