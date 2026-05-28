@@ -9,7 +9,7 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
     onStatusChange?.(msg);
   };
 
-  // 使用 React Native 内置 Animated API，不依赖 reanimated
+  // 四个碎片分别从屏幕四角飞入的偏移量
   const topLeftX = useRef(new Animated.Value(-300)).current;
   const topLeftY = useRef(new Animated.Value(-250)).current;
 
@@ -58,23 +58,16 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
       });
 
     const sequence = Animated.sequence([
-      // 左上角
       flyIn(topLeftX, topLeftY, 0),
-      // 右上角淡入 + 飞入
       Animated.parallel([fadeIn(topRightOpacity, 0), flyIn(topRightX, topRightY, 0)]),
-      // 左下角
       Animated.parallel([fadeIn(bottomLeftOpacity, 0), flyIn(bottomLeftX, bottomLeftY, 0)]),
-      // 右下角
       Animated.parallel([fadeIn(bottomRightOpacity, 0), flyIn(bottomRightX, bottomRightY, 0)]),
-      // 文字显示
       Animated.timing(textOpacity, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
       }),
-      // 停留 1.5 秒
       Animated.delay(1500),
-      // 容器淡出
       Animated.timing(containerOpacity, {
         toValue: 0,
         duration: 300,
@@ -90,7 +83,6 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
       }
     });
 
-    // 安全兜底：即使动画系统异常，8 秒后强制进入主页
     const safety = setTimeout(() => {
       report('SAFETY TIMEOUT fired – forcing visible=false');
       setVisible(false);
@@ -109,67 +101,51 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <View style={styles.logoContainer}>
-        {/* 左上角 */}
+        {/* 左上角：imageContainer 固定在 clipContainer 左上 */}
         <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, left: 0 }]}>
           <Animated.View
             style={[
               styles.imageContainer,
-              { transform: [{ translateX: topLeftX }, { translateY: topLeftY }] },
+              { top: 0, left: 0, transform: [{ translateX: topLeftX }, { translateY: topLeftY }] },
             ]}
           >
-            <Image
-              source={require('@/assets/splash-logo.png')}
-              style={styles.imageTopLeft}
-              resizeMode="contain"
-            />
+            <Image source={require('@/assets/splash-logo.png')} style={styles.image} resizeMode="contain" />
           </Animated.View>
         </View>
 
-        {/* 右上角 */}
+        {/* 右上角：imageContainer 固定在 clipContainer 右上 */}
         <View style={[styles.clipContainer, { width: 150, height: 150, top: 0, right: 0 }]}>
           <Animated.View
             style={[
               styles.imageContainer,
-              { opacity: topRightOpacity, transform: [{ translateX: topRightX }, { translateY: topRightY }] },
+              { top: 0, right: 0, opacity: topRightOpacity, transform: [{ translateX: topRightX }, { translateY: topRightY }] },
             ]}
           >
-            <Image
-              source={require('@/assets/splash-logo.png')}
-              style={styles.imageTopRight}
-              resizeMode="contain"
-            />
+            <Image source={require('@/assets/splash-logo.png')} style={styles.image} resizeMode="contain" />
           </Animated.View>
         </View>
 
-        {/* 左下角 */}
+        {/* 左下角：imageContainer 固定在 clipContainer 左下 */}
         <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, left: 0 }]}>
           <Animated.View
             style={[
               styles.imageContainer,
-              { opacity: bottomLeftOpacity, transform: [{ translateX: bottomLeftX }, { translateY: bottomLeftY }] },
+              { bottom: 0, left: 0, opacity: bottomLeftOpacity, transform: [{ translateX: bottomLeftX }, { translateY: bottomLeftY }] },
             ]}
           >
-            <Image
-              source={require('@/assets/splash-logo.png')}
-              style={styles.imageBottomLeft}
-              resizeMode="contain"
-            />
+            <Image source={require('@/assets/splash-logo.png')} style={styles.image} resizeMode="contain" />
           </Animated.View>
         </View>
 
-        {/* 右下角 */}
+        {/* 右下角：imageContainer 固定在 clipContainer 右下 */}
         <View style={[styles.clipContainer, { width: 150, height: 99, bottom: 0, right: 0 }]}>
           <Animated.View
             style={[
               styles.imageContainer,
-              { opacity: bottomRightOpacity, transform: [{ translateX: bottomRightX }, { translateY: bottomRightY }] },
+              { bottom: 0, right: 0, opacity: bottomRightOpacity, transform: [{ translateX: bottomRightX }, { translateY: bottomRightY }] },
             ]}
           >
-            <Image
-              source={require('@/assets/splash-logo.png')}
-              style={styles.imageBottomRight}
-              resizeMode="contain"
-            />
+            <Image source={require('@/assets/splash-logo.png')} style={styles.image} resizeMode="contain" />
           </Animated.View>
         </View>
       </View>
@@ -197,7 +173,6 @@ const styles = StyleSheet.create({
   clipContainer: {
     position: 'absolute',
     overflow: 'hidden',
-    // borderRadius forces Android to properly clip absolutely-positioned children
     borderRadius: 1,
   },
   imageContainer: {
@@ -205,33 +180,9 @@ const styles = StyleSheet.create({
     height: 249,
     position: 'absolute',
   },
-  imageTopLeft: {
+  image: {
     width: 300,
     height: 249,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  imageTopRight: {
-    width: 300,
-    height: 249,
-    position: 'absolute',
-    top: 0,
-    right: 0,
-  },
-  imageBottomLeft: {
-    width: 300,
-    height: 249,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-  },
-  imageBottomRight: {
-    width: 300,
-    height: 249,
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
   },
   slogan: {
     marginTop: 24,
