@@ -14,7 +14,8 @@ function getApiBaseUrl(): string {
   if (envUrl) return envUrl;
 
   // 2. Web 环境：使用相对路径，由静态服务器代理到后端
-  if (typeof window !== 'undefined') {
+  // React Native 也 polyfill 了 window，所以用 document 判断更可靠
+  if (typeof document !== 'undefined') {
     return '';
   }
 

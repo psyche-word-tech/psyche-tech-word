@@ -72,15 +72,16 @@ export default function AnimatedSplash({ onStatusChange }: { onStatusChange?: (s
       Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     }, 1600));
 
-    // Step 6: container fade out
+    // Step 6: container fade out (start animation, but don't rely on callback)
     timers.push(setTimeout(() => {
-      Animated.timing(containerOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(({ finished }) => {
-        if (finished) {
-          setVisible(false);
-          report('visible=false via fadeOut');
-        }
-      });
+      Animated.timing(containerOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start();
     }, 3600));
+
+    // Step 7: hide splash after fade out completes (use timeout, not animation callback)
+    timers.push(setTimeout(() => {
+      setVisible(false);
+      report('visible=false via timeout');
+    }, 4000));
 
     const safety = setTimeout(() => {
       report('SAFETY TIMEOUT fired');
