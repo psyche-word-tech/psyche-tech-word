@@ -6,7 +6,6 @@ export default function AnimatedSplash() {
 
   const report = (msg: string) => {
     console.log('[AnimatedSplash]', msg);
-    onStatusChange?.(msg);
   };
 
   const topLeftX = useRef(new Animated.Value(-300)).current;
