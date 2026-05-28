@@ -12,10 +12,13 @@ LogBox.ignoreLogs([
   "TurboModuleRegistry.getEnforcing(...): 'RNMapsAirModule' could not be found",
 ]);
 
-// 阻止系统原生启动页自动隐藏，由 AnimatedSplash 接管控制
-SplashScreen.preventAutoHideAsync().catch(() => {});
-
 export default function RootLayout() {
+  useEffect(() => {
+    // 在组件 mount 时阻止系统原生启动页自动隐藏
+    // 模块级别调用在 APK 中不可靠
+    SplashScreen.preventAutoHideAsync().catch(() => {});
+  }, []);
+
   return (
     <ApiConfigProvider>
       <AuthProvider>

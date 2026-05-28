@@ -42,48 +42,62 @@ export default function AnimatedSplash() {
   };
 
   useEffect(() => {
-    // 立即隐藏系统原生启动页，让自定义飞入动画接管
-    SplashScreen.hideAsync().catch(() => {});
+    let timeoutIds: NodeJS.Timeout[] = [];
 
-    // 第一个：左上角飞入
-    topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    
-    // 第二个：左上角完成后再开始右上角
-    setTimeout(() => {
-      topRightOpacity.value = 1;
-      topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 400);
-    
-    // 第三个：右上角完成后再开始左下角
-    setTimeout(() => {
-      bottomLeftOpacity.value = 1;
-      bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 800);
-    
-    // 第四个：左下角完成后再开始右下角
-    setTimeout(() => {
-      bottomRightOpacity.value = 1;
-      bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-      bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
-    }, 1200);
+    const startAnimation = () => {
+      // 第一个：左上角飞入
+      topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      topLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
 
-    // 四个图形飞入完成后显示文字
-    setTimeout(() => {
-      setShowText(true);
-      textOpacity.value = withTiming(1, { duration: 500 });
-    }, 1600);
+      timeoutIds.push(setTimeout(() => {
+        topRightOpacity.value = 1;
+        topRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+        topRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      }, 400));
 
-    // 显示文字后淡出整个启动页
-    setTimeout(() => {
-      containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
-        if (finished) {
-          runOnJS(handleAnimationComplete)();
-        }
+      timeoutIds.push(setTimeout(() => {
+        bottomLeftOpacity.value = 1;
+        bottomLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+        bottomLeftY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      }, 800));
+
+      timeoutIds.push(setTimeout(() => {
+        bottomRightOpacity.value = 1;
+        bottomRightX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+        bottomRightY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
+      }, 1200));
+
+      timeoutIds.push(setTimeout(() => {
+        setShowText(true);
+        textOpacity.value = withTiming(1, { duration: 500 });
+      }, 1600));
+
+      timeoutIds.push(setTimeout(() => {
+        containerOpacity.value = withTiming(0, { duration: 300 }, (finished) => {
+          if (finished) {
+            runOnJS(handleAnimationComplete)();
+          }
+        });
+      }, 3000));
+    };
+
+    // 先隐藏系统原生启动页，等待完成后再开始动画
+    SplashScreen.hideAsync()
+      .catch(() => {})
+      .finally(() => {
+        // 无论 hideAsync 成功还是失败，都延迟一小段时间确保原生层已释放
+        setTimeout(startAnimation, 100);
       });
-    }, 3000);
+
+    // 安全兜底：即使 reanimated 崩溃或动画卡住，5 秒后强制进入主页
+    const safetyTimeout = setTimeout(() => {
+      handleAnimationComplete();
+    }, 5000);
+    timeoutIds.push(safetyTimeout);
+
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id));
+    };
   }, []);
 
   const topLeftStyle = useAnimatedStyle(() => ({
