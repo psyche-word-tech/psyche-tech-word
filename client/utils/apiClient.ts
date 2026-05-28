@@ -35,6 +35,19 @@ export async function fetchWithRetry(
         continue;
       }
 
+      // 404 或其他非 2xx：可能是后端不存在，尝试离线数据
+      if (!response.ok) {
+        const offlineData = getOfflineData(path);
+        if (offlineData !== null) {
+          console.log(`[fetchRetry] ${response.status} -> using offline data for ${path}`);
+          return new Response(JSON.stringify(offlineData), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       return response;
     } catch (err: any) {
       const isTimeout = err.name === 'AbortError';
