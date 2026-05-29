@@ -48,6 +48,22 @@ export async function fetchWithRetry(
         throw new Error(`HTTP ${response.status}`);
       }
 
+      // 后端返回 200 但 body 包含 error（如代理返回 "Backend unavailable"）
+      try {
+        const clone = response.clone();
+        const body = await clone.text();
+        if (body.startsWith('{"error"') || body.startsWith('{"code"')) {
+          const offlineData = getOfflineData(path);
+          if (offlineData !== null) {
+            console.log(`[fetchRetry] Backend error body -> using offline data for ${path}`);
+            return new Response(JSON.stringify(offlineData), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+        }
+      } catch { /* ignore body check errors */ }
+
       return response;
     } catch (err: any) {
       const isTimeout = err.name === 'AbortError';

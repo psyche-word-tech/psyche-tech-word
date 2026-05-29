@@ -8,6 +8,7 @@ import { Screen } from '@/components/Screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 
 import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
@@ -685,23 +686,39 @@ function WordDetailPage() {
 		setIsPlaying(true);
 
 		if (typeof document !== 'undefined') {
-			// Web 端：直接用浏览器 Audio 元素播放后端 URL
-			try {
-				const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encodeURIComponent(playText)}`;
-				const audio = document.createElement('audio');
-				audio.src = audioUrl;
-				audio.onended = () => setIsPlaying(false);
-				audio.onerror = () => {
-					setIsPlaying(false);
-					(window as any).alert?.('发音失败: 音频无法加载，请检查网络或稍后重试');
-				};
-				audio.play().catch(() => {
-					setIsPlaying(false);
-					(window as any).alert?.('发音失败: 音频播放被阻止或后端未响应');
+			// Web 端：优先用后端 TTS，失败则用浏览器 Web Speech API
+			const tryBackendTTS = () => {
+				return new Promise<void>((resolve, reject) => {
+					const audioUrl = `${API_BASE_URL}/api/v1/tts?text=${encodeURIComponent(playText)}`;
+					const audio = document.createElement('audio');
+					audio.src = audioUrl;
+					audio.onended = () => { setIsPlaying(false); resolve(); };
+					audio.onerror = () => reject(new Error('backend'));
+					audio.play().catch(() => reject(new Error('playback')));
+					setTimeout(() => reject(new Error('timeout')), 5000);
 				});
+			};
+
+			const tryWebSpeechAPI = () => {
+				return new Promise<void>((resolve, reject) => {
+					const utterance = new SpeechSynthesisUtterance(playText);
+					utterance.lang = 'en-US';
+					utterance.rate = 0.9;
+					utterance.onend = () => { setIsPlaying(false); resolve(); };
+					utterance.onerror = () => reject(new Error('speech_api'));
+					speechSynthesis.speak(utterance);
+				});
+			};
+
+			setIsPlaying(true);
+			try {
+				await tryBackendTTS();
 			} catch {
-				setIsPlaying(false);
-				(window as any).alert?.('发音失败: 网络请求异常');
+				try {
+					await tryWebSpeechAPI();
+				} catch {
+					setIsPlaying(false);
+				}
 			}
 		} else {
 			// 移动端：下载到本地后播放
@@ -750,10 +767,14 @@ function WordDetailPage() {
 					setIsPlaying(false);
 				}
 			});
-		} catch (error: any) {
-			console.error('Downloaded TTS error:', error);
-			setIsPlaying(false);
-			Alert.alert('发音提示', `发音失败: ${error?.message || '网络错误'}`);
+		} catch {
+			// 后端 TTS 不可用时，用 expo-speech fallback
+			try {
+				await Speech.speak(text, { language: 'en', rate: 0.9, onDone: () => setIsPlaying(false) });
+			} catch {
+				setIsPlaying(false);
+				Alert.alert('发音提示', '发音失败：后端服务不可用');
+			}
 		}
 	};
 
