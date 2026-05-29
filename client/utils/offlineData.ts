@@ -15,6 +15,7 @@ const TABLE_TO_FILE: Record<string, string> = {
   words_x: 'wordbook_x_minimal',
   words_y: 'wordbook_y_minimal',
   words_z: 'wordbook_z_minimal',
+  '111': 'wordbook_111',
 };
 
 interface WordRecord {
