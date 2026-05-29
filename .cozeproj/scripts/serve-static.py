@@ -5,7 +5,7 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
 ROOT = sys.argv[2] if len(sys.argv) > 2 else "."
 os.chdir(ROOT)
 
-API_TARGET = "http://localhost:9091"
+API_TARGET = "https://word-voyage-api-production.up.railway.app"
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def _send_cors_headers(self):
