@@ -59,7 +59,7 @@ app.post('/api/v1/admin/create-abcd', async (req, res) => {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.COZE_SUPABASE_URL || '',
-      process.env.COZE_SUPABASE_SERVICE_KEY || ''
+      process.env.COZE_SUPABASE_SERVICE_ROLE_KEY || ''
     );
 
     // 1. 创建 abcd 表
