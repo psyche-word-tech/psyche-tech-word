@@ -60,6 +60,13 @@ export default function MyVocabularyPage() {
   );
 
   const handleLearnPress = (book: WordBook) => {
+    // 考研/四级/六级未解锁
+    if (book.id === 2 || book.id === 3 || book.id === 4) {
+      setAlertMessage('您未解锁本词汇书');
+      setAlertVisible(true);
+      return;
+    }
+
     const tableMap: Record<number, string> = {
       1: 'words_a',
       2: 'words_b',
@@ -155,7 +162,7 @@ export default function MyVocabularyPage() {
                 style={styles.alertButton}
                 onPress={() => setAlertVisible(false)}
               >
-                <Text style={styles.alertButtonText}>确定</Text>
+                <Text style={styles.alertButtonText}>返回</Text>
               </TouchableOpacity>
             </View>
           </View>
