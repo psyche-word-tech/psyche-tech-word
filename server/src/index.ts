@@ -51,6 +51,67 @@ app.post('/api/v1/health/reset', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Database connection reset' });
 });
 
+/**
+ * 临时接口：创建 abcd 表并复制 words_a 数据
+ */
+app.post('/api/v1/admin/create-abcd', async (req, res) => {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.COZE_SUPABASE_URL || '',
+      process.env.COZE_SUPABASE_SERVICE_KEY || ''
+    );
+
+    // 1. 创建 abcd 表
+    const { error: createError } = await supabase.rpc('exec_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS abcd (
+          id SERIAL PRIMARY KEY,
+          word TEXT,
+          phonetic TEXT,
+          meaning TEXT,
+          example TEXT,
+          translation TEXT,
+          example_translation TEXT,
+          example_image_url TEXT,
+          example_audio_url TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `
+    });
+
+    if (createError) {
+      console.log('Create table error (may already exist):', createError.message);
+    }
+
+    // 2. 清空 abcd 表
+    await supabase.from('abcd').delete().neq('id', 0);
+
+    // 3. 从 words_a 复制数据
+    const { data: wordsA, error: fetchError } = await supabase.from('words_a').select('*');
+    if (fetchError) throw fetchError;
+
+    if (wordsA && wordsA.length > 0) {
+      const { error: insertError } = await supabase.from('abcd').insert(wordsA);
+      if (insertError) throw insertError;
+    }
+
+    // 4. 验证
+    const { data: abcdData, error: verifyError } = await supabase.from('abcd').select('*');
+    if (verifyError) throw verifyError;
+
+    res.json({
+      status: 'ok',
+      message: 'abcd table created and data copied from words_a',
+      words_a_count: wordsA?.length || 0,
+      abcd_count: abcdData?.length || 0
+    });
+  } catch (error: any) {
+    console.error('Create abcd error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
 // 返回 API 配置信息给前端
 app.get('/api/v1/config', (req, res) => {
   const baseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 
