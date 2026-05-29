@@ -115,7 +115,7 @@ export default function MyVocabularyPage() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.replace('/')}>
             <Text style={styles.backText}>← back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>我的词汇书</Text>
