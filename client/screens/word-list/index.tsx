@@ -20,9 +20,10 @@ interface Word {
 
 export default function WordListPage() {
   const router = useSafeRouter();
-  const params = useSafeSearchParams<{ table?: string }>();
+  const params = useSafeSearchParams<{ table?: string; sourceTable?: string }>();
   const table = params.table || 'words_b';
-  
+  const sourceTable = params.sourceTable;
+
   const [words, setWords] = useState<Word[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,17 +31,35 @@ export default function WordListPage() {
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setWords(data);
+          // 如果有 sourceTable，需要同时获取分类表和原始词汇表，计算交集
+          if (sourceTable) {
+            const [categoryRes, sourceRes] = await Promise.all([
+              fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`),
+              fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${sourceTable}`),
+            ]);
+            const categoryData = await categoryRes.json();
+            const sourceData = await sourceRes.json();
+
+            if (Array.isArray(categoryData) && Array.isArray(sourceData)) {
+              const sourceIds = new Set(sourceData.map((w: any) => w.id));
+              const filtered = categoryData.filter((w: any) => sourceIds.has(w.id));
+              setWords(filtered);
+            } else if (Array.isArray(categoryData)) {
+              setWords(categoryData);
+            }
+          } else {
+            const response = await fetch(`${EXPO_PUBLIC_BACKEND_BASE_URL}/api/v1/wordbooks/${table}`);
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              setWords(data);
+            }
           }
         } catch (error) {
           console.error('Failed to fetch words:', error);
         }
       };
       fetchWords();
-    }, [table])
+    }, [table, sourceTable])
   );
 
   const filteredWords = words.filter(word => 

@@ -272,7 +272,7 @@ export default function LearnPage() {
 									<TouchableOpacity
 										key={id}
 										style={styles.categoryItem}
-										onPress={() => router.push('/word-list', { table: targetTable })}
+										onPress={() => router.push('/word-list', { table: targetTable, sourceTable: table })}
 									>
 										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
 											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
