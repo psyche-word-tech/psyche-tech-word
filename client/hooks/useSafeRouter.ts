@@ -126,9 +126,9 @@ export function useSafeRouter() {
   };
 
   const back = () => {
-    // Web 静态环境下可能无法回退，使用 replace 代替
-    if (typeof window !== 'undefined' && !router.canGoBack?.()) {
-      router.replace('/');
+    // Web 端使用浏览器原生 history.back()，瞬间完成，避免重新加载页面
+    if (typeof window !== 'undefined') {
+      window.history.back();
     } else {
       router.back();
     }
