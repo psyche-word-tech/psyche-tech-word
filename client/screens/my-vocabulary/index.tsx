@@ -60,8 +60,14 @@ export default function MyVocabularyPage() {
   );
 
   const handleLearnPress = (book: WordBook) => {
-    // 跳转到词汇预览页面，使用 words_b 作为学习表
-    router.push('/learn', { table: 'words_b' });
+    const tableMap: Record<number, string> = {
+      1: 'words_a',
+      2: 'words_b',
+      3: 'words_c',
+      4: 'words_d'
+    };
+    const table = tableMap[book.id] || 'words_b';
+    router.push('/learn', { table });
   };
 
   if (!isConfigLoaded) {
