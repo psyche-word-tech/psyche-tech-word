@@ -145,16 +145,12 @@ export default function LearnPage() {
 			const allWordsData = Array.isArray(wordsData) ? wordsData : [];
 			const filteredWords = allWordsData.filter((w: any) => !xIds.has(w.id) && !yIds.has(w.id) && !zIds.has(w.id));
 
-			// 只统计当前词汇表中已分类的单词数
-			const xInCurrent = allWordsData.filter((w: any) => xIds.has(w.id)).length;
-			const yInCurrent = allWordsData.filter((w: any) => yIds.has(w.id)).length;
-			const zInCurrent = allWordsData.filter((w: any) => zIds.has(w.id)).length;
-
+			// 按钮显示全局分类数量（words_x/y/z 的总数）
 			setAllWords(filteredWords);
 			setCategoryCounts({
-				x: xInCurrent,
-				y: yInCurrent,
-				z: zInCurrent,
+				x: Array.isArray(xResult) ? xResult.length : 0,
+				y: Array.isArray(yResult) ? yResult.length : 0,
+				z: Array.isArray(zResult) ? zResult.length : 0,
 			});
 		} catch (err: any) {
 			console.error('Failed to fetch data:', err);
@@ -272,7 +268,7 @@ export default function LearnPage() {
 									<TouchableOpacity
 										key={id}
 										style={styles.categoryItem}
-										onPress={() => router.push('/word-list', { table: targetTable, sourceTable: table })}
+										onPress={() => router.push('/word-list', { table: targetTable })}
 									>
 										<View style={[styles.categoryCard, { backgroundColor: categoryColors[id - 1] }]}>
 											<Text style={styles.categoryName}>{categoryNames[id - 1]}</Text>
