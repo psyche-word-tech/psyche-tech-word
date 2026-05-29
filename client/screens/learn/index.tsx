@@ -145,11 +145,16 @@ export default function LearnPage() {
 			const allWordsData = Array.isArray(wordsData) ? wordsData : [];
 			const filteredWords = allWordsData.filter((w: any) => !xIds.has(w.id) && !yIds.has(w.id) && !zIds.has(w.id));
 
+			// 只统计当前词汇表中已分类的单词数
+			const xInCurrent = allWordsData.filter((w: any) => xIds.has(w.id)).length;
+			const yInCurrent = allWordsData.filter((w: any) => yIds.has(w.id)).length;
+			const zInCurrent = allWordsData.filter((w: any) => zIds.has(w.id)).length;
+
 			setAllWords(filteredWords);
 			setCategoryCounts({
-				x: xIds.size,
-				y: yIds.size,
-				z: zIds.size,
+				x: xInCurrent,
+				y: yInCurrent,
+				z: zInCurrent,
 			});
 		} catch (err: any) {
 			console.error('Failed to fetch data:', err);
