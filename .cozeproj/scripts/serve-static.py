@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-import http.server, socketserver, os, sys, urllib.request, urllib.error, json
+import http.server, socketserver, os, sys, urllib.request, urllib.error, json, socket
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
 ROOT = sys.argv[2] if len(sys.argv) > 2 else "."
 os.chdir(ROOT)
 
 API_TARGET = "https://word-voyage-api-production.up.railway.app"
+
+class ReusableTCPServer(socketserver.TCPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        super().server_bind()
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def _send_cors_headers(self):
@@ -102,5 +108,5 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
-with socketserver.TCPServer(("", PORT), Handler) as httpd:
+with ReusableTCPServer(("", PORT), Handler) as httpd:
     httpd.serve_forever()
