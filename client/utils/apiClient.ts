@@ -1,21 +1,21 @@
 import { API_BASE_URL } from './apiConfig';
-import { getOfflineData } from './offlineData';
+import { getOfflineDataAsync } from './offlineData';
 
 /**
  * 带超时、自动重试和离线 fallback 的 fetch 包装
- * - 超时: 15 秒
- * - 重试: 失败/502/504 时自动重试 2 次
+ * - 超时: 3 秒（缩短，减少等待）
+ * - 重试: 仅对 502/504 重试 1 次
  * - 离线: 后端不可用时自动返回预置的本地 JSON 数据
  */
 export async function fetchWithRetry(
   path: string,
   options?: RequestInit,
-  maxRetries = 2,
+  maxRetries = 1,
   baseUrl?: string
 ): Promise<Response> {
   const apiBase = baseUrl || API_BASE_URL;
   const url = path.startsWith('http') ? path : `${apiBase}${path}`;
-  const timeout = 15000; // 15 秒超时
+  const timeout = 3000; // 3 秒超时（加快 fallback）
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -28,18 +28,18 @@ export async function fetchWithRetry(
       });
       clearTimeout(timer);
 
-      // 502/504 可能是 Railway 休眠中，需要重试
+      // 502/504 可能是 Railway 休眠中，快速重试
       if ((response.status === 502 || response.status === 504) && attempt < maxRetries) {
         console.log(`[fetchRetry] ${response.status} on attempt ${attempt + 1}, retrying...`);
-        await sleep(2000 + attempt * 1000); // 递增延迟
+        await sleep(200 + attempt * 100); // 快速重试间隔
         continue;
       }
 
-      // 404 或其他非 2xx：可能是后端不存在，尝试离线数据
+      // 非 2xx：尝试离线数据
       if (!response.ok) {
-        const offlineData = getOfflineData(path);
+        const offlineData = await getOfflineDataAsync(path);
         if (offlineData !== null) {
-          console.log(`[fetchRetry] ${response.status} -> using offline data for ${path}`);
+          console.log(`[fetchRetry] ${response.status} -> offline data for ${path}`);
           return new Response(JSON.stringify(offlineData), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -48,21 +48,21 @@ export async function fetchWithRetry(
         throw new Error(`HTTP ${response.status}`);
       }
 
-      // 后端返回 200 但 body 包含 error（如代理返回 "Backend unavailable"）
+      // 后端返回 200 但 body 包含 error
       try {
         const clone = response.clone();
         const body = await clone.text();
         if (body.startsWith('{"error"') || body.startsWith('{"code"')) {
-          const offlineData = getOfflineData(path);
+          const offlineData = await getOfflineDataAsync(path);
           if (offlineData !== null) {
-            console.log(`[fetchRetry] Backend error body -> using offline data for ${path}`);
+            console.log(`[fetchRetry] Backend error -> offline data for ${path}`);
             return new Response(JSON.stringify(offlineData), {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
             });
           }
         }
-      } catch { /* ignore body check errors */ }
+      } catch { /* ignore */ }
 
       return response;
     } catch (err: any) {
@@ -71,14 +71,14 @@ export async function fetchWithRetry(
 
       if ((isTimeout || isNetworkError) && attempt < maxRetries) {
         console.log(`[fetchRetry] ${isTimeout ? 'Timeout' : 'NetworkError'} on attempt ${attempt + 1}, retrying...`);
-        await sleep(2000 + attempt * 1000);
+        await sleep(500 + attempt * 300);
         continue;
       }
 
       // 所有重试失败，尝试离线数据
-      const offlineData = getOfflineData(path);
+      const offlineData = await getOfflineDataAsync(path);
       if (offlineData !== null) {
-        console.log(`[fetchRetry] Using offline data for ${path}`);
+        console.log(`[fetchRetry] All retries failed -> offline data for ${path}`);
         return new Response(JSON.stringify(offlineData), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -90,9 +90,8 @@ export async function fetchWithRetry(
   }
 
   // 兜底：尝试离线数据
-  const offlineData = getOfflineData(path);
+  const offlineData = await getOfflineDataAsync(path);
   if (offlineData !== null) {
-    console.log(`[fetchRetry] Using offline data for ${path}`);
     return new Response(JSON.stringify(offlineData), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

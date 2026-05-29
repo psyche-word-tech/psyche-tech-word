@@ -21,8 +21,8 @@ const CARD_WIDTH = SCREEN_WIDTH - 32;
 interface Word {
 	id: number;
 	word: string;
-	meaning: string;
-	phonetic: string;
+	meaning?: string;
+	phonetic?: string;
 	example?: string;
 	example_translation?: string;
 	translation?: string;
@@ -155,7 +155,7 @@ export default function WordPreviewPage() {
 					<Text style={styles.phoneticText}>{item.phonetic}</Text>
 
 					{/* Meaning */}
-					<Text style={styles.meaningText}>{item.meaning}</Text>
+					<Text style={styles.meaningText}>{item.meaning || '（离线模式，释义暂不可用）'}</Text>
 
 					{/* Divider + Example */}
 					{item.example && (

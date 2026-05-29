@@ -1,65 +1,117 @@
-// 离线数据：当后端不可用时，APK 使用这些预置数据
-// 所有数据从后端数据库导出，打包进 APK
+/**
+ * 离线数据 - 动态加载版本
+ * Web: 使用 fetch 从静态资源加载，不打包进 bundle
+ * Mobile: 数据由 build 时嵌入
+ */
 
-import wordbooksList from '@/assets/data/wordbooks.json';
-import wordbook1 from '@/assets/data/wordbook_1.json';
-import wordbook2 from '@/assets/data/wordbook_2.json';
-import wordbook3 from '@/assets/data/wordbook_3.json';
-import wordbook4 from '@/assets/data/wordbook_4.json';
-import wordbookX from '@/assets/data/wordbook_x.json';
-import wordbookY from '@/assets/data/wordbook_y.json';
-import wordbookZ from '@/assets/data/wordbook_z.json';
-import wordbookX1 from '@/assets/data/wordbook_x1.json';
-import wordbookY1 from '@/assets/data/wordbook_y1.json';
-import wordbookZ1 from '@/assets/data/wordbook_z1.json';
-import wordbook111 from '@/assets/data/wordbook_111.json';
+const DATA_BASE_URL = '/assets/data';
 
-const TABLE_MAP: Record<string, any> = {
-  'words_a': wordbook1,
-  'words_b': wordbook2,
-  'words_c': wordbook3,
-  'words_d': wordbook4,
-  'words_x': wordbookX,
-  'words_y': wordbookY,
-  'words_z': wordbookZ,
-  'x1': wordbookX1,
-  'y1': wordbookY1,
-  'z1': wordbookZ1,
-  '111': wordbook111,
+// table name -> JSON file mapping
+const TABLE_TO_FILE: Record<string, string> = {
+  words_a: 'wordbook_1_minimal',
+  words_b: 'wordbook_2_minimal',
+  words_c: 'wordbook_3_minimal',
+  words_d: 'wordbook_4_minimal',
+  words_x: 'wordbook_x_minimal',
+  words_y: 'wordbook_y_minimal',
+  words_z: 'wordbook_z_minimal',
 };
 
-export function getOfflineData(path: string): any | null {
-  // 词汇书列表
+interface WordRecord {
+  id: number;
+  word: string;
+  phonetic?: string;
+  definition?: string;
+  audioUrl?: string;
+  category?: string;
+}
+
+type OfflineData = WordRecord[] | { count: number } | null;
+
+const cache: Record<string, OfflineData> = {};
+
+async function loadJSON<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+// 异步版本 - web 使用
+export async function getOfflineDataAsync(path: string): Promise<OfflineData> {
+  if (cache[path] !== undefined) return cache[path];
+
+  // wordbooks 列表
   if (path === '/api/v1/wordbooks' || path === '/api/v1/wordbooks/') {
-    return wordbooksList;
+    cache[path] = [];
+    return cache[path];
   }
 
-  // 单词表 /api/v1/wordbooks/:table
-  const match = path.match(/^\/api\/v1\/wordbooks\/([^/]+)$/);
-  if (match) {
-    const table = match[1];
-    if (TABLE_MAP[table]) {
-      return TABLE_MAP[table];
+  // /api/v1/wordbooks/:table
+  const tableMatch = path.match(/^\/api\/v1\/wordbooks\/([^/]+)$/);
+  if (tableMatch) {
+    const table = tableMatch[1];
+    const fileName = TABLE_TO_FILE[table];
+    if (!fileName) return null;
+    const url = `${DATA_BASE_URL}/${fileName}.json`;
+    const data = await loadJSON<WordRecord[]>(url);
+    cache[path] = data;
+    return cache[path];
+  }
+
+  // /api/v1/words/:id
+  const wordMatch = path.match(/^\/api\/v1\/words\/(\d+)$/);
+  if (wordMatch) {
+    const id = parseInt(wordMatch[1]);
+    // 从 wordbook_1 中查找（包含完整数据）
+    const data = await loadJSON<WordRecord[]>(`${DATA_BASE_URL}/wordbook_1_minimal.json`);
+    cache[path] = data ? data.filter(w => w.id === id) : null;
+    return cache[path];
+  }
+
+  // /api/v1/user-words/category/:category -> 映射到 wordbook 数据
+  const catMatch = path.match(/^\/api\/v1\/user-words\/category\/([^/]+)(\/count)?$/);
+  if (catMatch) {
+    const category = catMatch[1];
+    const isCount = !!catMatch[2];
+    const fileName = TABLE_TO_FILE[category];
+    if (fileName) {
+      const url = `${DATA_BASE_URL}/${fileName}.json`;
+      const data = await loadJSON<WordRecord[]>(url);
+      if (isCount) {
+        // 返回 { count: number } 格式
+        cache[path] = { count: data?.length ?? 0 };
+        return cache[path];
+      }
+      cache[path] = data;
+      return cache[path];
     }
+    cache[path] = [];
+    return cache[path];
   }
 
-  // 用户分类单词 /api/v1/user-words/category/:category
-  const categoryMatch = path.match(/^\/api\/v1\/user-words\/category\/([^/]+)$/);
-  if (categoryMatch) {
-    const category = categoryMatch[1];
-    if (TABLE_MAP[category]) {
-      return TABLE_MAP[category];
-    }
-    return [];
-  }
-
-  // 用户分类单词计数 /api/v1/user-words/category/:category/count
-  const countMatch = path.match(/^\/api\/v1\/user-words\/category\/([^/]+)\/count$/);
-  if (countMatch) {
-    const category = countMatch[1];
-    const data = TABLE_MAP[category] || [];
-    return { count: data.length };
-  }
-
+  cache[path] = null;
   return null;
+}
+
+// 预加载所有离线数据（可选调用）
+export async function preloadOfflineData(): Promise<void> {
+  const paths = [
+    '/api/v1/wordbooks',
+    '/api/v1/wordbooks/words_a',
+    '/api/v1/wordbooks/words_b',
+    '/api/v1/wordbooks/words_c',
+    '/api/v1/wordbooks/words_d',
+    '/api/v1/wordbooks/words_x',
+    '/api/v1/wordbooks/words_y',
+    '/api/v1/wordbooks/words_z',
+    '/api/v1/user-words/category/words_b',
+    '/api/v1/user-words/category/words_x',
+    '/api/v1/user-words/category/words_y',
+    '/api/v1/user-words/category/words_z',
+  ];
+  await Promise.all(paths.map(p => getOfflineDataAsync(p)));
 }

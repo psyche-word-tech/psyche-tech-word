@@ -259,3 +259,40 @@ import { Screen } from '../../../components/Screen';
 ## 本地开发
 
 `coze dev`：用来首次启动前后端服务，也可以用来重启前后端服务（该命令会先尝试杀掉占用端口的进程，再启动服务）
+
+## 离线数据 Fallback 机制
+
+当后端 API 不可用时，前端通过 `fetchWithRetry` + `getOfflineDataAsync` 自动 fallback 到本地静态 JSON。
+
+### 核心文件
+- `client/utils/apiClient.ts` - `fetchWithRetry` 函数，包含离线 fallback 逻辑
+- `client/utils/offlineData.ts` - `getOfflineDataAsync` 函数，通过 fetch 动态加载 JSON
+- `client/assets/data/*_minimal.json` - 精简版词汇书（仅 id + word 字段）
+- `client/metro.config.js` - Metro blockList 配置排除 JSON 被 bundler 打包
+
+### 路径映射规则
+| API 路径 | 离线 JSON |
+|---|---|
+| `/api/v1/wordbooks/words_b` | `/assets/data/wordbook_2_minimal.json` |
+| `/api/v1/user-words/category/words_b` | `/assets/data/wordbook_2_minimal.json` |
+| `/api/v1/user-words/category/words_b/count` | 返回 `{count: 64}` |
+
+### 预览链路（静态导出）
+```bash
+# 重新导出 web 静态文件
+cd client && npx expo export --platform web
+
+# 同步到 web-static（preview server 从此目录读取）
+cp -r dist/* web-static/
+
+# 重启预览服务器
+bash scripts/coze-preview-run.sh
+```
+
+### Metro blockList 配置
+`metro.config.js` 中的 `blockList: [/assets\/data\/.*\.json$/]` 确保 JSON 文件不被 bundler 处理，而是作为独立静态资源通过 fetch 加载。
+
+### 注意事项
+- `if (false) { require('./offlineData') }` 用于防止 Metro tree-shaking 移除 offlineData 模块
+- 离线模式下词汇仅有 `id` 和 `word`，`meaning` 等字段显示"（离线模式，释义暂不可用）"
+- Railway 后端不可用时（502/404），所有词汇相关 API 自动 fallback
