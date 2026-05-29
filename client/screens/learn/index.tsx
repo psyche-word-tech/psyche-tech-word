@@ -138,11 +138,18 @@ export default function LearnPage() {
 			const yResult = await yRes.json();
 			const zResult = await zRes.json();
 
-			setAllWords(Array.isArray(wordsData) ? wordsData : []);
+			const xIds = new Set(Array.isArray(xResult) ? xResult.map((w: any) => w.id) : []);
+			const yIds = new Set(Array.isArray(yResult) ? yResult.map((w: any) => w.id) : []);
+			const zIds = new Set(Array.isArray(zResult) ? zResult.map((w: any) => w.id) : []);
+
+			const allWordsData = Array.isArray(wordsData) ? wordsData : [];
+			const filteredWords = allWordsData.filter((w: any) => !xIds.has(w.id) && !yIds.has(w.id) && !zIds.has(w.id));
+
+			setAllWords(filteredWords);
 			setCategoryCounts({
-				x: Array.isArray(xResult) ? xResult.length : 0,
-				y: Array.isArray(yResult) ? yResult.length : 0,
-				z: Array.isArray(zResult) ? zResult.length : 0,
+				x: xIds.size,
+				y: yIds.size,
+				z: zIds.size,
 			});
 		} catch (err: any) {
 			console.error('Failed to fetch data:', err);
