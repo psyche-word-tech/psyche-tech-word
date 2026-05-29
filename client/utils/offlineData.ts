@@ -46,7 +46,7 @@ export async function getOfflineDataAsync(path: string): Promise<OfflineData> {
 
   // wordbooks 列表
   if (path === '/api/v1/wordbooks' || path === '/api/v1/wordbooks/') {
-    cache[path] = [];
+    cache[path] = await loadJSON<any[]>(`${DATA_BASE_URL}/wordbooks.json`);
     return cache[path];
   }
 
