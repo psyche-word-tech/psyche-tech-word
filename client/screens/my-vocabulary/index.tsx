@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
@@ -11,22 +11,32 @@ interface WordBook {
   name: string;
 }
 
+// 全局缓存，避免返回时重复加载
+let globalBooksCache: WordBook[] | null = null;
+
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const { apiBaseUrl, isConfigLoaded } = useApiConfig();
-  const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
+  const [boughtBooks, setBoughtBooks] = useState<WordBook[]>(globalBooksCache || []);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!globalBooksCache);
   const [errorMsg, setErrorMsg] = useState('');
+  const isRefreshingRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
       const loadBooks = async () => {
         if (!isConfigLoaded) return;
+        if (isRefreshingRef.current) return;
         
-        setIsLoading(true);
+        // 如果有缓存数据，先显示缓存，后台静默刷新
+        const hasCache = globalBooksCache !== null && globalBooksCache.length > 0;
+        if (!hasCache) {
+          setIsLoading(true);
+        }
         setErrorMsg('');
+        isRefreshingRef.current = true;
         
         try {
           const response = await fetchWithRetry(`/api/v1/wordbooks`);
@@ -46,17 +56,22 @@ export default function MyVocabularyPage() {
             .filter((book: any) => book.purchased === true)
             .map((book: any) => ({ id: book.id, name: book.name }));
           
+          globalBooksCache = purchasedBooks;
           setBoughtBooks(purchasedBooks);
         } catch (error: any) {
           console.error('[MyVocabulary] 加载失败:', error);
-          const rawMsg = error?.message || '';
-          if (rawMsg.includes('aborted') || rawMsg.includes('timeout') || rawMsg.includes('Abort')) {
-            setErrorMsg('请求超时，请稍后重试');
-          } else {
-            setErrorMsg(rawMsg || '加载失败，请检查网络连接');
+          // 有缓存时不显示错误，静默失败
+          if (!hasCache) {
+            const rawMsg = error?.message || '';
+            if (rawMsg.includes('aborted') || rawMsg.includes('timeout') || rawMsg.includes('Abort')) {
+              setErrorMsg('请求超时，请稍后重试');
+            } else {
+              setErrorMsg(rawMsg || '加载失败，请检查网络连接');
+            }
           }
         } finally {
           setIsLoading(false);
+          isRefreshingRef.current = false;
         }
       };
       
