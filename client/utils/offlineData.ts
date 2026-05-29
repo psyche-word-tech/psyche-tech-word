@@ -43,5 +43,23 @@ export function getOfflineData(path: string): any | null {
     }
   }
 
+  // 用户分类单词 /api/v1/user-words/category/:category
+  const categoryMatch = path.match(/^\/api\/v1\/user-words\/category\/([^/]+)$/);
+  if (categoryMatch) {
+    const category = categoryMatch[1];
+    if (TABLE_MAP[category]) {
+      return TABLE_MAP[category];
+    }
+    return [];
+  }
+
+  // 用户分类单词计数 /api/v1/user-words/category/:category/count
+  const countMatch = path.match(/^\/api\/v1\/user-words\/category\/([^/]+)\/count$/);
+  if (countMatch) {
+    const category = countMatch[1];
+    const data = TABLE_MAP[category] || [];
+    return { count: data.length };
+  }
+
   return null;
 }
