@@ -49,7 +49,12 @@ export default function MyVocabularyPage() {
           setBoughtBooks(purchasedBooks);
         } catch (error: any) {
           console.error('[MyVocabulary] 加载失败:', error);
-          setErrorMsg(error.message || '加载失败，请检查网络连接');
+          const rawMsg = error?.message || '';
+          if (rawMsg.includes('aborted') || rawMsg.includes('timeout') || rawMsg.includes('Abort')) {
+            setErrorMsg('请求超时，请稍后重试');
+          } else {
+            setErrorMsg(rawMsg || '加载失败，请检查网络连接');
+          }
         } finally {
           setIsLoading(false);
         }

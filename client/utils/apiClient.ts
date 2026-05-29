@@ -2,7 +2,7 @@ import { API_BASE_URL } from './apiConfig';
 
 /**
  * 带超时和自动重试的 fetch 包装
- * - 超时: 15 秒
+ * - 超时: 30 秒（Railway 冷启动可能较慢）
  * - 重试: 失败/502/504 时自动重试 2 次
  */
 export async function fetchWithRetry(
@@ -13,7 +13,7 @@ export async function fetchWithRetry(
 ): Promise<Response> {
   const apiBase = baseUrl || API_BASE_URL;
   const url = path.startsWith('http') ? path : `${apiBase}${path}`;
-  const timeout = 15000; // 15 秒超时
+  const timeout = 30000; // 30 秒超时，给 Railway 冷启动留足时间
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
