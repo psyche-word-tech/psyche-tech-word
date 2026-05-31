@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "eas": {
         "projectId": "fe451a1b-dbcb-4d2b-b929-f2404fbd892c"
       },
-      "backendBaseUrl": backendBaseUrl || 'https://f2541e68-91d1-4805-97c9-3bf1e0126a01.dev.coze.site'
+      "backendBaseUrl": backendBaseUrl || 'http://localhost:9091'
     },
     "plugins": [
       'expo-router',
