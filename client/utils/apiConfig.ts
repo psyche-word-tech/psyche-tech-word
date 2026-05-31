@@ -10,7 +10,7 @@ function isValidApiUrl(url: string | undefined): url is string {
 // 根据环境自动选择 API 地址
 function getApiBaseUrl(): string {
   // 1. 环境变量最高优先级（构建时注入）
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
   if (envUrl) return envUrl;
 
   // 2. Web 环境：使用相对路径，由静态服务器代理到后端
