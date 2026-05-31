@@ -51,6 +51,7 @@ router.get('/count', async (req, res) => {
       return;
     }
 
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ count });
   } catch (err) {
     console.error('Error counting user words:', err);
@@ -240,6 +241,7 @@ router.get('/category/:table', async (req, res) => {
       return;
     }
 
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json(data || []);
   } catch (err) {
     console.error('Error fetching category words:', err);

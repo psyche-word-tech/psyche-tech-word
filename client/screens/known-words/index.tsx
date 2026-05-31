@@ -24,7 +24,7 @@ export default function KnownWordsPage() {
 
   const fetchWords = async () => {
     try {
-      const response = await fetchWithRetry(`/api/v1/wordbooks/x`);
+      const response = await fetchWithRetry(`${apiBaseUrl}/api/v1/user-words/category/x`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setWords(data);

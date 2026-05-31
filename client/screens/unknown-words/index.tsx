@@ -25,7 +25,7 @@ export default function UnknownWordsPage() {
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetchWithRetry(`/api/v1/wordbooks/z`);
+          const response = await fetchWithRetry(`/api/v1/user-words/category/z`);
           const data = await response.json();
           if (Array.isArray(data)) {
             setWords(data);

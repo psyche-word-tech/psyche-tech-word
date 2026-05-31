@@ -3,29 +3,16 @@ import { getSupabaseClient } from '@/storage/database/supabase-client';
 
 const router = express.Router();
 
-// 简单内存缓存
-const CACHE_TTL = 5 * 60 * 1000; // 5分钟
-const cache: Record<string, { data: any; expiry: number }> = {};
 
-function getCache(key: string) {
-  const item = cache[key];
-  if (item && item.expiry > Date.now()) {
-    return item.data;
-  }
-  return null;
-}
-
-function setCache(key: string, data: any) {
-  cache[key] = { data, expiry: Date.now() + CACHE_TTL };
-}
-
-export function clearWordbooksCache(key: string) {
-  delete cache[key];
-}
 
 const VALID_TABLES = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
 const VALID_TABLES_MOVE = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
 const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
+
+// 保留空函数以兼容旧代码引用
+export function clearWordbooksCache(table: string) {
+  // no-op: caching removed
+}
 
 /**
  * GET /api/v1/wordbooks
@@ -41,15 +28,7 @@ const WORDBOOKS_DATA = [
 
 router.get('/', async (req, res) => {
   try {
-    const cached = getCache('wordbooks:list');
-    if (cached) {
-      res.json(cached);
-      return;
-    }
-
-    const result = WORDBOOKS_DATA;
-    setCache('wordbooks:list', result);
-    res.json(result);
+    res.json(WORDBOOKS_DATA);
   } catch (error: any) {
     console.error('Error fetching wordbooks:', error);
     res.status(500).json({ error: error.message });
@@ -62,17 +41,11 @@ router.get('/', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
-    const cached = getCache('wordbooks:stats');
-    if (cached) {
-      res.json(cached);
-      return;
-    }
-
     const client = getSupabaseClient();
-    const tables = ['words_b', 'words_x', 'words_y', 'words_z'];
+    const tables = ['a', 'x', 'y', 'z'];
     const labels = ['learning', 'known', 'vague', 'unknown'];
 
-    // 并行查询所有表，而不是串行
+    // 并行查询所有表
     const results = await Promise.all(
       tables.map((table) =>
         client
@@ -90,14 +63,12 @@ router.get('/stats', async (req, res) => {
       stats[labels[i]] = result.count;
     });
 
-    const result = {
+    res.json({
       learning: stats.learning || 0,
       known: stats.known || 0,
       vague: stats.vague || 0,
       unknown: stats.unknown || 0,
-    };
-    setCache('wordbooks:stats', result);
-    res.json(result);
+    });
   } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -298,14 +269,7 @@ router.post('/move', async (req, res) => {
  */
 router.get('/:table/count', async (req, res) => {
   const table = req.params.table;
-  const cacheKey = `wordbooks:${table}:count`;
-  const cached = getCache(cacheKey);
-  if (cached) {
-    res.json(cached);
-    return;
-  }
-
-  const tableWhitelist = ['words_a', 'words_b', 'words_c', 'words_d', 'words_e', 'words_f', 'words_g', 'words_h', 'words_i', 'words_j', 'words_k', 'words_l', 'words_m', 'words_n', 'words_o', 'words_p', 'words_q', 'words_r', 'words_s', 'words_t', 'words_u', 'words_v', 'words_w', 'words_x', 'words_y', 'words_z'];
+  const tableWhitelist = ['mu', 'x', 'y', 'z', 'a', 'b', 'c', 'd'];
   if (!tableWhitelist.includes(table)) {
     res.status(400).json({ error: 'Invalid table name' });
     return;
@@ -323,9 +287,8 @@ router.get('/:table/count', async (req, res) => {
       return;
     }
 
-    const result = { table, count: count || 0 };
-    setCache(cacheKey, result);
-    res.json(result);
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.json({ table, count: count || 0 });
   } catch (error: any) {
     console.error(`Error counting table ${table}:`, error);
     res.status(500).json({ error: error.message });
@@ -346,15 +309,6 @@ router.get('/:table', async (req, res) => {
       return;
     }
 
-    // Cache check
-    const cacheKey = `words:${table}`;
-    const cached = getCache(cacheKey);
-    if (cached) {
-      console.log(`[Cache Hit] ${cacheKey}`);
-      res.json(cached);
-      return;
-    }
-
     const client = getSupabaseClient();
     const { data, error } = await client
       .from(table)
@@ -365,8 +319,7 @@ router.get('/:table', async (req, res) => {
       return;
     }
 
-    setCache(cacheKey, data || []);
-    console.log(`[Cache Set] ${cacheKey}, items: ${(data || []).length}`);
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json(data || []);
   } catch (err) {
     console.error('Error fetching words:', err);

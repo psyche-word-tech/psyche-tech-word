@@ -63,7 +63,7 @@ export default function WordPreviewPage() {
 			setIsLoading(true);
 			setError(null);
 
-			const response = await fetchWithRetry(`/api/v1/user-words/category/a`);
+			const response = await fetchWithRetry(`/api/v1/user-words/category/a?page=1&limit=200`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -122,6 +122,7 @@ export default function WordPreviewPage() {
 	// 移动单词到分类
 	const handleMoveWord = useCallback(async (word: Word, targetTable: string) => {
 		try {
+			console.log('[handleMoveWord] Moving word:', word.id, word.word, 'to', targetTable);
 			const response = await fetchWithRetry(`/api/v1/user-words/classify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -132,6 +133,7 @@ export default function WordPreviewPage() {
 			});
 
 			const result = await response.json();
+			console.log('[handleMoveWord] Response:', response.status, result);
 
 			if (!response.ok) {
 				throw new Error(result.error || '移动失败');
@@ -183,24 +185,30 @@ export default function WordPreviewPage() {
 			onPanResponderMove: (evt, gestureState) => {
 				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
 
-				// 实时检测悬停的按钮
-				const target = detectDropTarget(
-					gestureState.moveX,
-					gestureState.moveY
-				);
+				// 实时检测悬停的按钮（使用 pageX/pageY 更可靠）
+				const pageX = evt.nativeEvent.pageX;
+				const pageY = evt.nativeEvent.pageY;
+				const target = detectDropTarget(pageX, pageY);
 				setDropTarget(target);
 			},
 			onPanResponderRelease: (evt, gestureState) => {
 				setIsDragging(false);
-				const target = detectDropTarget(
-					gestureState.moveX,
-					gestureState.moveY
-				);
+				// 使用 pageX/pageY 获取全局坐标
+				const pageX = evt.nativeEvent.pageX;
+				const pageY = evt.nativeEvent.pageY;
+				console.log('[Drag] Release pageX:', pageX, 'pageY:', pageY);
+				console.log('[Drag] gestureState moveX:', gestureState.moveX, 'moveY:', gestureState.moveY);
+				console.log('[Drag] Button layouts:', JSON.stringify(buttonLayouts));
+				const target = detectDropTarget(pageX, pageY);
+				console.log('[Drag] Detected target:', target);
 				setDropTarget(null);
 
 				if (target && currentWord) {
+					console.log('[Drag] Calling handleMoveWord for', currentWord.word, 'id=', currentWord.id, 'target=', target);
 					// 执行分类
 					handleMoveWord(currentWord, target);
+				} else {
+					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
 				}
 
 				// 弹回原位
