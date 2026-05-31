@@ -1,5 +1,5 @@
 import express from "express";
-import { getSupabaseClient } from "@/storage/database/supabase-client";
+import { getSupabaseClient, fetchTableDirectly } from "@/storage/database/supabase-client";
 
 const router = express.Router();
 
@@ -231,10 +231,21 @@ router.get('/category/:table', async (req, res) => {
     }
 
     const client = getSupabaseClient();
-    const { data, error } = await client
+    let { data, error } = await client
       .from(table)
       .select('*')
       .order('created_at', { ascending: false });
+
+    console.log('DEBUG - table:', table, 'error:', error?.message, 'data length:', data?.length);
+
+    // 如果 schema cache 错误，使用直接 fetch 调用 REST API
+    if (error && error.message && error.message.includes('schema cache')) {
+      console.log('DEBUG - trying direct fetch for table:', table);
+      const directData = await fetchTableDirectly(table);
+      console.log('DEBUG - direct fetch result length:', directData?.length);
+      data = directData;
+      error = null;
+    }
 
     if (error) {
       res.status(500).json({ error: error.message });
@@ -261,9 +272,21 @@ router.get('/category/:table/count', async (req, res) => {
     }
 
     const client = getSupabaseClient();
-    const { count, error } = await client
+    let count = 0;
+    let { data, error } = await client
       .from(table)
       .select('*', { count: 'exact', head: true });
+
+    // 如果 schema cache 错误，使用 RPC 回退
+    if (error && error.message && error.message.includes('schema cache')) {
+      const rpcResult = await client.rpc('get_table_data', { table_name: table });
+      if (rpcResult.data && Array.isArray(rpcResult.data)) {
+        count = rpcResult.data.length;
+        error = null;
+      }
+    } else if (!error && data !== null) {
+      count = data.length;
+    }
 
     if (error) {
       res.status(500).json({ error: error.message });

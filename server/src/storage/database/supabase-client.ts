@@ -105,7 +105,7 @@ export async function queryWithRetry<T>(
   // 如果出错且是连接问题，重置后重试一次
   if (result.error) {
     const errMsg = result.error.message || '';
-    if (errMsg.includes('timeout') || errMsg.includes('Connection') || errMsg.includes('closed') || errMsg.includes('ECONNREFUSED')) {
+    if (errMsg.includes('timeout') || errMsg.includes('Connection') || errMsg.includes('closed') || errMsg.includes('ECONNREFUSED') || errMsg.includes('schema cache') || errMsg.includes('Could not find')) {
       console.log('[Supabase] Connection lost, resetting and retrying...');
       resetSupabaseClient();
       const newClient = getSupabaseClient();
@@ -186,6 +186,31 @@ export function startKeepAlive(intervalMs: number = 60000): NodeJS.Timeout {
       console.error('[Supabase] Keep-alive error:', err);
     }
   }, intervalMs);
+}
+
+/**
+ * 直接使用 fetch 调用 Supabase REST API（绕过 JS SDK 的 schema cache）
+ */
+export async function fetchTableDirectly(table: string): Promise<any[]> {
+  const { url, anonKey } = getSupabaseCredentials();
+  const serviceRoleKey = getSupabaseServiceRoleKey();
+  const key = serviceRoleKey || anonKey;
+
+  console.log(`DEBUG - fetchTableDirectly: url=${url}, anonKey=${anonKey?.substring(0, 20)}..., serviceRoleKey=${serviceRoleKey?.substring(0, 20)}...`);
+
+  const response = await fetch(`${url}/rest/v1/${table}?select=*`, {
+    headers: {
+      'apikey': anonKey,
+      'Authorization': `Bearer ${key}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Supabase REST API error: ${error}`);
+  }
+
+  return response.json();
 }
 
 export { loadEnv, getSupabaseCredentials, getSupabaseServiceRoleKey };
