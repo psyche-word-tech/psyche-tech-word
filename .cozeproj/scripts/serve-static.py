@@ -2,8 +2,7 @@
 import http.server, socketserver, os, sys, urllib.request, urllib.error, json, socket
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
-ROOT = sys.argv[2] if len(sys.argv) > 2 else "."
-os.chdir(ROOT)
+ROOT = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else ".")
 
 API_TARGET = "http://localhost:9091"
 
@@ -14,6 +13,14 @@ class ReusableTCPServer(socketserver.TCPServer):
         super().server_bind()
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        # 修复工作目录被删除的问题
+        try:
+            os.getcwd()
+        except FileNotFoundError:
+            os.chdir('/')
+        super().__init__(*args, directory=ROOT, **kwargs)
+
     def _send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')

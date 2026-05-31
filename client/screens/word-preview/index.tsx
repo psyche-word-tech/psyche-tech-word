@@ -3,11 +3,12 @@ import {
 	View,
 	Text,
 	StyleSheet,
-	ScrollView,
-	Alert,
 	Dimensions,
 	FlatList,
 	TouchableOpacity,
+	Animated,
+	PanResponder,
+	Alert,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { fetchWithRetry } from '@/utils/apiClient';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 interface Word {
@@ -29,7 +30,11 @@ interface Word {
 	image_url?: string;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
+const CATEGORY_CONFIG = {
+	x: { label: '已会', color: '#4CAF50', route: '/known-words' as const },
+	y: { label: '模糊', color: '#FF9800', route: '/vague-words' as const },
+	z: { label: '不会', color: '#F44336', route: '/unknown-words' as const },
+};
 
 export default function WordPreviewPage() {
 	const router = useSafeRouter();
@@ -40,6 +45,17 @@ export default function WordPreviewPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const flatListRef = useRef<FlatList>(null);
+
+	// 拖拽动画
+	const pan = useRef(new Animated.ValueXY()).current;
+	const [isDragging, setIsDragging] = useState(false);
+	const [dropTarget, setDropTarget] = useState<string | null>(null);
+
+	// 按钮区域引用和布局
+	const buttonRefs = useRef<{ [key: string]: View | null }>({}).current;
+	const [buttonLayouts, setButtonLayouts] = useState<{
+		[key: string]: { x: number; y: number; width: number; height: number };
+	}>({});
 
 	// 获取 words_b 的单词
 	const fetchWords = useCallback(async () => {
@@ -138,39 +154,163 @@ export default function WordPreviewPage() {
 		}
 	}, [words, currentIndex, fetchCategoryCounts]);
 
+	// 检测拖拽释放位置是否在按钮区域内
+	const detectDropTarget = useCallback((moveX: number, moveY: number): string | null => {
+		for (const [key, layout] of Object.entries(buttonLayouts)) {
+			if (
+				moveX >= layout.x &&
+				moveX <= layout.x + layout.width &&
+				moveY >= layout.y &&
+				moveY <= layout.y + layout.height
+			) {
+				return key;
+			}
+		}
+		return null;
+	}, [buttonLayouts]);
+
+	// PanResponder 用于拖拽当前卡片
+	const panResponder = useRef(
+		PanResponder.create({
+			onMoveShouldSetPanResponder: (evt, gestureState) => {
+				// 只有垂直方向移动超过 10px 才捕获
+				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
+			},
+			onPanResponderGrant: () => {
+				setIsDragging(true);
+				pan.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: (evt, gestureState) => {
+				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+
+				// 实时检测悬停的按钮
+				const target = detectDropTarget(
+					gestureState.moveX,
+					gestureState.moveY
+				);
+				setDropTarget(target);
+			},
+			onPanResponderRelease: (evt, gestureState) => {
+				setIsDragging(false);
+				const target = detectDropTarget(
+					gestureState.moveX,
+					gestureState.moveY
+				);
+				setDropTarget(null);
+
+				if (target && currentWord) {
+					// 执行分类
+					handleMoveWord(currentWord, target);
+				}
+
+				// 弹回原位
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+					friction: 5,
+				}).start();
+			},
+			onPanResponderTerminate: () => {
+				setIsDragging(false);
+				setDropTarget(null);
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+					friction: 5,
+				}).start();
+			},
+		})
+	).current;
+
+	// 按钮布局回调
+	const onButtonLayout = useCallback((key: string) => (event: any) => {
+		const layout = event.nativeEvent.layout;
+		// 使用 measure 获取相对于屏幕的绝对位置
+		buttonRefs[key]?.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
+			setButtonLayouts(prev => ({
+				...prev,
+				[key]: { x: px, y: py, width, height }
+			}));
+		});
+	}, [buttonRefs]);
+
 	// 渲染单词卡片
 	const renderWordCard = useCallback(({ item, index }: { item: Word; index: number }) => {
+		const isCurrent = index === currentIndex;
+
 		return (
 			<View style={styles.cardContainer}>
-				<View style={styles.wordCard}>
-					{/* Page number */}
-					<View style={styles.cardHeader}>
-						<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
-					</View>
-
-					{/* Word */}
-					<Text style={styles.wordText}>{item.word}</Text>
-
-					{/* Phonetic */}
-					<Text style={styles.phoneticText}>{item.phonetic}</Text>
-
-					{/* Meaning */}
-					<Text style={styles.meaningText}>{item.meaning}</Text>
-
-					{/* Divider + Example */}
-					{item.example && (
-						<View style={styles.exampleSection}>
-							<View style={styles.divider} />
-							<Text style={styles.exampleText}>{item.example}</Text>
-							{item.example_translation && (
-								<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
-							)}
+				{isCurrent ? (
+					<Animated.View
+						style={[
+							styles.wordCard,
+							{
+								transform: [
+									{ translateX: pan.x },
+									{ translateY: pan.y },
+								],
+								opacity: isDragging ? 0.9 : 1,
+								zIndex: isDragging ? 100 : 1,
+							},
+						]}
+						{...panResponder.panHandlers}
+					>
+						{/* Page number */}
+						<View style={styles.cardHeader}>
+							<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
 						</View>
-					)}
-				</View>
+
+						{/* Word */}
+						<Text style={styles.wordText}>{item.word}</Text>
+
+						{/* Phonetic */}
+						<Text style={styles.phoneticText}>{item.phonetic}</Text>
+
+						{/* Meaning */}
+						<Text style={styles.meaningText}>{item.meaning}</Text>
+
+						{/* Divider + Example */}
+						{item.example && (
+							<View style={styles.exampleSection}>
+								<View style={styles.divider} />
+								<Text style={styles.exampleText}>{item.example}</Text>
+								{item.example_translation && (
+									<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
+								)}
+							</View>
+						)}
+
+						{/* Drag hint */}
+						{isDragging && (
+							<View style={styles.dragHintContainer}>
+								<Text style={styles.dragHintText}>
+									{dropTarget ? `松手放入${CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG]?.label || ''}` : '拖动到下方按钮'}
+								</Text>
+							</View>
+						)}
+					</Animated.View>
+				) : (
+					<View style={styles.wordCard}>
+						<View style={styles.cardHeader}>
+							<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
+						</View>
+						<Text style={styles.wordText}>{item.word}</Text>
+						<Text style={styles.phoneticText}>{item.phonetic}</Text>
+						<Text style={styles.meaningText}>{item.meaning}</Text>
+						{item.example && (
+							<View style={styles.exampleSection}>
+								<View style={styles.divider} />
+								<Text style={styles.exampleText}>{item.example}</Text>
+								{item.example_translation && (
+									<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
+								)}
+							</View>
+						)}
+					</View>
+				)}
 			</View>
 		);
-	}, [words.length]);
+	}, [words.length, currentIndex, isDragging, dropTarget, pan, panResponder.panHandlers]);
 
 	// 处理滚动事件
 	const handleScroll = useCallback((event: any) => {
@@ -185,6 +325,11 @@ export default function WordPreviewPage() {
 	const headerSubtitle = params.category
 		? `${params.category} · ${words.length} 个单词`
 		: `${words.length} 个单词待分类`;
+
+	// 导航到分类列表
+	const navigateToCategory = useCallback((route: string) => {
+		router.push(route);
+	}, [router]);
 
 	return (
 		<Screen>
@@ -254,7 +399,6 @@ export default function WordPreviewPage() {
 							{error ? (
 								<>
 									<Text style={styles.errorText}>加载失败: {error}</Text>
-									<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
 								</>
 							) : (
 								<Text style={styles.emptyText}>所有单词已分类完成！</Text>
@@ -263,29 +407,32 @@ export default function WordPreviewPage() {
 					)}
 				</View>
 
-				{/* Action Buttons */}
+				{/* Action Buttons - Drop Targets */}
 				{currentWord && (
 					<View style={styles.actionSection}>
-						<Text style={styles.actionHint}>左右滑动浏览，点击下方按钮分类</Text>
+						<Text style={styles.actionHint}>
+							{isDragging ? '松手放入对应分类' : '长按拖动单词到按钮分类，单击按钮查看列表'}
+						</Text>
 						<View style={styles.actionRow}>
-							<TouchableOpacity
-								style={[styles.actionButton, styles.knownButton]}
-								onPress={() => handleMoveWord(currentWord, 'x')}
-							>
-								<Text style={styles.actionButtonText}>已会</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.actionButton, styles.vagueButton]}
-								onPress={() => handleMoveWord(currentWord, 'y')}
-							>
-								<Text style={styles.actionButtonText}>模糊</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[styles.actionButton, styles.unknownButton]}
-								onPress={() => handleMoveWord(currentWord, 'z')}
-							>
-								<Text style={styles.actionButtonText}>不会</Text>
-							</TouchableOpacity>
+							{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; route: string }][]).map(([key, config]) => (
+								<TouchableOpacity
+									key={key}
+									ref={(ref) => { buttonRefs[key] = ref; }}
+									onLayout={onButtonLayout(key)}
+									style={[
+										styles.actionButton,
+										{ backgroundColor: config.color },
+										dropTarget === key && styles.actionButtonActive,
+									]}
+									onPress={() => navigateToCategory(config.route)}
+									activeOpacity={0.8}
+								>
+									<Text style={styles.actionButtonText}>{config.label}</Text>
+									<Text style={styles.actionButtonCount}>
+										({categoryCounts[key as keyof typeof categoryCounts]})
+									</Text>
+								</TouchableOpacity>
+							))}
 						</View>
 					</View>
 				)}
@@ -293,18 +440,12 @@ export default function WordPreviewPage() {
 				{/* Category Stats */}
 				<View style={styles.statsSection}>
 					<View style={styles.statsRow}>
-						<View style={[styles.statsItem, { backgroundColor: '#4CAF50' }]}>
-							<Text style={styles.statsLabel}>已会</Text>
-							<Text style={styles.statsCount}>{categoryCounts.x}</Text>
-						</View>
-						<View style={[styles.statsItem, { backgroundColor: '#FF9800' }]}>
-							<Text style={styles.statsLabel}>模糊</Text>
-							<Text style={styles.statsCount}>{categoryCounts.y}</Text>
-						</View>
-						<View style={[styles.statsItem, { backgroundColor: '#F44336' }]}>
-							<Text style={styles.statsLabel}>不会</Text>
-							<Text style={styles.statsCount}>{categoryCounts.z}</Text>
-						</View>
+						{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string }][]).map(([key, config]) => (
+							<View key={key} style={[styles.statsItem, { backgroundColor: config.color }]}>
+								<Text style={styles.statsLabel}>{config.label}</Text>
+								<Text style={styles.statsCount}>{categoryCounts[key as keyof typeof categoryCounts]}</Text>
+							</View>
+						))}
 					</View>
 				</View>
 			</View>
@@ -398,7 +539,6 @@ const styles = StyleSheet.create({
 		color: '#6B7280',
 		marginTop: 10,
 		textAlign: 'center',
-		fontWeight: '500',
 	},
 	meaningText: {
 		fontSize: 15,
@@ -463,11 +603,6 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		textAlign: 'center',
 	},
-	errorSubText: {
-		fontSize: 12,
-		color: '#9CA3AF',
-		textAlign: 'center',
-	},
 	actionSection: {
 		backgroundColor: '#FFFFFF',
 		paddingHorizontal: 16,
@@ -496,20 +631,28 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		borderRadius: 14,
 		alignItems: 'center',
+		borderWidth: 2,
+		borderColor: 'transparent',
 	},
-	knownButton: {
-		backgroundColor: '#4CAF50',
-	},
-	vagueButton: {
-		backgroundColor: '#FF9800',
-	},
-	unknownButton: {
-		backgroundColor: '#F44336',
+	actionButtonActive: {
+		borderColor: '#FFFFFF',
+		transform: [{ scale: 1.05 }],
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		elevation: 8,
 	},
 	actionButtonText: {
 		fontSize: 15,
 		fontWeight: '600',
 		color: '#FFFFFF',
+	},
+	actionButtonCount: {
+		fontSize: 13,
+		color: '#FFFFFF',
+		opacity: 0.8,
+		marginTop: 2,
 	},
 	statsSection: {
 		backgroundColor: '#FFFFFF',
@@ -539,5 +682,18 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 		color: '#FFFFFF',
 		marginTop: 2,
+	},
+	dragHintContainer: {
+		marginTop: 16,
+		paddingVertical: 8,
+		paddingHorizontal: 16,
+		backgroundColor: '#EBF5FF',
+		borderRadius: 8,
+		alignItems: 'center',
+	},
+	dragHintText: {
+		fontSize: 13,
+		color: '#3B82F6',
+		fontWeight: '600',
 	},
 });
