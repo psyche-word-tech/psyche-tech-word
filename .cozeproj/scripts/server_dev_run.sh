@@ -43,4 +43,10 @@ kill_old_server
 
 echo "启动 server 服务..."
 cd "$SERVER_DIR"
+
+# 清除系统环境变量，让 .env 文件配置生效
+unset COZE_SUPABASE_URL
+unset COZE_SUPABASE_ANON_KEY
+unset COZE_SUPABASE_SERVICE_ROLE_KEY
+
 NODE_ENV=development PORT="$SERVER_PORT" npx tsx watch ./src/index.ts 2>&1 | pipe_to_log "SERVER" "$LOG_SERVER_FILE"
