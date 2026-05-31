@@ -13,8 +13,12 @@ function getApiBaseUrl(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
   if (envUrl) return envUrl;
 
-  // 2. Web 环境：使用相对路径，由静态服务器代理到后端
+  // 2. Web 环境：如果当前在 coze 预览域名下，使用完整的后端地址
   if (typeof window !== 'undefined') {
+    const host = window.location.host;
+    if (host.includes('coze')) {
+      return 'http://localhost:9091';
+    }
     return '';
   }
 
