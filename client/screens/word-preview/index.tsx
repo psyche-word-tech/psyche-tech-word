@@ -106,7 +106,7 @@ export default function WordPreviewPage() {
 	// 移动单词到分类
 	const handleMoveWord = useCallback(async (word: Word, targetTable: string) => {
 		try {
-			const response = await fetchWithRetry(`/api/v1/user-words/move`, {
+			const response = await fetchWithRetry(`/api/v1/user-words/classify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -270,19 +270,19 @@ export default function WordPreviewPage() {
 						<View style={styles.actionRow}>
 							<TouchableOpacity
 								style={[styles.actionButton, styles.knownButton]}
-								onPress={() => handleMoveWord(currentWord, 'words_x')}
+								onPress={() => handleMoveWord(currentWord, 'x')}
 							>
 								<Text style={styles.actionButtonText}>已会</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.actionButton, styles.vagueButton]}
-								onPress={() => handleMoveWord(currentWord, 'words_y')}
+								onPress={() => handleMoveWord(currentWord, 'y')}
 							>
 								<Text style={styles.actionButtonText}>模糊</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.actionButton, styles.unknownButton]}
-								onPress={() => handleMoveWord(currentWord, 'words_z')}
+								onPress={() => handleMoveWord(currentWord, 'z')}
 							>
 								<Text style={styles.actionButtonText}>不会</Text>
 							</TouchableOpacity>
