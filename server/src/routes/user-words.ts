@@ -177,41 +177,24 @@ router.post('/classify', async (req, res) => {
 
     const client = getSupabaseClient();
 
-    // 从 a 表获取单词详情
-    const { data: word, error: fetchError } = await client
-      .from('a')
-      .select('*')
-      .eq('id', wordId)
-      .single();
+    // 使用 RPC 调用 move_word 函数（绕过 schema cache）
+    const { data, error } = await client.rpc('move_word', {
+      word_id: wordId,
+      target_table: targetTable,
+    });
 
-    if (fetchError || !word) {
-      res.status(404).json({ error: 'Word not found in a' });
+    if (error) {
+      console.error('RPC move_word error:', error);
+      res.status(500).json({ error: error.message });
       return;
     }
 
-    // 先删除目标表中可能已存在的该单词（避免重复）
-    await client.from(targetTable).delete().eq('id', wordId);
-
-    // 插入到目标表
-    const { error: insertError } = await client.from(targetTable).insert(word);
-
-    if (insertError) {
-      res.status(500).json({ error: insertError.message });
+    if (!data.success) {
+      res.status(404).json({ error: data.error });
       return;
     }
 
-    // 从 a 表删除（移动效果）
-    const { error: deleteError } = await client
-      .from('a')
-      .delete()
-      .eq('id', wordId);
-
-    if (deleteError) {
-      res.status(500).json({ error: deleteError.message });
-      return;
-    }
-
-    res.json({ success: true, message: `Word moved to ${targetTable}` });
+    res.json({ success: true, message: data.message });
   } catch (err) {
     console.error('Error classifying word:', err);
     res.status(500).json({ error: 'Internal server error' });
