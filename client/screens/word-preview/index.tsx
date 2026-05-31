@@ -66,9 +66,9 @@ export default function WordPreviewPage() {
 	const fetchCategoryCounts = useCallback(async () => {
 		try {
 			const [xRes, yRes, zRes] = await Promise.all([
-				fetchWithRetry(`/api/v1/user-words/category/words_x/count`),
-				fetchWithRetry(`/api/v1/user-words/category/words_y/count`),
-				fetchWithRetry(`/api/v1/user-words/category/words_z/count`),
+				fetchWithRetry(`/api/v1/user-words/category/x/count`),
+				fetchWithRetry(`/api/v1/user-words/category/y/count`),
+				fetchWithRetry(`/api/v1/user-words/category/z/count`),
 			]);
 
 			const [xData, yData, zData] = await Promise.all([

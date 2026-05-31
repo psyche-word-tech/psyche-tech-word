@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import path from 'path';
-import { config as dotenvConfig } from 'dotenv';
+import fs from 'fs';
 
 let supabaseClientInstance: any = null;
 let lastHealthCheck = 0;
@@ -10,24 +10,41 @@ const HEALTH_CHECK_INTERVAL = 30000; // 30秒
 const DB_TIMEOUT = 60000;
 const CLIENT_MAX_AGE = 300000; // 5分钟，超过自动重建
 
-function loadEnv(): void {
+// 直接从 .env 文件读取配置，避免被系统环境变量覆盖
+function readEnvFile(): Record<string, string> {
+  const envVars: Record<string, string> = {};
   try {
     const dotenvPath = path.resolve(process.cwd(), '.env');
-    dotenvConfig({ path: dotenvPath });
+    const content = fs.readFileSync(dotenvPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIndex = trimmed.indexOf('=');
+      if (eqIndex > 0) {
+        const key = trimmed.slice(0, eqIndex).trim();
+        let value = trimmed.slice(eqIndex + 1).trim();
+        // 去除引号
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        envVars[key] = value;
+      }
+    }
   } catch {
     // ignore
   }
+  return envVars;
 }
 
-function getSupabaseCredentials(): { url: string; anonKey: string } {
-  loadEnv();
+const envCache = readEnvFile();
 
-  const url = process.env.COZE_SUPABASE_URL;
+function getSupabaseCredentials(): { url: string; anonKey: string } {
+  const url = envCache.COZE_SUPABASE_URL || process.env.COZE_SUPABASE_URL;
   if (!url) {
     throw new Error('COZE_SUPABASE_URL is not set');
   }
 
-  const anonKey = process.env.COZE_SUPABASE_ANON_KEY;
+  const anonKey = envCache.COZE_SUPABASE_ANON_KEY || process.env.COZE_SUPABASE_ANON_KEY;
   if (!anonKey) {
     throw new Error('COZE_SUPABASE_ANON_KEY is not set');
   }
@@ -36,12 +53,12 @@ function getSupabaseCredentials(): { url: string; anonKey: string } {
 }
 
 function getSupabaseServiceRoleKey(): string | undefined {
-  loadEnv();
-  return process.env.COZE_SUPABASE_SERVICE_ROLE_KEY;
+  return envCache.COZE_SUPABASE_SERVICE_ROLE_KEY || process.env.COZE_SUPABASE_SERVICE_ROLE_KEY;
 }
 
 function createSupabaseClient(token?: string): SupabaseClient {
   const { url, anonKey } = getSupabaseCredentials();
+  console.log('[Supabase] Connecting to:', url);
 
   let key: string;
   if (token) {
