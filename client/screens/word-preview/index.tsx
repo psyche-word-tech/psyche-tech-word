@@ -47,7 +47,7 @@ export default function WordPreviewPage() {
 			setIsLoading(true);
 			setError(null);
 
-			const response = await fetchWithRetry(`/api/v1/user-words/category/words_b`);
+			const response = await fetchWithRetry(`/api/v1/user-words/category/a`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
