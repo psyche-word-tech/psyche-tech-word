@@ -9,10 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 // 词汇书ID到数据库表的映射
 // id 对应 vocabulary 页面的词汇书ID
 const BOOK_TABLE_MAP: Record<number, { sourceTable: string; name: string }> = {
-  1: { sourceTable: 'words_a', name: '高中词汇' },
-  2: { sourceTable: 'words_a', name: '四级词汇' },
-  3: { sourceTable: 'words_a', name: '六级词汇' },
-  4: { sourceTable: 'words_a', name: '考研词汇' },
+  1: { sourceTable: 'a', name: '高中词汇' },
+  2: { sourceTable: 'a', name: '四级词汇' },
+  3: { sourceTable: 'a', name: '六级词汇' },
+  4: { sourceTable: 'a', name: '考研词汇' },
 };
 
 // 默认词汇书列表（当没有传入books时使用）
@@ -85,7 +85,7 @@ export default function PurchasePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sourceTable: bookConfig.sourceTable,
-            targetTable: 'words_b',
+            targetTable: 'b',
             bookId: bookId,
           }),
         });

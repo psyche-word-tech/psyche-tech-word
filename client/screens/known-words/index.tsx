@@ -24,7 +24,7 @@ export default function KnownWordsPage() {
 
   const fetchWords = async () => {
     try {
-      const response = await fetchWithRetry(`/api/v1/wordbooks/words_x`);
+      const response = await fetchWithRetry(`/api/v1/wordbooks/x`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setWords(data);
@@ -49,7 +49,7 @@ export default function KnownWordsPage() {
   const handleWordPress = (word: Word) => {
     router.push('/word-detail', {
       word: JSON.stringify(word),
-      table: 'words_x'
+      table: 'x'
     });
   };
 

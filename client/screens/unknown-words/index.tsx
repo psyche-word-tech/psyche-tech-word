@@ -25,7 +25,7 @@ export default function UnknownWordsPage() {
     useCallback(() => {
       const fetchWords = async () => {
         try {
-          const response = await fetchWithRetry(`/api/v1/wordbooks/words_z`);
+          const response = await fetchWithRetry(`/api/v1/wordbooks/z`);
           const data = await response.json();
           if (Array.isArray(data)) {
             setWords(data);
@@ -41,7 +41,7 @@ export default function UnknownWordsPage() {
   const handleWordPress = (word: Word) => {
     router.push('/word-detail', {
       word: JSON.stringify(word),
-      table: 'words_z'
+      table: 'z'
     });
   };
 

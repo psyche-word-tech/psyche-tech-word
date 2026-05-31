@@ -88,12 +88,12 @@ export default function MyVocabularyPage() {
     }
 
     const tableMap: Record<number, string> = {
-      1: 'words_a',
-      2: 'words_b',
-      3: 'words_c',
-      4: 'words_d'
+      1: 'a',
+      2: 'b',
+      3: 'c',
+      4: 'd'
     };
-    const table = tableMap[book.id] || 'words_b';
+    const table = tableMap[book.id] || 'b';
     router.push('/learn', { table });
   };
 

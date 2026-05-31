@@ -19,9 +19,9 @@ function setCache(key: string, data: any) {
   cache[key] = { data, expiry: Date.now() + CACHE_TTL };
 }
 
-const VALID_TABLES = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111'];
-const VALID_TABLES_MOVE = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1'];
-const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words'];
+const VALID_TABLES = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', '111', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
+const VALID_TABLES_MOVE = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
+const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x', 'words_y', 'words_z', 'x1', 'y1', 'z1', 'user_words', 'a', 'b', 'c', 'd', 'x', 'y', 'z'];
 
 /**
  * GET /api/v1/wordbooks

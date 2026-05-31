@@ -124,7 +124,7 @@ export default function WordDetailPage() {
 	const lastDropTapRef = useRef<{ table: string; time: number } | null>(null);
 	const dropTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const sourceTable = params.table || 'words_b';
+	const sourceTable = params.table || 'b';
 	const isInitialized = useRef(false);
 
 	// 移动单词到目标分类，并自动显示当前表中的下一个单词
@@ -266,9 +266,9 @@ export default function WordDetailPage() {
 	const fetchCategoryCounts = useCallback(async () => {
 		try {
 			const [xRes, yRes, zRes] = await Promise.all([
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_x/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_y/count`),
-				fetch(`${API_BASE_URL}/api/v1/user-words/category/words_z/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/x/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/y/count`),
+				fetch(`${API_BASE_URL}/api/v1/user-words/category/z/count`),
 			]);
 			const [xData, yData, zData] = await Promise.all([xRes.json(), yRes.json(), zRes.json()]);
 			setCategoryCounts({
@@ -1008,7 +1008,7 @@ export default function WordDetailPage() {
 			}
 
 			// 从 words_b 重新加载单词列表（移除已移动的单词）
-			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/words_b`);
+			const listResponse = await fetch(`${API_BASE_URL}/api/v1/user-words/category/b`);
 			const data = await listResponse.json();
 				
 			if (Array.isArray(data) && data.length > 0) {
@@ -1197,21 +1197,21 @@ export default function WordDetailPage() {
 						<View style={styles.dropZones}>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneX]}
-								onPress={() => handleDropZonePress('words_x', '已会')}
+								onPress={() => handleDropZonePress('x', '已会')}
 							>
 								<Text style={styles.dropZoneText}>已会</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.x : categoryCounts.x})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneY]}
-								onPress={() => handleDropZonePress('words_y', '模糊')}
+								onPress={() => handleDropZonePress('y', '模糊')}
 							>
 								<Text style={styles.dropZoneText}>模糊</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.y : categoryCounts.y})</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.dropZone, styles.dropZoneZ]}
-								onPress={() => handleDropZonePress('words_z', '不会')}
+								onPress={() => handleDropZonePress('z', '不会')}
 							>
 								<Text style={styles.dropZoneText}>不会</Text>
 								<Text style={styles.dropZoneCount}>({params.from === 'mindmap' ? mindmapCounts.z : categoryCounts.z})</Text>
@@ -1488,12 +1488,12 @@ export default function WordDetailPage() {
 												]}
 												onPress={() => {
 													setCategoryModalVisible(false);
-													const tableMap: Record<string, string> = { words_x: params.from === 'mindmap' ? 'x1' : 'words_x', words_y: params.from === 'mindmap' ? 'y1' : 'words_y', words_z: params.from === 'mindmap' ? 'z1' : 'words_z' };
+													const tableMap: Record<string, string> = { words_x: params.from === 'mindmap' ? 'x1' : 'x', words_y: params.from === 'mindmap' ? 'y1' : 'y', words_z: params.from === 'mindmap' ? 'z1' : 'z' };
 													// 根据当前弹窗标题推断表名
 													let targetTable = sourceTable;
-													if (categoryModalTitle === '已会') targetTable = params.from === 'mindmap' ? 'x1' : 'words_x';
-													else if (categoryModalTitle === '模糊') targetTable = params.from === 'mindmap' ? 'y1' : 'words_y';
-													else if (categoryModalTitle === '不会') targetTable = params.from === 'mindmap' ? 'z1' : 'words_z';
+													if (categoryModalTitle === '已会') targetTable = params.from === 'mindmap' ? 'x1' : 'x';
+													else if (categoryModalTitle === '模糊') targetTable = params.from === 'mindmap' ? 'y1' : 'y';
+													else if (categoryModalTitle === '不会') targetTable = params.from === 'mindmap' ? 'z1' : 'z';
 													router.push('/word-detail', {
 														word: JSON.stringify(item),
 														table: targetTable,

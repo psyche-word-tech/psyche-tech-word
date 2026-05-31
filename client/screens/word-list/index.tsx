@@ -21,7 +21,7 @@ interface Word {
 export default function WordListPage() {
   const router = useSafeRouter();
   const params = useSafeSearchParams<{ table?: string }>();
-  const table = params.table || 'words_b';
+  const table = params.table || 'b';
 
   const [words, setWords] = useState<Word[]>([]);
   const [searchQuery, setSearchQuery] = useState('');

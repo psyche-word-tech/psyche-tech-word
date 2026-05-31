@@ -22,7 +22,7 @@ export default function WordCategoryPage() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	const tableName = params.table || 'words_x';
+	const tableName = params.table || 'x';
 	const categoryName = params.name || '已会';
 
 	// 获取分类单词
@@ -67,6 +67,9 @@ export default function WordCategoryPage() {
 			case 'words_x': return '#4CAF50';
 			case 'words_y': return '#FF9800';
 			case 'words_z': return '#F44336';
+			case 'x': return '#4CAF50';
+			case 'y': return '#FF9800';
+			case 'z': return '#F44336';
 			default: return '#4F46E5';
 		}
 	};
