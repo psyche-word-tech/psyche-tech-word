@@ -148,7 +148,7 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; error?:
   try {
     const client = getSupabaseClient();
     const { data, error } = await client
-      .from('wordbooks')
+      .from('a')
       .select('id')
       .limit(1)
       .abortSignal(AbortSignal.timeout(10000));

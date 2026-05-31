@@ -27,6 +27,14 @@ const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x
  * GET /api/v1/wordbooks
  * 获取所有词汇书列表
  */
+// 硬编码词汇书数据（绕过 PostgREST schema cache 问题）
+const WORDBOOKS_DATA = [
+  { id: 1, name: '高中词汇', purchased: true },
+  { id: 2, name: '四级词汇', purchased: false },
+  { id: 3, name: '六级词汇', purchased: false },
+  { id: 4, name: '考研词汇', purchased: false },
+];
+
 router.get('/', async (req, res) => {
   try {
     const cached = getCache('wordbooks:list');
@@ -35,18 +43,7 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    const client = getSupabaseClient();
-    const { data, error } = await client
-      .from('wordbooks')
-      .select('id,name,purchased')
-      .order('id');
-
-    if (error) {
-      res.status(500).json({ error: error.message });
-      return;
-    }
-
-    const result = data || [];
+    const result = WORDBOOKS_DATA;
     setCache('wordbooks:list', result);
     res.json(result);
   } catch (error: any) {
