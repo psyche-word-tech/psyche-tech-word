@@ -1,5 +1,6 @@
 import express from "express";
 import { getSupabaseClient, fetchTableDirectly } from "@/storage/database/supabase-client";
+import { clearWordbooksCache } from "@/routes/wordbooks";
 
 const router = express.Router();
 
@@ -193,6 +194,10 @@ router.post('/classify', async (req, res) => {
       res.status(404).json({ error: data.error });
       return;
     }
+
+    // 清除 wordbooks 缓存，确保已会/模糊/不会列表能立即看到更新
+    clearWordbooksCache('words:a');
+    clearWordbooksCache(`words:${targetTable}`);
 
     res.json({ success: true, message: data.message });
   } catch (err) {
