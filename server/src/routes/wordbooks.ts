@@ -30,9 +30,9 @@ const VALID_TABLES_COUNT = ['words_a', 'words_b', 'words_c', 'words_d', 'words_x
 // 硬编码词汇书数据（绕过 PostgREST schema cache 问题）
 const WORDBOOKS_DATA = [
   { id: 1, name: '高中词汇', purchased: true },
-  { id: 2, name: '四级词汇', purchased: false },
-  { id: 3, name: '六级词汇', purchased: false },
-  { id: 4, name: '考研词汇', purchased: false },
+  { id: 2, name: '四级词汇', purchased: true },
+  { id: 3, name: '六级词汇', purchased: true },
+  { id: 4, name: '考研词汇', purchased: true },
 ];
 
 router.get('/', async (req, res) => {
