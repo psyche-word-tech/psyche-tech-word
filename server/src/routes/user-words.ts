@@ -256,7 +256,7 @@ router.get('/category/:table/count', async (req, res) => {
 
     const client = getSupabaseClient();
     let count = 0;
-    let { data, error } = await client
+    let { count: exactCount, error } = await client
       .from(table)
       .select('*', { count: 'exact', head: true });
 
@@ -267,8 +267,8 @@ router.get('/category/:table/count', async (req, res) => {
         count = rpcResult.data.length;
         error = null;
       }
-    } else if (!error && data !== null) {
-      count = data.length;
+    } else if (!error && exactCount !== null) {
+      count = exactCount;
     }
 
     if (error) {
