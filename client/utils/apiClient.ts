@@ -23,6 +23,7 @@ export async function fetchWithRetry(
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
+        cache: 'no-store',
       });
       clearTimeout(timer);
 

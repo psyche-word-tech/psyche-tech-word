@@ -50,6 +50,8 @@ export default function WordPreviewPage() {
 	const pan = useRef(new Animated.ValueXY()).current;
 	const [isDragging, setIsDragging] = useState(false);
 	const [dropTarget, setDropTarget] = useState<string | null>(null);
+	// 用于防止拖拽释放时意外触发按钮的 onPress
+	const dragJustEnded = useRef(false);
 
 	// 按钮区域引用和布局
 	const buttonRefs = useRef<{ [key: string]: View | null }>({}).current;
@@ -193,6 +195,9 @@ export default function WordPreviewPage() {
 			},
 			onPanResponderRelease: (evt, gestureState) => {
 				setIsDragging(false);
+					// 标记拖拽刚刚结束，防止触发按钮 onPress
+					dragJustEnded.current = true;
+					setTimeout(() => { dragJustEnded.current = false; }, 200);
 				// 使用 pageX/pageY 获取全局坐标
 				const pageX = evt.nativeEvent.pageX;
 				const pageY = evt.nativeEvent.pageY;
@@ -432,7 +437,10 @@ export default function WordPreviewPage() {
 										{ backgroundColor: config.color },
 										dropTarget === key && styles.actionButtonActive,
 									]}
-									onPress={() => navigateToCategory(config.route)}
+									onPress={() => {
+										if (dragJustEnded.current) return;
+										navigateToCategory(config.route);
+									}}
 									activeOpacity={0.8}
 								>
 									<Text style={styles.actionButtonText}>{config.label}</Text>
