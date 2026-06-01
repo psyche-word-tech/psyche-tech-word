@@ -94,7 +94,7 @@ export default function MyVocabularyPage() {
       4: 'd'
     };
     const table = tableMap[book.id] || 'b';
-    router.push('/learn', { table });
+    router.push('/word-preview', { table });
   };
 
   if (!isConfigLoaded) {
