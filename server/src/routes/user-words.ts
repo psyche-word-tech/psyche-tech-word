@@ -181,8 +181,10 @@ router.post('/classify', async (req, res) => {
     const client = getSupabaseClient();
 
     // 使用 RPC 调用 move_word 函数（绕过 schema cache）
+    // 确保 word_id 是数字类型（数据库中 id 为 bigint，Supabase JS 可能返回字符串）
+    const numericWordId = typeof wordId === 'string' ? parseInt(wordId, 10) : wordId;
     const { data, error } = await client.rpc('move_word', {
-      word_id: wordId,
+      word_id: numericWordId,
       target_table: targetTable,
     });
 
