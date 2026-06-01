@@ -133,7 +133,18 @@ app.use('/api/v1/grammar-check', grammarCheckRouter);
 app.use('/api/v1/speech-eval', speechEvalRouter);
 app.use('/api/v1/tts', ttsRouter);
 
-app.listen(port, () => {
+// 全局未捕获异常处理 - 防止进程崩溃退出
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err);
+  // 记录错误但不退出进程，保持服务可用
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+  // 记录错误但不退出进程
+});
+
+const server = app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}/`);
   // 启动数据库连接保活（每60秒检查一次）
   startKeepAlive(60000);
