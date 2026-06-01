@@ -5,7 +5,6 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
-import { API_BASE_URL } from '@/utils/apiConfig';
 import { fetchWithRetry } from '@/utils/apiClient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -180,25 +179,45 @@ export default function LearnPage() {
 		const targetTable = targetTableMap[categoryId];
 
 		try {
-			await fetch(`${API_BASE_URL}/api/v1/wordbooks/move`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+			const response = await fetchWithRetry(`/api/v1/user-words/classify`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					sourceTable: table,
-					targetTable: targetTable,
-					wordId: wordId
+					wordId: wordId,
+					targetTable: targetTable
 				}),
 			});
+			const result = await response.json();
+			if (!response.ok) {
+				throw new Error(result.error || "移动失败");
+			}
 		} catch (error) {
-			console.error('Failed to move word:', error);
+			console.error("Failed to move word:", error);
+			return; // 失败时不更新状态
 		}
 
 		setAllWords(prev => prev.filter(w => w.id !== wordId));
-		
-		setCategoryCounts(prev => {
-			const key = ['x', 'y', 'z'][categoryId - 1] as 'x' | 'y' | 'z';
-			return { ...prev, [key]: prev[key] + 1 };
-		});
+
+		// 重新获取分类数量
+		try {
+			const [xRes, yRes, zRes] = await Promise.all([
+				fetchWithRetry(`/api/v1/user-words/category/x/count`),
+				fetchWithRetry(`/api/v1/user-words/category/y/count`),
+				fetchWithRetry(`/api/v1/user-words/category/z/count`),
+			]);
+			const [xData, yData, zData] = await Promise.all([
+				xRes.json(),
+				yRes.json(),
+				zRes.json(),
+			]);
+			setCategoryCounts({
+				x: xData.count || 0,
+				y: yData.count || 0,
+				z: zData.count || 0,
+			});
+		} catch (error) {
+			console.error("Failed to fetch category counts:", error);
+		}
 	}, [table]);
 
 	const handleWordPress = (word: Word) => {
