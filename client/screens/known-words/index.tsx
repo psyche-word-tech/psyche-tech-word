@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } 
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useFocusEffect } from 'expo-router';
-import { useApiConfig } from '@/contexts/ApiConfigContext';
 import { fetchWithRetry } from '@/utils/apiClient';
 
 interface Word {
@@ -18,13 +17,12 @@ interface Word {
 
 export default function KnownWordsPage() {
   const router = useSafeRouter();
-  const { apiBaseUrl } = useApiConfig();
   const [words, setWords] = useState<Word[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchWords = async () => {
     try {
-      const response = await fetchWithRetry(`${apiBaseUrl}/api/v1/user-words/category/x`);
+      const response = await fetchWithRetry(`/api/v1/user-words/category/x`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setWords(data);
@@ -43,7 +41,7 @@ export default function KnownWordsPage() {
   useFocusEffect(
     useCallback(() => {
       fetchWords();
-    }, [apiBaseUrl])
+    }, [])
   );
 
   const handleWordPress = (word: Word) => {
