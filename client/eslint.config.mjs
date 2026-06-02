@@ -107,6 +107,8 @@ export default [
         },
       ],
       'reactnative/wrap-horizontal-scrollview-inside-view': ['error'],
+      // 允许 PanResponder 的使用
+      'react-hooks/refs': 'off',
       'no-empty-function': 'off',
       '@typescript-eslint/no-empty-function': 'error',
       'no-warning-comments': ['error', { terms: ['TODO'], location: 'start' }],
