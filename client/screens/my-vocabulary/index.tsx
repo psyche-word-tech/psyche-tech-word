@@ -37,7 +37,8 @@ export default function MyVocabularyScreen() {
     try {
       setIsLoading(true);
       setErrorMsg('');
-      const data = await fetchWithRetry('/api/v1/wordbooks');
+      const response = await fetchWithRetry('/api/v1/wordbooks');
+      const data = await (response as Response).json();
       const purchased = data.filter((book: WordBook) => book.purchased);
       setBoughtBooks(purchased);
     } catch (err: any) {
