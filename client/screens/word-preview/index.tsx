@@ -659,7 +659,9 @@ const styles = StyleSheet.create({
 		opacity: 0.8,
 		marginTop: 2,
 	},
+	dragHintContainer: {
 		marginTop: 16,
+	},
 	dragHintText: {
 		fontSize: 13,
 		color: '#3B82F6',

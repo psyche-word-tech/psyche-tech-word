@@ -110,6 +110,7 @@ export default [
       // 允许 PanResponder 的使用
       'react-hooks/refs': 'off',
       'no-empty-function': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
       '@typescript-eslint/no-empty-function': 'error',
       'no-warning-comments': ['error', { terms: ['TODO'], location: 'start' }],
     },
