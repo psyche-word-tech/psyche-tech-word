@@ -1,2 +1,2 @@
-// 新版词汇预览 - 2024
-export { default } from "@/screens/learn";
+// 词汇预览页面
+export { default } from "@/screens/word-preview";
