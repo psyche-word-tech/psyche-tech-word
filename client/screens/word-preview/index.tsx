@@ -374,6 +374,8 @@ export default function WordPreviewPage() {
 								showsHorizontalScrollIndicator={false}
 								onScroll={handleScroll}
 								scrollEventThrottle={16}
+									contentContainerStyle={{ width: SCREEN_WIDTH * words.length }}
+									style={{ width: SCREEN_WIDTH }}
 								getItemLayout={(data, index) => ({
 									length: SCREEN_WIDTH,
 									offset: SCREEN_WIDTH * index,
