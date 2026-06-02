@@ -4,7 +4,7 @@ import http.server, socketserver, os, sys, urllib.request, urllib.error, json, s
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
 ROOT = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else ".")
 
-API_TARGET = "http://localhost:9091"
+API_TARGET = "https://word-voyage-api-production.up.railway.app"
 
 class ReusableTCPServer(socketserver.TCPServer):
     def server_bind(self):
