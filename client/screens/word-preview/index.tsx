@@ -105,15 +105,7 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面加载时获取数据
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			fetchWords();
-			fetchCategoryCounts();
-		}, 0);
-		return () => clearTimeout(timer);
-	}, [fetchWords, fetchCategoryCounts]);
-
+	// 页面获得焦点时获取数据
 	useFocusEffect(
 		useCallback(() => {
 			fetchWords();
@@ -216,21 +208,12 @@ export default function WordPreviewPage() {
 					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
 				}
 
-				// 弹回原位
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-					friction: 5,
-				}).start();
+				// 移除后直接消失，不回弹
 			},
 			onPanResponderTerminate: () => {
 				setIsDragging(false);
 				setDropTarget(null);
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-					friction: 5,
-				}).start();
+				// 移除后不回弹
 			},
 		})
 	).current;
