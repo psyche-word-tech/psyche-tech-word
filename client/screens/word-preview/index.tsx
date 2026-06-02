@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
 	View,
 	Text,
@@ -169,12 +169,8 @@ export default function WordPreviewPage() {
 		return null;
 	}, [buttonLayouts]);
 
-	// 当前单词（需要在 PanResponder 之前定义）
-	const currentWord = words[currentIndex];
-
 	// PanResponder 用于拖拽当前卡片
-	// eslint-disable-next-line react-hooks/refs
-	const panResponder = useMemo(() =>
+	const panResponder = useRef(
 		PanResponder.create({
 			onMoveShouldSetPanResponder: (evt, gestureState) => {
 				// 只有垂直方向移动超过 10px 才捕获
@@ -187,7 +183,7 @@ export default function WordPreviewPage() {
 			onPanResponderMove: (evt, gestureState) => {
 				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
 
-				// 实时检测悬停的按钮
+				// 实时检测悬停的按钮（使用 pageX/pageY 更可靠）
 				const pageX = evt.nativeEvent.pageX;
 				const pageY = evt.nativeEvent.pageY;
 				const target = detectDropTarget(pageX, pageY);
@@ -195,28 +191,38 @@ export default function WordPreviewPage() {
 			},
 			onPanResponderRelease: (evt, gestureState) => {
 				setIsDragging(false);
-				// 标记拖拽刚刚结束，防止触发按钮 onPress
-				dragJustEnded.current = true;
-				setTimeout(() => { dragJustEnded.current = false; }, 200);
+					// 标记拖拽刚刚结束，防止触发按钮 onPress
+					dragJustEnded.current = true;
+					setTimeout(() => { dragJustEnded.current = false; }, 200);
 				// 使用 pageX/pageY 获取全局坐标
 				const pageX = evt.nativeEvent.pageX;
 				const pageY = evt.nativeEvent.pageY;
+				console.log('[Drag] Release pageX:', pageX, 'pageY:', pageY);
+				console.log('[Drag] gestureState moveX:', gestureState.moveX, 'moveY:', gestureState.moveY);
+				console.log('[Drag] Button layouts:', JSON.stringify(buttonLayouts));
 				const target = detectDropTarget(pageX, pageY);
+				console.log('[Drag] Detected target:', target);
 				setDropTarget(null);
 
 				if (target && currentWord) {
+					console.log('[Drag] Calling handleMoveWord for', currentWord.word, 'id=', currentWord.id, 'target=', target);
 					// 执行分类
 					handleMoveWord(currentWord, target);
+				} else {
+					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
 				}
+
+				// 移除后直接消失，不回弹
 			},
 			onPanResponderTerminate: () => {
 				setIsDragging(false);
 				setDropTarget(null);
+				// 移除后不回弹
 			},
-		}), [detectDropTarget, currentWord, handleMoveWord]);
+		})
+	).current;
 
 	// 按钮布局回调
-	// eslint-disable-next-line react-hooks/preserve-manual-memoization
 	const onButtonLayout = useCallback((key: string) => (event: any) => {
 		const layout = event.nativeEvent.layout;
 		// 使用 measure 获取相对于屏幕的绝对位置
@@ -312,6 +318,9 @@ export default function WordPreviewPage() {
 		const newIndex = Math.round(offsetX / SCREEN_WIDTH);
 		setCurrentIndex(newIndex);
 	}, []);
+
+	// 当前单词
+	const currentWord = words[currentIndex];
 
 	const headerSubtitle = params.category
 		? `${params.category} · ${words.length} 个单词`
