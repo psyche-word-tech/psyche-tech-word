@@ -21,7 +21,7 @@ interface WordBook {
 
 export default function MyVocabularyScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width } = useWindowDimensions() || { width: 1024 };
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
