@@ -20,7 +20,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 interface Word {
-	id: string;
+	id: number;
 	word: string;
 	meaning: string;
 	phonetic: string;
@@ -73,10 +73,6 @@ export default function WordPreviewPage() {
 			setWords(data);
 			setCurrentIndex(0);
 		} catch (error: any) {
-			// 忽略请求被取消的错误
-			if (error.name === 'AbortError' || error.message?.includes('aborted')) {
-				return;
-			}
 			console.error('Failed to fetch words:', error);
 			setError(error.message || '获取单词列表失败');
 		} finally {
@@ -109,7 +105,15 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面获得焦点时获取数据
+	// 页面加载时获取数据
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			fetchWords();
+			fetchCategoryCounts();
+		}, 0);
+		return () => clearTimeout(timer);
+	}, [fetchWords, fetchCategoryCounts]);
+
 	useFocusEffect(
 		useCallback(() => {
 			fetchWords();
@@ -212,12 +216,21 @@ export default function WordPreviewPage() {
 					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
 				}
 
-				// 移除后直接消失，不回弹
+				// 弹回原位
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+					friction: 5,
+				}).start();
 			},
 			onPanResponderTerminate: () => {
 				setIsDragging(false);
 				setDropTarget(null);
-				// 移除后不回弹
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+					friction: 5,
+				}).start();
 			},
 		})
 	).current;
@@ -310,7 +323,7 @@ export default function WordPreviewPage() {
 				)}
 			</View>
 		);
-	}, [words.length, currentIndex, isDragging, dropTarget]);
+	}, [words.length, currentIndex, isDragging, dropTarget, pan, panResponder.panHandlers]);
 
 	// 处理滚动事件
 	const handleScroll = useCallback((event: any) => {
@@ -374,8 +387,6 @@ export default function WordPreviewPage() {
 								showsHorizontalScrollIndicator={false}
 								onScroll={handleScroll}
 								scrollEventThrottle={16}
-									contentContainerStyle={{ width: SCREEN_WIDTH * words.length }}
-									style={{ width: SCREEN_WIDTH }}
 								getItemLayout={(data, index) => ({
 									length: SCREEN_WIDTH,
 									offset: SCREEN_WIDTH * index,
