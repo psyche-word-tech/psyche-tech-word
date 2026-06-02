@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { useSafeRouter } from '@/hooks/useSafeRouter';
 import { Screen } from '@/components/Screen';
 import { useApiConfig } from '@/contexts/ApiConfigContext';
@@ -17,6 +17,8 @@ let globalBooksCache: WordBook[] | null = null;
 export default function MyVocabularyPage() {
   const router = useSafeRouter();
   const { apiBaseUrl, isConfigLoaded } = useApiConfig();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 600;
   const [boughtBooks, setBoughtBooks] = useState<WordBook[]>(globalBooksCache || []);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    marginTop: 200,
+    marginTop: 20,
     alignSelf: 'center',
     marginLeft: 60,
   },
