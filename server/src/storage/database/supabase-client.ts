@@ -147,8 +147,9 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; error?:
 
   try {
     const client = getSupabaseClient();
+    // 查询 x 表进行健康检查（x 表在 Supabase 中存在）
     const { data, error } = await client
-      .from('a')
+      .from('x')
       .select('id')
       .limit(1)
       .abortSignal(AbortSignal.timeout(10000));
