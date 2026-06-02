@@ -38,6 +38,10 @@ export default function WordPreviewScreen() {
 			setWords(data);
 			setCurrentIndex(0);
 		} catch (err: any) {
+			// 忽略请求被取消的错误（用户快速切换页面时产生）
+			if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+				return;
+			}
 			console.error('Failed to fetch words:', err);
 			setError(err.message || '获取单词列表失败');
 		} finally {
