@@ -228,7 +228,7 @@ export async function fetchTableDirectly(table: string): Promise<any[]> {
     throw new Error(`Supabase REST API error: ${error}`);
   }
 
-  return response.json();
+  return response.json() as Promise<any[]>;
 }
 
-export { loadEnv, getSupabaseCredentials, getSupabaseServiceRoleKey };
+export { getSupabaseCredentials, getSupabaseServiceRoleKey };

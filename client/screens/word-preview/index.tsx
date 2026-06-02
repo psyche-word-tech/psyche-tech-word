@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Platform, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { fetchWithRetry } from '@/utils/apiClient';
 
@@ -17,35 +17,12 @@ interface CategoryCounts {
 	z: number;
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// 触摸命中测试辅助函数
-function hitTest(x: number, y: number, layout: { x: number; y: number; width: number; height: number }) {
-	return (
-		x >= layout.x &&
-		x <= layout.x + layout.width &&
-		y >= layout.y &&
-		y <= layout.y + layout.height
-	);
-}
-
 export default function WordPreviewScreen() {
 	const [words, setWords] = useState<Word[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [categoryCounts, setCategoryCounts] = useState<CategoryCounts>({ x: 0, y: 0, z: 0 });
 	const [currentIndex, setCurrentIndex] = useState(0);
-
-	// 拖拽状态
-	const [draggingWord, setDraggingWord] = useState<Word | null>(null);
-	const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-	const dragOffset = useRef({ x: 0, y: 0 });
-
-	// 按钮布局
-	const buttonRefs = useRef<{ [key: string]: View | null }>({});
-	const [buttonLayouts, setButtonLayouts] = useState<{
-		[key: string]: { x: number; y: number; width: number; height: number };
-	}>({});
 
 	// 获取 words_a 的单词
 	const fetchWords = useCallback(async () => {
@@ -60,9 +37,9 @@ export default function WordPreviewScreen() {
 			const data = await response.json();
 			setWords(data);
 			setCurrentIndex(0);
-		} catch (error: any) {
-			console.error('Failed to fetch words:', error);
-			setError(error.message || '获取单词列表失败');
+		} catch (err: any) {
+			console.error('Failed to fetch words:', err);
+			setError(err.message || '获取单词列表失败');
 		} finally {
 			setIsLoading(false);
 		}
@@ -88,8 +65,8 @@ export default function WordPreviewScreen() {
 				y: yData.count || 0,
 				z: zData.count || 0,
 			});
-		} catch (error) {
-			console.error('Failed to fetch category counts:', error);
+		} catch (err) {
+			console.error('Failed to fetch category counts:', err);
 		}
 	}, []);
 
@@ -130,73 +107,11 @@ export default function WordPreviewScreen() {
 
 			// 更新分类数量
 			fetchCategoryCounts();
-		} catch (error) {
-			console.error('Failed to move word:', error);
+		} catch (err: any) {
+			console.error('Failed to move word:', err);
 			Alert.alert('错误', '移动失败，请重试');
 		}
 	}, [words, currentIndex, fetchCategoryCounts]);
-
-	// 检测拖拽释放位置是否在按钮区域内
-	const detectDropTarget = useCallback((clientX: number, clientY: number): string | null => {
-		for (const [key, layout] of Object.entries(buttonLayouts)) {
-			if (hitTest(clientX, clientY, layout)) {
-				return key;
-			}
-		}
-		return null;
-	}, [buttonLayouts]);
-
-	// 记录按钮布局
-	const recordButtonLayout = useCallback((key: string, view: View | null) => {
-		if (view) {
-			buttonRefs.current[key] = view;
-			view.measureInWindow((x, y, width, height) => {
-				setButtonLayouts(prev => ({
-					...prev,
-					[key]: { x, y, width, height }
-				}));
-			});
-		}
-	}, []);
-
-	// 鼠标/触摸事件处理 (Web 兼容)
-	const handlePointerDown = useCallback((e: React.PointerEvent, word: Word) => {
-		if (Platform.OS === 'web') {
-			const event = e as unknown as { nativeEvent: { offsetX: number; offsetY: number; clientX: number; clientY: number } };
-			dragOffset.current = {
-				x: event.nativeEvent.offsetX,
-				y: event.nativeEvent.offsetY
-			};
-			setDragPosition({
-				x: event.nativeEvent.clientX - event.nativeEvent.offsetX,
-				y: event.nativeEvent.clientY - event.nativeEvent.offsetY
-			});
-			setDraggingWord(word);
-		}
-	}, []);
-
-	const handlePointerMove = useCallback((e: React.PointerEvent) => {
-		if (draggingWord && Platform.OS === 'web') {
-			const event = e as unknown as { nativeEvent: { clientX: number; clientY: number } };
-			setDragPosition({
-				x: event.nativeEvent.clientX - dragOffset.current.x,
-				y: event.nativeEvent.clientY - dragOffset.current.y
-			});
-		}
-	}, [draggingWord]);
-
-	const handlePointerUp = useCallback((e: React.PointerEvent) => {
-		if (draggingWord && Platform.OS === 'web') {
-			const event = e as unknown as { nativeEvent: { clientX: number; clientY: number } };
-			const target = detectDropTarget(event.nativeEvent.clientX, event.nativeEvent.clientY);
-			
-			if (target) {
-				handleMoveWord(draggingWord, target);
-			}
-			
-			setDraggingWord(null);
-		}
-	}, [draggingWord, detectDropTarget, handleMoveWord]);
 
 	// 计算显示的单词
 	const currentWord = words[currentIndex];
@@ -224,17 +139,11 @@ export default function WordPreviewScreen() {
 					<Text style={styles.errorText}>{error}</Text>
 				</View>
 			</View>
-		</View>
 		);
 	}
 
 	return (
-		<View 
-			style={styles.container}
-			onPointerMove={handlePointerMove}
-			onPointerUp={handlePointerUp}
-			onPointerLeave={handlePointerUp}
-		>
+		<View style={styles.container}>
 			<View style={styles.header}>
 				<Text style={styles.headerTitle}>词汇预览</Text>
 			</View>
@@ -254,19 +163,10 @@ export default function WordPreviewScreen() {
 								const word = words[currentIndex + offset];
 								if (!word) return null;
 								
-								const isBeingDragged = draggingWord?.id === word.id;
-								
 								return (
 									<View
 										key={word.id}
-										ref={(ref) => {
-											// 存储引用但不阻塞渲染
-										}}
-										style={[
-											styles.wordCard,
-											isBeingDragged && styles.wordCardDragging,
-										]}
-										onPointerDown={(e) => handlePointerDown(e, word)}
+										style={styles.wordCard}
 									>
 										<Text style={styles.wordText}>{word.word}</Text>
 										<Text style={styles.definitionText}>{word.definition}</Text>
@@ -278,7 +178,6 @@ export default function WordPreviewScreen() {
 						{/* 分类按钮 */}
 						<View style={styles.buttonsContainer}>
 							<TouchableOpacity
-								ref={(ref) => recordButtonLayout('x', ref as unknown as View)}
 								style={[styles.categoryButton, styles.buttonX]}
 								onPress={() => currentWord && handleMoveWord(currentWord, 'x')}
 							>
@@ -286,7 +185,6 @@ export default function WordPreviewScreen() {
 							</TouchableOpacity>
 
 							<TouchableOpacity
-								ref={(ref) => recordButtonLayout('y', ref as unknown as View)}
 								style={[styles.categoryButton, styles.buttonY]}
 								onPress={() => currentWord && handleMoveWord(currentWord, 'y')}
 							>
@@ -294,7 +192,6 @@ export default function WordPreviewScreen() {
 							</TouchableOpacity>
 
 							<TouchableOpacity
-								ref={(ref) => recordButtonLayout('z', ref as unknown as View)}
 								style={[styles.categoryButton, styles.buttonZ]}
 								onPress={() => currentWord && handleMoveWord(currentWord, 'z')}
 							>
@@ -302,27 +199,34 @@ export default function WordPreviewScreen() {
 							</TouchableOpacity>
 						</View>
 
-						<Text style={styles.hintText}>点击按钮进行分类</Text>
+						{/* 提示文字 */}
+						<Text style={styles.hintText}>点击按钮对当前单词分类</Text>
+
+						{/* 翻页控制 */}
+						<View style={styles.paginationContainer}>
+							<TouchableOpacity
+								style={[styles.pageButton, currentIndex === 0 && styles.pageButtonDisabled]}
+								onPress={() => setCurrentIndex(Math.max(0, currentIndex - 3))}
+								disabled={currentIndex === 0}
+							>
+								<Text style={styles.pageButtonText}>上一组</Text>
+							</TouchableOpacity>
+
+							<Text style={styles.pageInfo}>
+								{Math.floor(currentIndex / 3) + 1} / {Math.ceil(words.length / 3)}
+							</Text>
+
+							<TouchableOpacity
+								style={[styles.pageButton, currentIndex >= words.length - 3 && styles.pageButtonDisabled]}
+								onPress={() => setCurrentIndex(Math.min(words.length - 3, currentIndex + 3))}
+								disabled={currentIndex >= words.length - 3}
+							>
+								<Text style={styles.pageButtonText}>下一组</Text>
+							</TouchableOpacity>
+						</View>
 					</>
 				)}
 			</View>
-
-			{/* 拖拽中的单词 */}
-			{draggingWord && (
-				<View
-					style={[
-						styles.draggingCard,
-						{
-							left: dragPosition.x,
-							top: dragPosition.y,
-						}
-					]}
-					pointerEvents="none"
-				>
-					<Text style={styles.wordText}>{draggingWord.word}</Text>
-					<Text style={styles.definitionText}>{draggingWord.definition}</Text>
-				</View>
-			)}
 		</View>
 	);
 }
@@ -330,24 +234,24 @@ export default function WordPreviewScreen() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f5f5f5',
+		backgroundColor: '#fff',
 	},
 	header: {
-		padding: 16,
-		backgroundColor: '#fff',
+		paddingTop: 50,
+		paddingBottom: 16,
+		paddingHorizontal: 20,
+		backgroundColor: '#f5f5f5',
 		borderBottomWidth: 1,
 		borderBottomColor: '#e0e0e0',
-		alignItems: 'center',
 	},
 	headerTitle: {
 		fontSize: 18,
-		fontWeight: '600',
+		fontWeight: 'bold',
 		color: '#333',
 	},
 	content: {
 		flex: 1,
-		padding: 16,
-		justifyContent: 'center',
+		padding: 20,
 	},
 	centerContent: {
 		flex: 1,
@@ -360,17 +264,18 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		fontSize: 16,
-		color: '#e53935',
+		color: 'red',
 		textAlign: 'center',
-		padding: 20,
 	},
 	completedContainer: {
+		flex: 1,
+		justifyContent: 'center',
 		alignItems: 'center',
 	},
 	completedText: {
 		fontSize: 18,
-		color: '#4caf50',
-		fontWeight: '600',
+		color: '#4CAF50',
+		fontWeight: 'bold',
 	},
 	remainingText: {
 		fontSize: 16,
@@ -379,75 +284,90 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	wordsContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
 		marginBottom: 30,
 	},
 	wordCard: {
 		backgroundColor: '#fff',
 		borderRadius: 12,
-		padding: 20,
-		marginBottom: 12,
+		padding: 16,
+		width: '30%',
+		minHeight: 120,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
-	},
-	wordCardDragging: {
-		opacity: 0.5,
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 	wordText: {
-		fontSize: 24,
+		fontSize: 18,
 		fontWeight: 'bold',
 		color: '#333',
 		marginBottom: 8,
+		textAlign: 'center',
 	},
 	definitionText: {
-		fontSize: 14,
+		fontSize: 12,
 		color: '#666',
-		lineHeight: 20,
+		textAlign: 'center',
 	},
 	buttonsContainer: {
 		flexDirection: 'row',
-		justifyContent: 'space-between',
-		gap: 12,
+		justifyContent: 'space-around',
+		marginBottom: 20,
 	},
 	categoryButton: {
-		flex: 1,
-		paddingVertical: 20,
-		borderRadius: 12,
+		paddingVertical: 16,
+		paddingHorizontal: 20,
+		borderRadius: 8,
+		minWidth: 100,
 		alignItems: 'center',
-		justifyContent: 'center',
 	},
 	buttonX: {
-		backgroundColor: '#4caf50',
+		backgroundColor: '#4CAF50',
 	},
 	buttonY: {
-		backgroundColor: '#ff9800',
+		backgroundColor: '#FF9800',
 	},
 	buttonZ: {
-		backgroundColor: '#f44336',
+		backgroundColor: '#F44336',
 	},
 	buttonText: {
 		color: '#fff',
 		fontSize: 16,
-		fontWeight: '600',
+		fontWeight: 'bold',
 	},
 	hintText: {
-		textAlign: 'center',
-		marginTop: 16,
-		color: '#999',
 		fontSize: 14,
+		color: '#999',
+		textAlign: 'center',
+		marginBottom: 20,
 	},
-	draggingCard: {
-		position: 'absolute',
-		backgroundColor: '#fff',
-		borderRadius: 12,
-		padding: 20,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 10,
-		minWidth: SCREEN_WIDTH - 64,
+	paginationContainer: {
+		flexDirection: 'row',
+		justifyContent: 'center',
+		alignItems: 'center',
+		gap: 20,
+	},
+	pageButton: {
+		backgroundColor: '#2196F3',
+		paddingVertical: 10,
+		paddingHorizontal: 20,
+		borderRadius: 8,
+	},
+	pageButtonDisabled: {
+		backgroundColor: '#ccc',
+	},
+	pageButtonText: {
+		color: '#fff',
+		fontSize: 14,
+		fontWeight: 'bold',
+	},
+	pageInfo: {
+		fontSize: 14,
+		color: '#666',
 	},
 });

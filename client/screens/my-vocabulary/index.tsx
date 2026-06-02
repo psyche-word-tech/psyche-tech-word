@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Modal,
   useWindowDimensions,
+  ViewStyle,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { fetchWithRetry } from '@/utils/apiClient';
@@ -29,10 +30,6 @@ export default function MyVocabularyScreen() {
 
   const isMobile = width < 768;
 
-  useEffect(() => {
-    loadWordBooks();
-  }, []);
-
   const loadWordBooks = async () => {
     try {
       setIsLoading(true);
@@ -47,6 +44,10 @@ export default function MyVocabularyScreen() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadWordBooks();
+  }, []);
 
   const handleLearnPress = (book: WordBook) => {
     if (!book.purchased) {
@@ -75,14 +76,14 @@ export default function MyVocabularyScreen() {
     paddingTop: isMobile ? 20 : 60,
   };
 
-  const gridStyle = {
-    flexDirection: isMobile ? ('column' as const) : ('row' as const),
-    alignItems: isMobile ? ('stretch' as const) : ('flex-start' as const),
-    justifyContent: 'space-between',
+  const gridStyle: ViewStyle = {
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'flex-start',
+    justifyContent: 'space-between' as const,
     marginTop: isMobile ? 20 : 40,
   };
 
-  const bookCardStyle = {
+  const bookCardStyle: ViewStyle = {
     backgroundColor: '#EBEBEB',
     borderRadius: isMobile ? 12 : 8,
     padding: isMobile ? 20 : 12,
@@ -185,8 +186,8 @@ const styles = {
   },
   header: {
     flexDirection: 'row' as const,
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     paddingVertical: 16,
   },
   backText: {

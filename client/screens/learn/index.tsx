@@ -253,7 +253,6 @@ export default function LearnPage() {
 						{error ? (
 							<View style={styles.emptyContainer}>
 								<Text style={styles.errorText}>加载失败: {error}</Text>
-								<Text style={styles.errorSubText}>API: {API_BASE_URL}</Text>
 							</View>
 						) : (
 							<>
