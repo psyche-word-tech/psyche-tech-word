@@ -14,6 +14,7 @@ LogBox.ignoreLogs([
 ]);
 
 // 阻止系统原生启动页自动隐藏，由 AnimatedSplash 接管控制
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
