@@ -105,15 +105,7 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面加载时获取数据
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			fetchWords();
-			fetchCategoryCounts();
-		}, 0);
-		return () => clearTimeout(timer);
-	}, [fetchWords, fetchCategoryCounts]);
-
+	// 页面获得焦点时获取数据
 	useFocusEffect(
 		useCallback(() => {
 			fetchWords();
@@ -216,21 +208,12 @@ export default function WordPreviewPage() {
 					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
 				}
 
-				// 弹回原位
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-					friction: 5,
-				}).start();
+				// 移除后直接消失，不回弹
 			},
 			onPanResponderTerminate: () => {
 				setIsDragging(false);
 				setDropTarget(null);
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-					friction: 5,
-				}).start();
+				// 移除后不回弹
 			},
 		})
 	).current;
@@ -387,8 +370,6 @@ export default function WordPreviewPage() {
 								showsHorizontalScrollIndicator={false}
 								onScroll={handleScroll}
 								scrollEventThrottle={16}
-								contentContainerStyle={{ width: SCREEN_WIDTH * words.length }}
-								style={{ width: SCREEN_WIDTH }}
 								getItemLayout={(data, index) => ({
 									length: SCREEN_WIDTH,
 									offset: SCREEN_WIDTH * index,
@@ -455,6 +436,17 @@ export default function WordPreviewPage() {
 					</View>
 				)}
 
+				{/* Category Stats */}
+				<View style={styles.statsSection}>
+					<View style={styles.statsRow}>
+						{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string }][]).map(([key, config]) => (
+							<View key={key} style={[styles.statsItem, { backgroundColor: config.color }]}>
+								<Text style={styles.statsLabel}>{config.label}</Text>
+								<Text style={styles.statsCount}>{categoryCounts[key as keyof typeof categoryCounts]}</Text>
+							</View>
+						))}
+					</View>
+				</View>
 			</View>
 		</Screen>
 	);
@@ -661,8 +653,42 @@ const styles = StyleSheet.create({
 		opacity: 0.8,
 		marginTop: 2,
 	},
+	statsSection: {
+		backgroundColor: '#FFFFFF',
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderTopWidth: 1,
+		borderTopColor: '#F3F4F6',
+	},
+	statsRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 10,
+	},
+	statsItem: {
+		flex: 1,
+		borderRadius: 10,
+		paddingVertical: 8,
+		alignItems: 'center',
+	},
+	statsLabel: {
+		fontSize: 11,
+		color: '#FFFFFF',
+		opacity: 0.9,
+	},
+	statsCount: {
+		fontSize: 16,
+		fontWeight: '700',
+		color: '#FFFFFF',
+		marginTop: 2,
+	},
 	dragHintContainer: {
 		marginTop: 16,
+		paddingVertical: 8,
+		paddingHorizontal: 16,
+		backgroundColor: '#EBF5FF',
+		borderRadius: 8,
+		alignItems: 'center',
 	},
 	dragHintText: {
 		fontSize: 13,
