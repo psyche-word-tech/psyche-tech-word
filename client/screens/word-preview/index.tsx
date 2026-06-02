@@ -7,7 +7,7 @@ interface Word {
 	id: string;
 	word: string;
 	phonetic: string;
-	definition: string;
+	meaning: string;
 	example_image_url?: string;
 }
 
@@ -173,7 +173,7 @@ export default function WordPreviewScreen() {
 										style={styles.wordCard}
 									>
 										<Text style={styles.wordText}>{word.word}</Text>
-										<Text style={styles.definitionText}>{word.definition}</Text>
+										<Text style={styles.definitionText}>{word.meaning}</Text>
 									</View>
 								);
 							})}
