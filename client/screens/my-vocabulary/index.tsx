@@ -46,7 +46,11 @@ export default function MyVocabularyScreen() {
   };
 
   useEffect(() => {
-    loadWordBooks();
+    const init = async () => {
+
+      await loadWordBooks();
+    };
+    init();
   }, []);
 
   const handleLearnPress = (book: WordBook) => {

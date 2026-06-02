@@ -43,7 +43,7 @@ export default function AnimatedSplash() {
 
   useEffect(() => {
     // 立即隐藏系统原生启动页，让自定义飞入动画接管
-    SplashScreen.hideAsync().catch(() => {});
+    SplashScreen.hideAsync()
 
     // 第一个：左上角飞入
     topLeftX.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
