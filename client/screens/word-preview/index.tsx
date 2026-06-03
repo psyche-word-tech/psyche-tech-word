@@ -4,12 +4,10 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  PanResponder,
   ActivityIndicator,
   ScrollView,
   Modal,
   useWindowDimensions,
-  Pressable,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +20,12 @@ const CATEGORIES = [
   { key: "known", label: "已会", color: "#22c55e", lightColor: "#dcfce7" },
   { key: "fuzzy", label: "模糊", color: "#f97316", lightColor: "#ffedd5" },
   { key: "unknown", label: "不会", color: "#ef4444", lightColor: "#fee2e2" },
+];
+
+const DROP_ZONES = [
+  { key: "known", id: "drop-known" },
+  { key: "fuzzy", id: "drop-fuzzy" },
+  { key: "unknown", id: "drop-unknown" },
 ];
 
 type Word = {
@@ -37,6 +41,14 @@ type WordStatus = {
   known: Word[];
   fuzzy: Word[];
   unknown: Word[];
+};
+
+type DragState = {
+  active: boolean;
+  word: Word | null;
+  startX: number;
+  startY: number;
+  isClick: boolean;
 };
 
 export default function WordPreviewScreen() {
@@ -56,30 +68,19 @@ export default function WordPreviewScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalCategory, setModalCategory] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
-  // Button refs for drop detection
-  const buttonRefs = useRef<Array<View | null>>([null, null, null]);
-  const buttonLayouts = useRef<
-    Array<{ x: number; y: number; width: number; height: number } | null>
-  >([null, null, null]);
-
-  // Animated values for drag
-  const dragAnim = useRef(new Animated.ValueXY()).current;
-  const dragScale = useRef(new Animated.Value(1)).current;
+  // Drag state
+  const dragStateRef = useRef<DragState>({
+    active: false,
+    word: null,
+    startX: 0,
+    startY: 0,
+    isClick: true,
+  });
   const [dragWord, setDragWord] = useState<Word | null>(null);
-  const dragIndex = useRef<number>(-1);
-
-  // Measure button positions
-  const measureButtons = useCallback(() => {
-    buttonRefs.current.forEach((ref, index) => {
-      if (ref) {
-        ref.measureInWindow((x, y, width, height) => {
-          buttonLayouts.current[index] = { x, y, width, height };
-        });
-      }
-    });
-  }, []);
+  const dragAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const dragScale = useRef(new Animated.Value(1)).current;
+  const floatOrigin = useRef({ x: 0, y: 0 });
 
   const fetchData = useCallback(async () => {
     try {
@@ -101,128 +102,126 @@ export default function WordPreviewScreen() {
   useEffect(() => {
     if (!didInit.current) {
       didInit.current = true;
-      fetchWithRetry(`/api/words?table=${TABLE}`).then(async (res: Response) => {
-        const data = (await res.json()) || [];
-        setAllWords(data);
-        setQueue(data);
-        setLoading(false);
-      }).catch(() => setLoading(false));
+      fetchData();
     }
-  }, [TABLE]);
+  }, [fetchData]);
 
-  // Re-measure buttons on layout changes
-  useEffect(() => {
-    const timer = setTimeout(measureButtons, 500);
-    return () => clearTimeout(timer);
-  }, [measureButtons, queue]);
+  const classify = useCallback((word: Word, category: string) => {
+    setQueue((prev) => prev.filter((w) => w.id !== word.id));
+    setStatus((prev) => ({
+      ...prev,
+      [category]: [...prev[category as keyof WordStatus], word],
+    }));
+  }, []);
 
-  const getDropCategory = useCallback(
-    (cardCenterX: number, cardCenterY: number) => {
-      for (let i = 0; i < buttonLayouts.current.length; i++) {
-        const layout = buttonLayouts.current[i];
-        if (!layout) continue;
-        if (
-          cardCenterX >= layout.x &&
-          cardCenterX <= layout.x + layout.width &&
-          cardCenterY >= layout.y &&
-          cardCenterY <= layout.y + layout.height
-        ) {
-          return CATEGORIES[i].key;
-        }
+  const getCategoryFromPoint = useCallback(
+    (clientX: number, clientY: number): string | null => {
+      if (typeof document === "undefined") return null;
+      const el = document.elementFromPoint(clientX, clientY);
+      let target: Element | null = el;
+      while (target) {
+        const id = target.id;
+        if (id === "drop-known") return "known";
+        if (id === "drop-fuzzy") return "fuzzy";
+        if (id === "drop-unknown") return "unknown";
+        target = target.parentElement;
       }
       return null;
     },
     []
   );
 
-  const classify = useCallback(
-    (word: Word, category: string) => {
-      setQueue((prev) => prev.filter((w) => w.id !== word.id));
-      setStatus((prev) => ({
-        ...prev,
-        [category]: [...prev[category as keyof WordStatus], word],
-      }));
-    },
-    []
-  );
+  // Global pointer handlers for reliable drag on Web
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const handleCardPress = useCallback(
-    (word: Word) => {
-      if (!isDragging) {
-        router.push(`/word-detail?word=${encodeURIComponent(word.word)}`);
+    const handleMove = (e: PointerEvent) => {
+      const state = dragStateRef.current;
+      if (!state.active) return;
+
+      const dx = e.clientX - state.startX;
+      const dy = e.clientY - state.startY;
+
+      // If moved more than 8px, treat as drag not click
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        state.isClick = false;
       }
-    },
-    [isDragging, router]
-  );
 
-  const createPanResponder = useCallback(
-    (word: Word, index: number) => {
-      return PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gesture) => {
-          return Math.abs(gesture.dy) > 5 || Math.abs(gesture.dx) > 5;
-        },
-        onPanResponderGrant: () => {
-          dragIndex.current = index;
-          setDragWord(word);
-          setIsDragging(true);
-          dragScale.setValue(1.1);
-        },
-        onPanResponderMove: (_, gesture) => {
-          dragAnim.setValue({ x: gesture.dx, y: gesture.dy });
-        },
-        onPanResponderRelease: (_, gesture) => {
-          const cardWidth = width > 500 ? 300 : (width - 48) / 3;
-          const cardCenterX =
-            16 + cardWidth * index + cardWidth / 2 + gesture.dx;
-          const cardTopY = 80 + gesture.dy;
-          const cardCenterY = cardTopY + 140;
+      // Use setValue for instant updates (no animation delay)
+      dragAnim.setValue({ x: dx, y: dy });
+    };
 
-          const category = getDropCategory(cardCenterX, cardCenterY);
+    const handleUp = (e: PointerEvent) => {
+      const state = dragStateRef.current;
+      if (!state.active) return;
 
-          if (category && gesture.dy > 20) {
-            // Drop on button - classify
-            Animated.timing(dragAnim, {
-              toValue: { x: 0, y: 200 },
-              duration: 200,
-              useNativeDriver: false,
-            }).start(() => {
-              classify(word, category);
-              dragAnim.setValue({ x: 0, y: 0 });
-              dragScale.setValue(1);
-              setDragWord(null);
-              setIsDragging(false);
-              dragIndex.current = -1;
-            });
-          } else {
-            // Snap back
-            Animated.spring(dragAnim, {
-              toValue: { x: 0, y: 0 },
-              useNativeDriver: false,
-            }).start(() => {
-              dragAnim.setValue({ x: 0, y: 0 });
-              dragScale.setValue(1);
-              setDragWord(null);
-              setIsDragging(false);
-              dragIndex.current = -1;
-            });
-          }
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(dragAnim, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-          }).start(() => {
-            dragAnim.setValue({ x: 0, y: 0 });
-            dragScale.setValue(1);
-            setDragWord(null);
-            setIsDragging(false);
-            dragIndex.current = -1;
-          });
-        },
+      dragStateRef.current.active = false;
+
+      if (state.isClick) {
+        // Short press without significant movement → navigate to detail
+        if (state.word) {
+          router.push(
+            `/word-detail?word=${encodeURIComponent(state.word.word)}`
+          );
+        }
+      } else {
+        // Drag release → check drop target
+        const category = getCategoryFromPoint(e.clientX, e.clientY);
+        if (category && state.word) {
+          classify(state.word, category);
+        }
+      }
+
+      // Reset animation
+      Animated.spring(dragAnim, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false,
+        friction: 5,
+      }).start(() => {
+        setDragWord(null);
+        dragScale.setValue(1);
       });
-    },
-    [width, dragAnim, dragScale, getDropCategory, classify]
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+    };
+  }, [classify, getCategoryFromPoint, router, dragAnim, dragScale]);
+
+  const handlePointerDown = useCallback(
+    (word: Word) =>
+      (e: any) => {
+        const native = e.nativeEvent;
+        const clientX = native.clientX ?? native.pageX ?? 0;
+        const clientY = native.clientY ?? native.pageY ?? 0;
+
+        dragStateRef.current = {
+          active: true,
+          word,
+          startX: clientX,
+          startY: clientY,
+          isClick: true,
+        };
+
+        // Set float card origin so it follows the finger precisely
+        const phoneWidth = width > 500 ? 375 : width;
+        const cw = (phoneWidth - 48) / 3;
+        floatOrigin.current = {
+          x: clientX - cw / 2,
+          y: clientY - 90,
+        };
+
+        setDragWord(word);
+        dragScale.setValue(1.08);
+        dragAnim.setValue({ x: 0, y: 0 });
+      },
+    [width, dragAnim, dragScale]
   );
 
   const currentCards = queue.slice(0, 3);
@@ -240,10 +239,73 @@ export default function WordPreviewScreen() {
   const cardWidth = (phoneWidth - 48) / 3;
 
   return (
-    <View
-      className="flex-1"
-      style={{ backgroundColor: "#f3f4f6" }}
-    >
+    <View className="flex-1" style={{ backgroundColor: "#f3f4f6" }}>
+      {/* Floating drag card (rendered above everything) */}
+      {dragWord && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: floatOrigin.current.x,
+            top: floatOrigin.current.y,
+            width: cardWidth,
+            zIndex: 999,
+            transform: [
+              { translateX: dragAnim.x },
+              { translateY: dragAnim.y },
+              { scale: dragScale },
+            ],
+            opacity: 0.96,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 12,
+              padding: 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.22,
+              shadowRadius: 14,
+              elevation: 10,
+              minHeight: 180,
+              borderWidth: 2,
+              borderColor: "#3b82f6",
+            }}
+          >
+            <Text
+              className="text-xs text-gray-400 text-right mb-2"
+              style={{ userSelect: "none" }}
+            >
+              拖动中…
+            </Text>
+            <Text
+              className="text-lg font-bold text-gray-900 mb-1"
+              style={{ userSelect: "none" }}
+            >
+              {dragWord.word}
+            </Text>
+            {dragWord.phonetic && (
+              <Text
+                className="text-xs text-gray-500 mb-2"
+                style={{ userSelect: "none" }}
+              >
+                {dragWord.phonetic}
+              </Text>
+            )}
+            {dragWord.meaning && (
+              <Text
+                className="text-sm text-blue-600"
+                style={{ userSelect: "none" }}
+              >
+                {dragWord.meaning}
+                {dragWord.pos ? ` (${dragWord.pos})` : ""}
+              </Text>
+            )}
+          </View>
+        </Animated.View>
+      )}
+
       <View className="flex-1" style={{ alignItems: "center" }}>
         <View
           className="flex-1 bg-white"
@@ -300,22 +362,22 @@ export default function WordPreviewScreen() {
             </View>
           ) : (
             <>
-              {/* Card area */}
-              <View className="px-4 pt-4">
+              {/* Cards */}
+              <View className="px-4 pt-4 flex-1 justify-center">
                 <View className="flex-row justify-between">
                   {currentCards.map((word, index) => {
-                    const panResponder = createPanResponder(word, index);
                     const isDraggingThis = dragWord?.id === word.id;
-
                     return (
-                      <Animated.View
+                      <View
                         key={word.id}
-                        {...panResponder.panHandlers}
+                        onPointerDown={handlePointerDown(word)}
                         style={[
                           {
                             width: cardWidth,
                             minHeight: 180,
-                            backgroundColor: "#ffffff",
+                            backgroundColor: isDraggingThis
+                              ? "#f3f4f6"
+                              : "#ffffff",
                             borderRadius: 12,
                             padding: 12,
                             shadowColor: "#000",
@@ -323,60 +385,41 @@ export default function WordPreviewScreen() {
                             shadowOpacity: 0.08,
                             shadowRadius: 6,
                             elevation: 3,
+                            opacity: isDraggingThis ? 0.35 : 1,
                           },
-                          isDraggingThis
-                            ? {
-                                transform: [
-                                  {
-                                    translateX: dragAnim.x as any,
-                                  },
-                                  {
-                                    translateY: dragAnim.y as any,
-                                  },
-                                  { scale: dragScale as any },
-                                ],
-                                zIndex: 100,
-                              }
-                            : {},
                         ]}
                       >
-                        {/* Disable text selection */}
-                        <Pressable
-                          onPress={() => handleCardPress(word)}
+                        <Text
+                          className="text-xs text-gray-400 text-right mb-2"
                           style={{ userSelect: "none" }}
                         >
+                          {allWords.length - queue.length + index + 1} /{" "}
+                          {allWords.length}
+                        </Text>
+                        <Text
+                          className="text-lg font-bold text-gray-900 mb-1"
+                          style={{ userSelect: "none" }}
+                        >
+                          {word.word}
+                        </Text>
+                        {word.phonetic && (
                           <Text
-                            className="text-xs text-gray-400 text-right mb-2"
+                            className="text-xs text-gray-500 mb-2"
                             style={{ userSelect: "none" }}
                           >
-                            {allWords.length - queue.length + index + 1} /{" "}
-                            {allWords.length}
+                            {word.phonetic}
                           </Text>
+                        )}
+                        {word.meaning && (
                           <Text
-                            className="text-lg font-bold text-gray-900 mb-1"
+                            className="text-sm text-blue-600"
                             style={{ userSelect: "none" }}
                           >
-                            {word.word}
+                            {word.meaning}
+                            {word.pos ? ` (${word.pos})` : ""}
                           </Text>
-                          {word.phonetic && (
-                            <Text
-                              className="text-xs text-gray-500 mb-2"
-                              style={{ userSelect: "none" }}
-                            >
-                              {word.phonetic}
-                            </Text>
-                          )}
-                          {word.meaning && (
-                            <Text
-                              className="text-sm text-blue-600"
-                              style={{ userSelect: "none" }}
-                            >
-                              {word.meaning}
-                              {word.pos ? ` (${word.pos})` : ""}
-                            </Text>
-                          )}
-                        </Pressable>
-                      </Animated.View>
+                        )}
+                      </View>
                     );
                   })}
                 </View>
@@ -388,19 +431,16 @@ export default function WordPreviewScreen() {
                 )}
               </View>
 
-              {/* Buttons area */}
-              <View
-                className="px-4 pt-8 pb-4"
-                onLayout={measureButtons}
-              >
+              {/* Drop buttons */}
+              <View className="px-4 pt-6 pb-4">
                 <Text className="text-xs text-gray-400 text-center mb-4">
                   拖动单词到下方按钮分类
                 </Text>
                 <View className="flex-row justify-between">
-                  {CATEGORIES.map((cat, index) => (
+                  {CATEGORIES.map((cat) => (
                     <View
                       key={cat.key}
-                      ref={(ref) => { buttonRefs.current[index] = ref; }}
+                      nativeID={`drop-${cat.key}`}
                       style={{
                         flex: 1,
                         marginHorizontal: 4,
