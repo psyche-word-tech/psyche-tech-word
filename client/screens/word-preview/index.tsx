@@ -16,7 +16,12 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { fetchWithRetry } from '@/utils/apiClient';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// 固定手机尺寸
+const PHONE_WIDTH = 375;
+const PHONE_HEIGHT = 812;
+
+const { width: WINDOW_WIDTH } = Dimensions.get('window');
+const SCREEN_WIDTH = PHONE_WIDTH;
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 3;
 const CARD_GAP = 12; // 卡片间距
 
@@ -324,7 +329,8 @@ export default function WordPreviewPage() {
 
 	return (
 		<Screen>
-			<View style={styles.container}>
+			<View style={styles.phoneWrapper}>
+				<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
 					<TouchableOpacity
@@ -436,14 +442,31 @@ export default function WordPreviewPage() {
 
 
 			</View>
+			</View>
 		</Screen>
 	);
 }
 
 const styles = StyleSheet.create({
+	phoneWrapper: {
+		flex: 1,
+		backgroundColor: '#1F2937',
+		alignItems: 'center',
+		justifyContent: 'center',
+		paddingVertical: 20,
+	},
 	container: {
+		width: PHONE_WIDTH,
+		maxHeight: PHONE_HEIGHT,
 		flex: 1,
 		backgroundColor: '#F3F4F6',
+		borderRadius: 40,
+		overflow: 'hidden',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 10 },
+		shadowOpacity: 0.3,
+		shadowRadius: 20,
+		elevation: 20,
 	},
 	header: {
 		backgroundColor: '#FFFFFF',
