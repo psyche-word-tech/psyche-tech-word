@@ -1,0 +1,14 @@
+[build]
+  command = "cd client && npx expo export --platform web"
+  publish = "client/dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://word-voyage-api-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
