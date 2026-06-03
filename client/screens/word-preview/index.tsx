@@ -22,12 +22,6 @@ const CATEGORIES = [
   { key: "unknown", label: "不会", color: "#ef4444", lightColor: "#fee2e2" },
 ];
 
-const DROP_ZONES = [
-  { key: "known", id: "drop-known" },
-  { key: "fuzzy", id: "drop-fuzzy" },
-  { key: "unknown", id: "drop-unknown" },
-];
-
 type Word = {
   id: number;
   word: string;
@@ -41,14 +35,6 @@ type WordStatus = {
   known: Word[];
   fuzzy: Word[];
   unknown: Word[];
-};
-
-type DragState = {
-  active: boolean;
-  word: Word | null;
-  startX: number;
-  startY: number;
-  isClick: boolean;
 };
 
 export default function WordPreviewScreen() {
@@ -69,18 +55,23 @@ export default function WordPreviewScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modalCategory, setModalCategory] = useState<string | null>(null);
 
-  // Drag state
-  const dragStateRef = useRef<DragState>({
-    active: false,
-    word: null,
-    startX: 0,
-    startY: 0,
-    isClick: true,
-  });
+  // Drag visual state
   const [dragWord, setDragWord] = useState<Word | null>(null);
   const dragAnim = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const dragScale = useRef(new Animated.Value(1)).current;
   const floatOrigin = useRef({ x: 0, y: 0 });
+
+  // Drag logic stored in ref to avoid re-renders during gesture
+  const dragRef = useRef<{
+    active: boolean;
+    word: Word | null;
+    startX: number;
+    startY: number;
+    isClick: boolean;
+  }>({ active: false, word: null, startX: 0, startY: 0, isClick: true });
+
+  // Prevent duplicate handling when both touch and pointer events fire
+  const gestureLock = useRef(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -114,114 +105,199 @@ export default function WordPreviewScreen() {
     }));
   }, []);
 
-  const getCategoryFromPoint = useCallback(
+  // Detect which drop zone the pointer is over using getBoundingClientRect
+  const detectDropZone = useCallback(
     (clientX: number, clientY: number): string | null => {
       if (typeof document === "undefined") return null;
-      const el = document.elementFromPoint(clientX, clientY);
-      let target: Element | null = el;
-      while (target) {
-        const id = target.id;
-        if (id === "drop-known") return "known";
-        if (id === "drop-fuzzy") return "fuzzy";
-        if (id === "drop-unknown") return "unknown";
-        target = target.parentElement;
+      const zones = [
+        { id: "drop-known", key: "known" },
+        { id: "drop-fuzzy", key: "fuzzy" },
+        { id: "drop-unknown", key: "unknown" },
+      ];
+      for (const zone of zones) {
+        const el = document.getElementById(zone.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (
+            clientX >= rect.left &&
+            clientX <= rect.right &&
+            clientY >= rect.top &&
+            clientY <= rect.bottom
+          ) {
+            return zone.key;
+          }
+        }
       }
       return null;
     },
     []
   );
 
-  // Global pointer handlers for reliable drag on Web
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // Start drag or tap
+  const startGesture = useCallback(
+    (word: Word, clientX: number, clientY: number) => {
+      if (gestureLock.current) return;
+      gestureLock.current = true;
 
-    const handleMove = (e: PointerEvent) => {
-      const state = dragStateRef.current;
+      dragRef.current = {
+        active: true,
+        word,
+        startX: clientX,
+        startY: clientY,
+        isClick: true,
+      };
+
+      const phoneWidth = width > 500 ? 375 : width;
+      const cw = (phoneWidth - 48) / 3;
+      floatOrigin.current = {
+        x: clientX - cw / 2,
+        y: clientY - 90,
+      };
+
+      setDragWord(word);
+      dragScale.setValue(1.08);
+      dragAnim.setValue({ x: 0, y: 0 });
+    },
+    [width, dragAnim, dragScale]
+  );
+
+  // Move during drag
+  const moveGesture = useCallback(
+    (clientX: number, clientY: number) => {
+      const state = dragRef.current;
       if (!state.active) return;
 
-      const dx = e.clientX - state.startX;
-      const dy = e.clientY - state.startY;
+      const dx = clientX - state.startX;
+      const dy = clientY - state.startY;
 
-      // If moved more than 8px, treat as drag not click
-      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      // 20px threshold to distinguish tap from drag
+      if (Math.abs(dx) > 20 || Math.abs(dy) > 20) {
         state.isClick = false;
       }
 
-      // Use setValue for instant updates (no animation delay)
       dragAnim.setValue({ x: dx, y: dy });
-    };
+    },
+    [dragAnim]
+  );
 
-    const handleUp = (e: PointerEvent) => {
-      const state = dragStateRef.current;
+  // End drag or tap
+  const endGesture = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!gestureLock.current) return;
+      gestureLock.current = false;
+
+      const state = dragRef.current;
       if (!state.active) return;
 
-      dragStateRef.current.active = false;
+      dragRef.current.active = false;
 
       if (state.isClick) {
-        // Short press without significant movement → navigate to detail
+        // Tap → detail page
+        setDragWord(null);
+        dragScale.setValue(1);
         if (state.word) {
           router.push(
             `/word-detail?word=${encodeURIComponent(state.word.word)}`
           );
         }
-      } else {
-        // Drag release → check drop target
-        const category = getCategoryFromPoint(e.clientX, e.clientY);
-        if (category && state.word) {
-          classify(state.word, category);
-        }
+        return;
       }
 
-      // Reset animation
-      Animated.spring(dragAnim, {
-        toValue: { x: 0, y: 0 },
-        useNativeDriver: false,
-        friction: 5,
-      }).start(() => {
+      // Drag release → classify if over a button
+      const category = detectDropZone(clientX, clientY);
+      if (category && state.word) {
         setDragWord(null);
         dragScale.setValue(1);
-      });
+        classify(state.word, category);
+      } else {
+        // Snap back
+        Animated.spring(dragAnim, {
+          toValue: { x: 0, y: 0 },
+          useNativeDriver: false,
+          friction: 5,
+        }).start(() => {
+          setDragWord(null);
+          dragScale.setValue(1);
+        });
+      }
+    },
+    [classify, detectDropZone, router, dragAnim, dragScale]
+  );
+
+  // Global touch handlers (most reliable on mobile browsers)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) moveGesture(t.clientX, t.clientY);
     };
 
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    window.addEventListener("pointercancel", handleUp);
+    const onTouchEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      if (t) endGesture(t.clientX, t.clientY);
+    };
+
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchEnd);
 
     return () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-      window.removeEventListener("pointercancel", handleUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [classify, getCategoryFromPoint, router, dragAnim, dragScale]);
+  }, [moveGesture, endGesture]);
 
-  const handlePointerDown = useCallback(
+  // Global pointer handlers (for desktop / stylus)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onPointerMove = (e: PointerEvent) => {
+      moveGesture(e.clientX, e.clientY);
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      endGesture(e.clientX, e.clientY);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [moveGesture, endGesture]);
+
+  const handleTouchStartCard = useCallback(
     (word: Word) =>
       (e: any) => {
+        // Prevent browser default scrolling / text-selection on the card
+        if (e.preventDefault) e.preventDefault();
+
         const native = e.nativeEvent;
-        const clientX = native.clientX ?? native.pageX ?? 0;
-        const clientY = native.clientY ?? native.pageY ?? 0;
-
-        dragStateRef.current = {
-          active: true,
-          word,
-          startX: clientX,
-          startY: clientY,
-          isClick: true,
-        };
-
-        // Set float card origin so it follows the finger precisely
-        const phoneWidth = width > 500 ? 375 : width;
-        const cw = (phoneWidth - 48) / 3;
-        floatOrigin.current = {
-          x: clientX - cw / 2,
-          y: clientY - 90,
-        };
-
-        setDragWord(word);
-        dragScale.setValue(1.08);
-        dragAnim.setValue({ x: 0, y: 0 });
+        const touch = native.touches?.[0] ?? native;
+        const clientX = touch.clientX ?? 0;
+        const clientY = touch.clientY ?? 0;
+        startGesture(word, clientX, clientY);
       },
-    [width, dragAnim, dragScale]
+    [startGesture]
+  );
+
+  const handlePointerDownCard = useCallback(
+    (word: Word) =>
+      (e: any) => {
+        if (e.preventDefault) e.preventDefault();
+
+        const native = e.nativeEvent;
+        const clientX = native.clientX ?? 0;
+        const clientY = native.clientY ?? 0;
+        startGesture(word, clientX, clientY);
+      },
+    [startGesture]
   );
 
   const currentCards = queue.slice(0, 3);
@@ -240,7 +316,7 @@ export default function WordPreviewScreen() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: "#f3f4f6" }}>
-      {/* Floating drag card (rendered above everything) */}
+      {/* Floating drag card */}
       {dragWord && (
         <Animated.View
           pointerEvents="none"
@@ -362,15 +438,16 @@ export default function WordPreviewScreen() {
             </View>
           ) : (
             <>
-              {/* Cards */}
-              <View className="px-4 pt-4 flex-1 justify-center">
+              {/* Cards + Buttons grouped together and centred vertically */}
+              <View className="flex-1 justify-center px-4">
                 <View className="flex-row justify-between">
                   {currentCards.map((word, index) => {
                     const isDraggingThis = dragWord?.id === word.id;
                     return (
                       <View
                         key={word.id}
-                        onPointerDown={handlePointerDown(word)}
+                        onTouchStart={handleTouchStartCard(word)}
+                        onPointerDown={handlePointerDownCard(word)}
                         style={[
                           {
                             width: cardWidth,
@@ -386,6 +463,7 @@ export default function WordPreviewScreen() {
                             shadowRadius: 6,
                             elevation: 3,
                             opacity: isDraggingThis ? 0.35 : 1,
+                            touchAction: "none",
                           },
                         ]}
                       >
@@ -425,17 +503,16 @@ export default function WordPreviewScreen() {
                 </View>
 
                 {remaining > 0 && (
-                  <Text className="text-xs text-gray-400 text-center mt-3">
+                  <Text className="text-xs text-gray-400 text-center mt-3 mb-2">
                     还有{remaining}个单词待分类
                   </Text>
                 )}
-              </View>
 
-              {/* Drop buttons */}
-              <View className="px-4 pt-6 pb-4">
-                <Text className="text-xs text-gray-400 text-center mb-4">
+                <Text className="text-xs text-gray-400 text-center mt-4 mb-3">
                   拖动单词到下方按钮分类
                 </Text>
+
+                {/* Drop buttons */}
                 <View className="flex-row justify-between">
                   {CATEGORIES.map((cat) => (
                     <View
