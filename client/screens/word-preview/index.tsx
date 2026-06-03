@@ -6,11 +6,11 @@ import {
 	Dimensions,
 	TouchableOpacity,
 	Animated,
-	PanResponder,
 	Alert,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { fetchWithRetry } from '@/utils/apiClient';
@@ -38,124 +38,170 @@ const CATEGORY_CONFIG = {
 	z: { label: '不会', color: '#F44336', route: '/unknown-words' as const },
 };
 
+interface ButtonLayout {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
 // 每个单词卡片用的拖动逻辑
 function DraggableWordCard({
 	word,
 	index,
 	total,
 	onClassify,
+	onShowDetail,
+	buttonLayouts,
 }: {
 	word: Word;
 	index: number;
 	total: number;
 	onClassify: (word: Word, target: string) => void;
+	onShowDetail: (word: Word) => void;
+	buttonLayouts: React.MutableRefObject<Record<string, ButtonLayout>>;
 }) {
-	const pan = useRef(new Animated.ValueXY()).current;
+	const translateX = useRef(new Animated.Value(0)).current;
+	const translateY = useRef(new Animated.Value(0)).current;
 	const [isDragging, setIsDragging] = useState(false);
 	const [dropTarget, setDropTarget] = useState<string | null>(null);
+	const cardRef = useRef<View>(null);
+	const pressStartTime = useRef(0);
+	const pressStartPos = useRef({ x: 0, y: 0 });
 
-	const panResponder = useRef(
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => true,
-			onMoveShouldSetPanResponder: (_evt, gestureState) => {
-				return Math.abs(gestureState.dy) > 5 || Math.abs(gestureState.dx) > 5;
-			},
-			onPanResponderGrant: () => {
-				setIsDragging(true);
-				pan.setValue({ x: 0, y: 0 });
-			},
-			onPanResponderMove: (_evt, gestureState) => {
-				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+	// 检测卡片中心是否在按钮区域内
+	const checkDropTarget = useCallback((): Promise<string | null> => {
+		return new Promise((resolve) => {
+			if (!cardRef.current) {
+				resolve(null);
+				return;
+			}
+			cardRef.current.measureInWindow((cardX, cardY, cardW, cardH) => {
+				const centerX = cardX + cardW / 2;
+				const centerY = cardY + cardH / 2;
 
-				// 简单检测：向下拖动超过150px认为是要分类
-				if (gestureState.dy > 150) {
-					// 根据水平位置判断目标按钮
-					const screenWidth = PHONE_WIDTH;
-					const third = screenWidth / 3;
-					const cardCenterX = screenWidth / 2 + gestureState.dx;
-					if (cardCenterX < third) {
-						setDropTarget('x');
-					} else if (cardCenterX < third * 2) {
-						setDropTarget('y');
-					} else {
-						setDropTarget('z');
+				for (const [key, layout] of Object.entries(buttonLayouts.current)) {
+					if (
+						centerX >= layout.x &&
+						centerX <= layout.x + layout.width &&
+						centerY >= layout.y &&
+						centerY <= layout.y + layout.height
+					) {
+						resolve(key);
+						return;
 					}
-				} else {
-					setDropTarget(null);
 				}
-			},
-			onPanResponderRelease: (_evt, gestureState) => {
-				setIsDragging(false);
-				const target = dropTarget;
-				setDropTarget(null);
+				resolve(null);
+			});
+		});
+	}, [buttonLayouts]);
 
-				if (target && gestureState.dy > 150) {
-					onClassify(word, target);
-					// 直接消失，不回弹
-				} else {
-					// 回弹
-					Animated.spring(pan, {
-						toValue: { x: 0, y: 0 },
-						useNativeDriver: false,
-						friction: 5,
-					}).start();
-				}
-			},
-			onPanResponderTerminate: () => {
+	const onGestureEvent = Animated.event(
+		[{ nativeEvent: { translationX: translateX, translationY: translateY } }],
+		{ useNativeDriver: false }
+	);
+
+	const onHandlerStateChange = useCallback(
+		(event: any) => {
+			const { state, translationX, translationY, absoluteX, absoluteY } = event.nativeEvent;
+
+			if (state === State.BEGAN) {
+				pressStartTime.current = Date.now();
+				pressStartPos.current = { x: absoluteX, y: absoluteY };
+			}
+
+			if (state === State.ACTIVE) {
+				setIsDragging(true);
+			}
+
+			if (state === State.END || state === State.CANCELLED) {
 				setIsDragging(false);
+				const duration = Date.now() - pressStartTime.current;
+				const moved = Math.abs(translationX) > 8 || Math.abs(translationY) > 8;
+
+				// 短按 = 显示详情
+				if (!moved && duration < 250) {
+					setDropTarget(null);
+					onShowDetail(word);
+					return;
+				}
+
+				// 向下拖动 = 分类
+				if (translationY > 60) {
+					checkDropTarget().then((target) => {
+						setDropTarget(null);
+						if (target) {
+							onClassify(word, target);
+						} else {
+							// 回弹
+							Animated.parallel([
+								Animated.spring(translateX, { toValue: 0, useNativeDriver: false, friction: 5 }),
+								Animated.spring(translateY, { toValue: 0, useNativeDriver: false, friction: 5 }),
+							]).start();
+						}
+					});
+					return;
+				}
+
+				// 回弹
 				setDropTarget(null);
-				Animated.spring(pan, {
-					toValue: { x: 0, y: 0 },
-					useNativeDriver: false,
-					friction: 5,
-				}).start();
-			},
-		})
-	).current;
+				Animated.parallel([
+					Animated.spring(translateX, { toValue: 0, useNativeDriver: false, friction: 5 }),
+					Animated.spring(translateY, { toValue: 0, useNativeDriver: false, friction: 5 }),
+				]).start();
+			}
+		},
+		[word, onClassify, onShowDetail, checkDropTarget, translateX, translateY]
+	);
 
 	return (
-		<Animated.View
-			style={[
-				styles.wordCard,
-				isDragging && styles.wordCardDragging,
-				{
-					transform: [
-						{ translateX: pan.x },
-						{ translateY: pan.y },
-						{ scale: isDragging ? 1.05 : 1 },
-					],
-					opacity: isDragging ? 0.95 : 1,
-					zIndex: isDragging ? 100 : 1,
-				},
-			]}
-			{...panResponder.panHandlers}
+		<PanGestureHandler
+			onGestureEvent={onGestureEvent}
+			onHandlerStateChange={onHandlerStateChange}
 		>
-			<View style={styles.cardHeader}>
-				<Text style={styles.indexText}>{index + 1} / {total}</Text>
-			</View>
-
-			<Text style={styles.wordText}>{word.word}</Text>
-			<Text style={styles.phoneticText}>{word.phonetic}</Text>
-			<Text style={styles.meaningText}>{word.meaning}</Text>
-
-			{word.example && (
-				<View style={styles.exampleSection}>
-					<View style={styles.divider} />
-					<Text style={styles.exampleText}>{word.example}</Text>
-					{word.example_translation && (
-						<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
-					)}
+			<Animated.View
+				ref={cardRef}
+				style={[
+					styles.wordCard,
+					isDragging && styles.wordCardDragging,
+					{
+						transform: [
+							{ translateX },
+							{ translateY },
+							{ scale: isDragging ? 1.05 : 1 },
+						],
+						opacity: isDragging ? 0.95 : 1,
+						zIndex: isDragging ? 100 : 1,
+					},
+				]}
+			>
+				<View style={styles.cardHeader}>
+					<Text style={styles.indexText}>{index + 1} / {total}</Text>
 				</View>
-			)}
 
-			{isDragging && dropTarget && (
-				<View style={[styles.dropHint, { backgroundColor: CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].color }]}>
-					<Text style={styles.dropHintText}>
-						松手放入「{CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].label}」
-					</Text>
-				</View>
-			)}
-		</Animated.View>
+				<Text style={styles.wordText}>{word.word}</Text>
+				<Text style={styles.phoneticText}>{word.phonetic}</Text>
+				<Text style={styles.meaningText}>{word.meaning}</Text>
+
+				{word.example && (
+					<View style={styles.exampleSection}>
+						<View style={styles.divider} />
+						<Text style={styles.exampleText}>{word.example}</Text>
+						{word.example_translation && (
+							<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
+						)}
+					</View>
+				)}
+
+				{isDragging && dropTarget && (
+					<View style={[styles.dropHint, { backgroundColor: CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].color }]}>
+						<Text style={styles.dropHintText}>
+							松手放入「{CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].label}」
+						</Text>
+					</View>
+				)}
+			</Animated.View>
+		</PanGestureHandler>
 	);
 }
 
@@ -166,6 +212,35 @@ export default function WordPreviewPage() {
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+
+	// 按钮布局缓存
+	const buttonRefs = useRef<Record<string, View | null>>({ x: null, y: null, z: null });
+	const buttonLayouts = useRef<Record<string, ButtonLayout>>({});
+
+	// 测量按钮位置
+	const measureButtons = useCallback(() => {
+		Object.entries(buttonRefs.current).forEach(([key, ref]) => {
+			if (ref) {
+				ref.measureInWindow((x, y, width, height) => {
+					buttonLayouts.current[key] = { x, y, width, height };
+				});
+			}
+		});
+	}, []);
+
+	useEffect(() => {
+		// 延迟测量，确保布局完成
+		const timer = setTimeout(measureButtons, 500);
+		return () => clearTimeout(timer);
+	}, [measureButtons, categoryCounts]);
+
+	// 窗口大小变化时重新测量
+	useEffect(() => {
+		const sub = Dimensions.addEventListener('change', () => {
+			setTimeout(measureButtons, 300);
+		});
+		return () => sub?.remove();
+	}, [measureButtons]);
 
 	// 获取单词
 	const fetchWords = useCallback(async () => {
@@ -242,6 +317,11 @@ export default function WordPreviewPage() {
 		}
 	}, [fetchCategoryCounts]);
 
+	// 点击显示详情
+	const handleShowDetail = useCallback((word: Word) => {
+		router.push('/word-detail', { word });
+	}, [router]);
+
 	// 当前显示的3个单词
 	const displayWords = words.slice(0, 3);
 	const remainingCount = Math.max(0, words.length - 3);
@@ -295,9 +375,10 @@ export default function WordPreviewPage() {
 										index={index}
 										total={words.length}
 										onClassify={handleClassify}
+										onShowDetail={handleShowDetail}
+										buttonLayouts={buttonLayouts}
 									/>
 									))}
-									{/* 占位卡片，保持3个位置 */}
 									{displayWords.length < 3 &&
 										Array.from({ length: 3 - displayWords.length }).map((_, i) => (
 											<View key={`placeholder-${i}`} style={[styles.wordCard, styles.placeholderCard]} />
@@ -320,35 +401,36 @@ export default function WordPreviewPage() {
 							)}
 						</View>
 
-						{/* Action Buttons - Drop Targets */}
-						{displayWords.length > 0 && (
-							<View style={styles.actionSection}>
-								<Text style={styles.actionHint}>拖动单词到下方按钮分类，长按按钮查看列表</Text>
-								<View style={styles.actionRow}>
-									{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; route: string }][]).map(
-										([key, config]) => (
-											<TouchableOpacity
-												key={key}
-												style={[styles.actionButton, { backgroundColor: config.color }]}
-												onLongPress={() => navigateToCategory(config.route)}
-												delayLongPress={600}
-												activeOpacity={0.8}
-											>
-												<Text style={styles.actionButtonText}>{config.label}</Text>
-												<Text style={styles.actionButtonCount}>
-													({categoryCounts[key as keyof typeof categoryCounts]})
-												</Text>
-											</TouchableOpacity>
-											)
-										)}
-								</View>
+					{/* Action Buttons - Drop Targets */}
+					{displayWords.length > 0 && (
+						<View style={styles.actionSection}>
+							<Text style={styles.actionHint}>拖动单词到下方按钮分类，长按按钮查看列表</Text>
+							<View style={styles.actionRow}>
+								{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; route: string }][]).map(
+									([key, config]) => (
+										<TouchableOpacity
+											key={key}
+											ref={(ref) => { buttonRefs.current[key] = ref; }}
+											style={[styles.actionButton, { backgroundColor: config.color }]}
+											onLongPress={() => navigateToCategory(config.route)}
+											delayLongPress={600}
+											activeOpacity={0.8}
+										>
+											<Text style={styles.actionButtonText}>{config.label}</Text>
+											<Text style={styles.actionButtonCount}>
+												({categoryCounts[key as keyof typeof categoryCounts]})
+											</Text>
+										</TouchableOpacity>
+									)
+									)}
 							</View>
-						)}
-					</View>
+						</View>
+					)}
 				</View>
-			</Screen>
-		);
-	}
+			</View>
+		</Screen>
+	);
+}
 
 const styles = StyleSheet.create({
 	phoneWrapper: {
