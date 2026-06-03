@@ -17,7 +17,8 @@ import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { fetchWithRetry } from '@/utils/apiClient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 32;
+const CARD_WIDTH = (SCREEN_WIDTH - 48) / 3;
+const CARD_GAP = 12; // 卡片间距
 
 interface Word {
 	id: number;
@@ -233,13 +234,16 @@ export default function WordPreviewPage() {
 	// 渲染单词卡片
 	const renderWordCard = useCallback(({ item, index }: { item: Word; index: number }) => {
 		const isCurrent = index === currentIndex;
+		const distance = Math.abs(index - currentIndex);
+		const isSide = distance === 1;
 
 		return (
-			<View style={styles.cardContainer}>
+			<View style={[styles.cardContainer, { width: CARD_WIDTH + CARD_GAP }]}>
 				{isCurrent ? (
 					<Animated.View
 						style={[
 							styles.wordCard,
+							styles.wordCardCurrent,
 							{
 								transform: [
 									{ translateX: pan.x },
@@ -286,22 +290,13 @@ export default function WordPreviewPage() {
 						)}
 					</Animated.View>
 				) : (
-					<View style={styles.wordCard}>
+					<View style={[styles.wordCard, isSide ? styles.wordCardSide : styles.wordCardHidden]}>
 						<View style={styles.cardHeader}>
 							<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
 						</View>
-						<Text style={styles.wordText}>{item.word}</Text>
-						<Text style={styles.phoneticText}>{item.phonetic}</Text>
-						<Text style={styles.meaningText}>{item.meaning}</Text>
-						{item.example && (
-							<View style={styles.exampleSection}>
-								<View style={styles.divider} />
-								<Text style={styles.exampleText}>{item.example}</Text>
-								{item.example_translation && (
-									<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
-								)}
-							</View>
-						)}
+						<Text style={[styles.wordText, isSide ? {} : { fontSize: 16 }]}>{item.word}</Text>
+						{isSide && <Text style={styles.phoneticText}>{item.phonetic}</Text>}
+						{isSide && <Text style={styles.meaningText}>{item.meaning}</Text>}
 					</View>
 				)}
 			</View>
@@ -311,9 +306,9 @@ export default function WordPreviewPage() {
 	// 处理滚动事件
 	const handleScroll = useCallback((event: any) => {
 		const offsetX = event.nativeEvent.contentOffset.x;
-		const newIndex = Math.round(offsetX / SCREEN_WIDTH);
-		setCurrentIndex(newIndex);
-	}, []);
+		const newIndex = Math.round(offsetX / (CARD_WIDTH + CARD_GAP));
+		setCurrentIndex(Math.min(Math.max(newIndex, 0), words.length - 1));
+	}, [words.length]);
 
 	// 当前单词
 	const currentWord = words[currentIndex];
@@ -366,17 +361,18 @@ export default function WordPreviewPage() {
 								renderItem={renderWordCard}
 								keyExtractor={(item) => item.id.toString()}
 								horizontal
-								pagingEnabled
 								showsHorizontalScrollIndicator={false}
 								onScroll={handleScroll}
 								scrollEventThrottle={16}
-								contentContainerStyle={{ width: SCREEN_WIDTH * words.length }}
+								contentContainerStyle={{ paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 }}
 								style={{ width: SCREEN_WIDTH }}
 								getItemLayout={(data, index) => ({
-									length: SCREEN_WIDTH,
-									offset: SCREEN_WIDTH * index,
+									length: CARD_WIDTH + CARD_GAP,
+									offset: (CARD_WIDTH + CARD_GAP) * index,
 									index,
 								})}
+								snapToInterval={CARD_WIDTH + CARD_GAP}
+								decelerationRate="fast"
 							/>
 
 							{/* Page Indicator */}
@@ -438,17 +434,7 @@ export default function WordPreviewPage() {
 					</View>
 				)}
 
-				{/* Category Stats */}
-				<View style={styles.statsSection}>
-					<View style={styles.statsRow}>
-						{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string }][]).map(([key, config]) => (
-							<View key={key} style={[styles.statsItem, { backgroundColor: config.color }]}>
-								<Text style={styles.statsLabel}>{config.label}</Text>
-								<Text style={styles.statsCount}>{categoryCounts[key as keyof typeof categoryCounts]}</Text>
-							</View>
-						))}
-					</View>
-				</View>
+
 			</View>
 		</Screen>
 	);
@@ -501,22 +487,39 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	cardContainer: {
-		width: SCREEN_WIDTH,
-		paddingHorizontal: 16,
 		justifyContent: 'center',
 		alignItems: 'center',
+		paddingHorizontal: CARD_GAP / 2,
 	},
 	wordCard: {
 		width: CARD_WIDTH,
 		backgroundColor: '#FFFFFF',
 		borderRadius: 20,
-		padding: 28,
+		padding: 20,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.06,
 		shadowRadius: 8,
 		elevation: 4,
-		minHeight: 320,
+		minHeight: 280,
+	},
+	wordCardCurrent: {
+		transform: [{ scale: 1 }],
+		shadowOpacity: 0.12,
+		shadowRadius: 12,
+		elevation: 8,
+	},
+	wordCardSide: {
+		opacity: 0.6,
+		transform: [{ scale: 0.9 }],
+		minHeight: 240,
+		padding: 16,
+	},
+	wordCardHidden: {
+		opacity: 0.2,
+		transform: [{ scale: 0.8 }],
+		minHeight: 200,
+		padding: 12,
 	},
 	cardHeader: {
 		flexDirection: 'row',
@@ -655,35 +658,7 @@ const styles = StyleSheet.create({
 		opacity: 0.8,
 		marginTop: 2,
 	},
-	statsSection: {
-		backgroundColor: '#FFFFFF',
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-		borderTopWidth: 1,
-		borderTopColor: '#F3F4F6',
-	},
-	statsRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		gap: 10,
-	},
-	statsItem: {
-		flex: 1,
-		borderRadius: 10,
-		paddingVertical: 8,
-		alignItems: 'center',
-	},
-	statsLabel: {
-		fontSize: 11,
-		color: '#FFFFFF',
-		opacity: 0.9,
-	},
-	statsCount: {
-		fontSize: 16,
-		fontWeight: '700',
-		color: '#FFFFFF',
-		marginTop: 2,
-	},
+
 	dragHintContainer: {
 		marginTop: 16,
 		paddingVertical: 8,
