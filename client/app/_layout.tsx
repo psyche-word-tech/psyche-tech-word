@@ -3,8 +3,8 @@ import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogBox } from 'react-native';
-import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from '@/components/Provider';
 import { ApiConfigProvider } from '@/contexts/ApiConfigContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -20,6 +20,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ApiConfigProvider>
       <AuthProvider>
         <Provider>
@@ -61,5 +62,6 @@ export default function RootLayout() {
       </Provider>
       </AuthProvider>
     </ApiConfigProvider>
+    </GestureHandlerRootView>
   );
 }
