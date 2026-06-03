@@ -4,7 +4,6 @@ import {
 	Text,
 	StyleSheet,
 	Dimensions,
-	FlatList,
 	TouchableOpacity,
 	Animated,
 	PanResponder,
@@ -16,14 +15,11 @@ import { Screen } from '@/components/Screen';
 import { useSafeRouter, useSafeSearchParams } from '@/hooks/useSafeRouter';
 import { fetchWithRetry } from '@/utils/apiClient';
 
+const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
+
 // 固定手机尺寸
 const PHONE_WIDTH = 375;
 const PHONE_HEIGHT = 812;
-
-const { width: WINDOW_WIDTH } = Dimensions.get('window');
-const SCREEN_WIDTH = PHONE_WIDTH;
-const CARD_WIDTH = (SCREEN_WIDTH - 48) / 3;
-const CARD_GAP = 12; // 卡片间距
 
 interface Word {
 	id: number;
@@ -42,42 +38,146 @@ const CATEGORY_CONFIG = {
 	z: { label: '不会', color: '#F44336', route: '/unknown-words' as const },
 };
 
+// 每个单词卡片用的拖动逻辑
+function DraggableWordCard({
+	word,
+	index,
+	total,
+	onClassify,
+}: {
+	word: Word;
+	index: number;
+	total: number;
+	onClassify: (word: Word, target: string) => void;
+}) {
+	const pan = useRef(new Animated.ValueXY()).current;
+	const [isDragging, setIsDragging] = useState(false);
+	const [dropTarget, setDropTarget] = useState<string | null>(null);
+
+	const panResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onMoveShouldSetPanResponder: (_evt, gestureState) => {
+				return Math.abs(gestureState.dy) > 5 || Math.abs(gestureState.dx) > 5;
+			},
+			onPanResponderGrant: () => {
+				setIsDragging(true);
+				pan.setValue({ x: 0, y: 0 });
+			},
+			onPanResponderMove: (_evt, gestureState) => {
+				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+
+				// 简单检测：向下拖动超过150px认为是要分类
+				if (gestureState.dy > 150) {
+					// 根据水平位置判断目标按钮
+					const screenWidth = PHONE_WIDTH;
+					const third = screenWidth / 3;
+					const cardCenterX = screenWidth / 2 + gestureState.dx;
+					if (cardCenterX < third) {
+						setDropTarget('x');
+					} else if (cardCenterX < third * 2) {
+						setDropTarget('y');
+					} else {
+						setDropTarget('z');
+					}
+				} else {
+					setDropTarget(null);
+				}
+			},
+			onPanResponderRelease: (_evt, gestureState) => {
+				setIsDragging(false);
+				const target = dropTarget;
+				setDropTarget(null);
+
+				if (target && gestureState.dy > 150) {
+					onClassify(word, target);
+					// 直接消失，不回弹
+				} else {
+					// 回弹
+					Animated.spring(pan, {
+						toValue: { x: 0, y: 0 },
+						useNativeDriver: false,
+						friction: 5,
+					}).start();
+				}
+			},
+			onPanResponderTerminate: () => {
+				setIsDragging(false);
+				setDropTarget(null);
+				Animated.spring(pan, {
+					toValue: { x: 0, y: 0 },
+					useNativeDriver: false,
+					friction: 5,
+				}).start();
+			},
+		})
+	).current;
+
+	return (
+		<Animated.View
+			style={[
+				styles.wordCard,
+				isDragging && styles.wordCardDragging,
+				{
+					transform: [
+						{ translateX: pan.x },
+						{ translateY: pan.y },
+						{ scale: isDragging ? 1.05 : 1 },
+					],
+					opacity: isDragging ? 0.95 : 1,
+					zIndex: isDragging ? 100 : 1,
+				},
+			]}
+			{...panResponder.panHandlers}
+		>
+			<View style={styles.cardHeader}>
+				<Text style={styles.indexText}>{index + 1} / {total}</Text>
+			</View>
+
+			<Text style={styles.wordText}>{word.word}</Text>
+			<Text style={styles.phoneticText}>{word.phonetic}</Text>
+			<Text style={styles.meaningText}>{word.meaning}</Text>
+
+			{word.example && (
+				<View style={styles.exampleSection}>
+					<View style={styles.divider} />
+					<Text style={styles.exampleText}>{word.example}</Text>
+					{word.example_translation && (
+						<Text style={styles.exampleTranslation}>{word.example_translation}</Text>
+					)}
+				</View>
+			)}
+
+			{isDragging && dropTarget && (
+				<View style={[styles.dropHint, { backgroundColor: CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].color }]}>
+					<Text style={styles.dropHintText}>
+						松手放入「{CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG].label}」
+					</Text>
+				</View>
+			)}
+		</Animated.View>
+	);
+}
+
 export default function WordPreviewPage() {
 	const router = useSafeRouter();
 	const params = useSafeSearchParams<{ category?: string; categoryId?: string }>();
 	const [words, setWords] = useState<Word[]>([]);
-	const [currentIndex, setCurrentIndex] = useState(0);
 	const [categoryCounts, setCategoryCounts] = useState({ x: 0, y: 0, z: 0 });
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const flatListRef = useRef<FlatList>(null);
 
-	// 拖拽动画
-	const pan = useRef(new Animated.ValueXY()).current;
-	const [isDragging, setIsDragging] = useState(false);
-	const [dropTarget, setDropTarget] = useState<string | null>(null);
-	// 用于防止拖拽释放时意外触发按钮的 onPress
-	const dragJustEnded = useRef(false);
-
-	// 按钮区域引用和布局
-	const buttonRefs = useRef<{ [key: string]: View | null }>({}).current;
-	const [buttonLayouts, setButtonLayouts] = useState<{
-		[key: string]: { x: number; y: number; width: number; height: number };
-	}>({});
-
-	// 获取 words_b 的单词
+	// 获取单词
 	const fetchWords = useCallback(async () => {
 		try {
 			setIsLoading(true);
 			setError(null);
-
 			const response = await fetchWithRetry(`/api/v1/user-words/category/a?page=1&limit=200`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			const data = await response.json();
 			setWords(data);
-			setCurrentIndex(0);
 		} catch (error: any) {
 			console.error('Failed to fetch words:', error);
 			setError(error.message || '获取单词列表失败');
@@ -94,13 +194,11 @@ export default function WordPreviewPage() {
 				fetchWithRetry(`/api/v1/user-words/category/y/count`),
 				fetchWithRetry(`/api/v1/user-words/category/z/count`),
 			]);
-
 			const [xData, yData, zData] = await Promise.all([
 				xRes.json(),
 				yRes.json(),
 				zRes.json(),
 			]);
-
 			setCategoryCounts({
 				x: xData.count || 0,
 				y: yData.count || 0,
@@ -111,7 +209,6 @@ export default function WordPreviewPage() {
 		}
 	}, []);
 
-	// 页面获得焦点时获取数据
 	useFocusEffect(
 		useCallback(() => {
 			fetchWords();
@@ -119,210 +216,40 @@ export default function WordPreviewPage() {
 		}, [fetchWords, fetchCategoryCounts])
 	);
 
-	// 移动单词到分类
-	const handleMoveWord = useCallback(async (word: Word, targetTable: string) => {
+	// 分类单词
+	const handleClassify = useCallback(async (word: Word, targetTable: string) => {
 		try {
-			console.log('[handleMoveWord] Moving word:', word.id, word.word, 'to', targetTable);
 			const response = await fetchWithRetry(`/api/v1/user-words/classify`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					wordId: word.id,
-					targetTable: targetTable
-				})
+					targetTable: targetTable,
+				}),
 			});
 
 			const result = await response.json();
-			console.log('[handleMoveWord] Response:', response.status, result);
-
 			if (!response.ok) {
 				throw new Error(result.error || '移动失败');
 			}
 
-			// 从列表中移除当前单词
-			const newWords = words.filter(w => w.id !== word.id);
-			setWords(newWords);
-
-			// 更新索引
-			if (currentIndex >= newWords.length && newWords.length > 0) {
-				setCurrentIndex(newWords.length - 1);
-			}
-
-			// 更新分类数量
+			// 从列表中移除
+			setWords(prev => prev.filter(w => w.id !== word.id));
 			fetchCategoryCounts();
 		} catch (error) {
 			console.error('Failed to move word:', error);
 			Alert.alert('错误', '移动失败，请重试');
 		}
-	}, [words, currentIndex, fetchCategoryCounts]);
+	}, [fetchCategoryCounts]);
 
-	// 检测拖拽释放位置是否在按钮区域内
-	const detectDropTarget = useCallback((moveX: number, moveY: number): string | null => {
-		for (const [key, layout] of Object.entries(buttonLayouts)) {
-			if (
-				moveX >= layout.x &&
-				moveX <= layout.x + layout.width &&
-				moveY >= layout.y &&
-				moveY <= layout.y + layout.height
-			) {
-				return key;
-			}
-		}
-		return null;
-	}, [buttonLayouts]);
-
-	// PanResponder 用于拖拽当前卡片
-	const panResponder = useRef(
-		PanResponder.create({
-			onMoveShouldSetPanResponder: (evt, gestureState) => {
-				// 只有垂直方向移动超过 10px 才捕获
-				return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
-			},
-			onPanResponderGrant: () => {
-				setIsDragging(true);
-				pan.setValue({ x: 0, y: 0 });
-			},
-			onPanResponderMove: (evt, gestureState) => {
-				pan.setValue({ x: gestureState.dx, y: gestureState.dy });
-
-				// 实时检测悬停的按钮（使用 pageX/pageY 更可靠）
-				const pageX = evt.nativeEvent.pageX;
-				const pageY = evt.nativeEvent.pageY;
-				const target = detectDropTarget(pageX, pageY);
-				setDropTarget(target);
-			},
-			onPanResponderRelease: (evt, gestureState) => {
-				setIsDragging(false);
-					// 标记拖拽刚刚结束，防止触发按钮 onPress
-					dragJustEnded.current = true;
-					setTimeout(() => { dragJustEnded.current = false; }, 200);
-				// 使用 pageX/pageY 获取全局坐标
-				const pageX = evt.nativeEvent.pageX;
-				const pageY = evt.nativeEvent.pageY;
-				console.log('[Drag] Release pageX:', pageX, 'pageY:', pageY);
-				console.log('[Drag] gestureState moveX:', gestureState.moveX, 'moveY:', gestureState.moveY);
-				console.log('[Drag] Button layouts:', JSON.stringify(buttonLayouts));
-				const target = detectDropTarget(pageX, pageY);
-				console.log('[Drag] Detected target:', target);
-				setDropTarget(null);
-
-				if (target && currentWord) {
-					console.log('[Drag] Calling handleMoveWord for', currentWord.word, 'id=', currentWord.id, 'target=', target);
-					// 执行分类
-					handleMoveWord(currentWord, target);
-				} else {
-					console.log('[Drag] No drop target or no currentWord. target=', target, 'currentWord=', currentWord?.word);
-				}
-
-				// 移除后直接消失，不回弹
-			},
-			onPanResponderTerminate: () => {
-				setIsDragging(false);
-				setDropTarget(null);
-				// 移除后不回弹
-			},
-		})
-	).current;
-
-	// 按钮布局回调
-	const onButtonLayout = useCallback((key: string) => (event: any) => {
-		const layout = event.nativeEvent.layout;
-		// 使用 measure 获取相对于屏幕的绝对位置
-		buttonRefs[key]?.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
-			setButtonLayouts(prev => ({
-				...prev,
-				[key]: { x: px, y: py, width, height }
-			}));
-		});
-	}, [buttonRefs]);
-
-	// 渲染单词卡片
-	const renderWordCard = useCallback(({ item, index }: { item: Word; index: number }) => {
-		const isCurrent = index === currentIndex;
-		const distance = Math.abs(index - currentIndex);
-		const isSide = distance === 1;
-
-		return (
-			<View style={[styles.cardContainer, { width: CARD_WIDTH + CARD_GAP }]}>
-				{isCurrent ? (
-					<Animated.View
-						style={[
-							styles.wordCard,
-							styles.wordCardCurrent,
-							{
-								transform: [
-									{ translateX: pan.x },
-									{ translateY: pan.y },
-								],
-								opacity: isDragging ? 0.9 : 1,
-								zIndex: isDragging ? 100 : 1,
-							},
-						]}
-						{...panResponder.panHandlers}
-					>
-						{/* Page number */}
-						<View style={styles.cardHeader}>
-							<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
-						</View>
-
-						{/* Word */}
-						<Text style={styles.wordText}>{item.word}</Text>
-
-						{/* Phonetic */}
-						<Text style={styles.phoneticText}>{item.phonetic}</Text>
-
-						{/* Meaning */}
-						<Text style={styles.meaningText}>{item.meaning}</Text>
-
-						{/* Divider + Example */}
-						{item.example && (
-							<View style={styles.exampleSection}>
-								<View style={styles.divider} />
-								<Text style={styles.exampleText}>{item.example}</Text>
-								{item.example_translation && (
-									<Text style={styles.exampleTranslation}>{item.example_translation}</Text>
-								)}
-							</View>
-						)}
-
-						{/* Drag hint */}
-						{isDragging && (
-							<View style={styles.dragHintContainer}>
-								<Text style={styles.dragHintText}>
-									{dropTarget ? `松手放入${CATEGORY_CONFIG[dropTarget as keyof typeof CATEGORY_CONFIG]?.label || ''}` : '拖动到下方按钮'}
-								</Text>
-							</View>
-						)}
-					</Animated.View>
-				) : (
-					<View style={[styles.wordCard, isSide ? styles.wordCardSide : styles.wordCardHidden]}>
-						<View style={styles.cardHeader}>
-							<Text style={styles.indexText}>{index + 1} / {words.length}</Text>
-						</View>
-						<Text style={[styles.wordText, isSide ? {} : { fontSize: 16 }]}>{item.word}</Text>
-						{isSide && <Text style={styles.phoneticText}>{item.phonetic}</Text>}
-						{isSide && <Text style={styles.meaningText}>{item.meaning}</Text>}
-					</View>
-				)}
-			</View>
-		);
-	}, [words.length, currentIndex, isDragging, dropTarget, pan, panResponder.panHandlers]);
-
-	// 处理滚动事件
-	const handleScroll = useCallback((event: any) => {
-		const offsetX = event.nativeEvent.contentOffset.x;
-		const newIndex = Math.round(offsetX / (CARD_WIDTH + CARD_GAP));
-		setCurrentIndex(Math.min(Math.max(newIndex, 0), words.length - 1));
-	}, [words.length]);
-
-	// 当前单词
-	const currentWord = words[currentIndex];
+	// 当前显示的3个单词
+	const displayWords = words.slice(0, 3);
+	const remainingCount = Math.max(0, words.length - 3);
 
 	const headerSubtitle = params.category
 		? `${params.category} · ${words.length} 个单词`
 		: `${words.length} 个单词待分类`;
 
-	// 导航到分类列表
 	const navigateToCategory = useCallback((route: string) => {
 		router.push(route);
 	}, [router]);
@@ -331,121 +258,97 @@ export default function WordPreviewPage() {
 		<Screen>
 			<View style={styles.phoneWrapper}>
 				<View style={styles.container}>
-				{/* Header */}
-				<View style={styles.header}>
-					<TouchableOpacity
-						style={styles.backButton}
-						onPress={() => {
-							if (router.canGoBack && router.canGoBack()) {
-								router.back();
-							} else {
-								router.replace('/');
-							}
-						}}
-						activeOpacity={0.6}
-					>
-						<FontAwesome6 name="arrow-left" size={18} color="#1F2937" />
-					</TouchableOpacity>
-					<View style={styles.headerLeft}>
-						<Text style={styles.headerTitle}>词汇预览</Text>
-						<Text style={styles.headerCount}>
-							{isLoading ? '加载中...' : headerSubtitle}
-						</Text>
+					{/* Header */}
+					<View style={styles.header}>
+						<TouchableOpacity
+							style={styles.backButton}
+							onPress={() => {
+								if (router.canGoBack && router.canGoBack()) {
+									router.back();
+								} else {
+									router.replace('/');
+								}
+							}}
+							activeOpacity={0.6}
+						>
+							<FontAwesome6 name="arrow-left" size={18} color="#1F2937" />
+						</TouchableOpacity>
+						<View style={styles.headerLeft}>
+							<Text style={styles.headerTitle}>词汇预览</Text>
+							<Text style={styles.headerCount}>
+								{isLoading ? '加载中...' : headerSubtitle}
+							</Text>
+						</View>
+						<TouchableOpacity style={styles.refreshButton} onPress={fetchWords}>
+							<Text style={styles.refreshText}>刷新</Text>
+						</TouchableOpacity>
 					</View>
-					<TouchableOpacity style={styles.refreshButton} onPress={fetchWords}>
-						<Text style={styles.refreshText}>刷新</Text>
-					</TouchableOpacity>
-				</View>
 
-				{/* Word Cards - Horizontal Scroll */}
-				<View style={styles.cardsSection}>
-					{words.length > 0 ? (
-						<>
-							<FlatList
-								ref={flatListRef}
-								data={words}
-								renderItem={renderWordCard}
-								keyExtractor={(item) => item.id.toString()}
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								onScroll={handleScroll}
-								scrollEventThrottle={16}
-								contentContainerStyle={{ paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 }}
-								style={{ width: SCREEN_WIDTH }}
-								getItemLayout={(data, index) => ({
-									length: CARD_WIDTH + CARD_GAP,
-									offset: (CARD_WIDTH + CARD_GAP) * index,
-									index,
-								})}
-								snapToInterval={CARD_WIDTH + CARD_GAP}
-								decelerationRate="fast"
-							/>
-
-							{/* Page Indicator */}
-							<View style={styles.indicatorContainer}>
-								{words.map((_, index) => (
-									<View
-										key={index}
-										style={[
-											styles.indicatorDot,
-											index === currentIndex && styles.indicatorDotActive,
-										]}
+					{/* Word Cards - Fixed 3 cards */}
+					<View style={styles.cardsSection}>
+						{displayWords.length > 0 ? (
+							<View style={styles.cardsRow}>
+								{displayWords.map((word, index) => (
+									<DraggableWordCard
+										key={word.id}
+										word={word}
+										index={index}
+										total={words.length}
+										onClassify={handleClassify}
 									/>
-								))}
-							</View>
-						</>
-					) : (
-						<View style={styles.emptyContainer}>
-							{error ? (
-								<>
-									<Text style={styles.errorText}>加载失败: {error}</Text>
-								</>
+									))}
+									{/* 占位卡片，保持3个位置 */}
+									{displayWords.length < 3 &&
+										Array.from({ length: 3 - displayWords.length }).map((_, i) => (
+											<View key={`placeholder-${i}`} style={[styles.wordCard, styles.placeholderCard]} />
+										))}
+								</View>
 							) : (
-								<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+								<View style={styles.emptyContainer}>
+									{error ? (
+										<Text style={styles.errorText}>加载失败: {error}</Text>
+									) : (
+										<Text style={styles.emptyText}>所有单词已分类完成！</Text>
+									)}
+								</View>
+							)}
+
+							{remainingCount > 0 && (
+								<Text style={styles.remainingText}>
+									还有 {remainingCount} 个单词待分类
+								</Text>
 							)}
 						</View>
-					)}
-				</View>
 
-				{/* Action Buttons - Drop Targets */}
-				{currentWord && (
-					<View style={styles.actionSection}>
-						<Text style={styles.actionHint}>
-							{isDragging ? '松手放入对应分类' : '长按拖动单词到按钮分类，单击按钮查看列表'}
-						</Text>
-						<View style={styles.actionRow}>
-							{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; route: string }][]).map(([key, config]) => (
-								<TouchableOpacity
-									key={key}
-									ref={(ref) => { buttonRefs[key] = ref; }}
-									onLayout={onButtonLayout(key)}
-									style={[
-										styles.actionButton,
-										{ backgroundColor: config.color },
-										dropTarget === key && styles.actionButtonActive,
-									]}
-									onPress={() => {
-										if (dragJustEnded.current) return;
-										navigateToCategory(config.route);
-									}}
-									activeOpacity={0.8}
-								>
-									<Text style={styles.actionButtonText}>{config.label}</Text>
-									<Text style={styles.actionButtonCount}>
-										({categoryCounts[key as keyof typeof categoryCounts]})
-									</Text>
-								</TouchableOpacity>
-							))}
-						</View>
+						{/* Action Buttons - Drop Targets */}
+						{displayWords.length > 0 && (
+							<View style={styles.actionSection}>
+								<Text style={styles.actionHint}>拖动单词到下方按钮分类，长按按钮查看列表</Text>
+								<View style={styles.actionRow}>
+									{(Object.entries(CATEGORY_CONFIG) as [string, { label: string; color: string; route: string }][]).map(
+										([key, config]) => (
+											<TouchableOpacity
+												key={key}
+												style={[styles.actionButton, { backgroundColor: config.color }]}
+												onLongPress={() => navigateToCategory(config.route)}
+												delayLongPress={600}
+												activeOpacity={0.8}
+											>
+												<Text style={styles.actionButtonText}>{config.label}</Text>
+												<Text style={styles.actionButtonCount}>
+													({categoryCounts[key as keyof typeof categoryCounts]})
+												</Text>
+											</TouchableOpacity>
+											)
+										)}
+								</View>
+							</View>
+						)}
 					</View>
-				)}
-
-
-			</View>
-			</View>
-		</Screen>
-	);
-}
+				</View>
+			</Screen>
+		);
+	}
 
 const styles = StyleSheet.create({
 	phoneWrapper: {
@@ -507,112 +410,106 @@ const styles = StyleSheet.create({
 	},
 	cardsSection: {
 		flex: 1,
-		justifyContent: 'center',
+		paddingHorizontal: 12,
+		paddingTop: 16,
 	},
-	cardContainer: {
-		justifyContent: 'center',
-		alignItems: 'center',
-		paddingHorizontal: CARD_GAP / 2,
+	cardsRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 8,
 	},
 	wordCard: {
-		width: CARD_WIDTH,
+		flex: 1,
 		backgroundColor: '#FFFFFF',
-		borderRadius: 20,
-		padding: 20,
+		borderRadius: 16,
+		padding: 12,
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.06,
 		shadowRadius: 8,
 		elevation: 4,
 		minHeight: 280,
+		maxWidth: (PHONE_WIDTH - 40) / 3,
 	},
-	wordCardCurrent: {
-		transform: [{ scale: 1 }],
-		shadowOpacity: 0.12,
-		shadowRadius: 12,
-		elevation: 8,
+	wordCardDragging: {
+		shadowOpacity: 0.2,
+		shadowRadius: 16,
+		elevation: 12,
 	},
-	wordCardSide: {
-		opacity: 0.6,
-		transform: [{ scale: 0.9 }],
-		minHeight: 240,
-		padding: 16,
-	},
-	wordCardHidden: {
-		opacity: 0.2,
-		transform: [{ scale: 0.8 }],
-		minHeight: 200,
-		padding: 12,
+	placeholderCard: {
+		backgroundColor: '#E5E7EB',
+		opacity: 0.5,
 	},
 	cardHeader: {
 		flexDirection: 'row',
 		justifyContent: 'flex-end',
-		marginBottom: 12,
+		marginBottom: 8,
 	},
 	indexText: {
-		fontSize: 13,
+		fontSize: 11,
 		color: '#9CA3AF',
 		fontWeight: '500',
 	},
 	wordText: {
-		fontSize: 40,
+		fontSize: 22,
 		fontWeight: '800',
 		color: '#1F2937',
 		textAlign: 'center',
-		marginTop: 8,
+		marginTop: 4,
 	},
 	phoneticText: {
-		fontSize: 16,
+		fontSize: 12,
 		color: '#6B7280',
-		marginTop: 10,
+		marginTop: 6,
 		textAlign: 'center',
 	},
 	meaningText: {
-		fontSize: 15,
+		fontSize: 13,
 		color: '#3B82F6',
-		marginTop: 20,
+		marginTop: 12,
 		textAlign: 'center',
-		lineHeight: 24,
+		lineHeight: 20,
 		fontWeight: '500',
 	},
 	exampleSection: {
-		marginTop: 24,
+		marginTop: 16,
 	},
 	divider: {
 		height: 1,
 		backgroundColor: '#E5E7EB',
-		marginBottom: 16,
+		marginBottom: 10,
 	},
 	exampleText: {
-		fontSize: 14,
+		fontSize: 11,
 		color: '#9CA3AF',
-		lineHeight: 22,
+		lineHeight: 18,
 		textAlign: 'center',
 		fontStyle: 'italic',
 	},
 	exampleTranslation: {
+		fontSize: 10,
+		color: '#9CA3AF',
+		lineHeight: 16,
+		textAlign: 'center',
+		marginTop: 4,
+	},
+	dropHint: {
+		marginTop: 12,
+		paddingVertical: 6,
+		paddingHorizontal: 8,
+		borderRadius: 6,
+		alignItems: 'center',
+	},
+	dropHintText: {
+		fontSize: 11,
+		color: '#FFFFFF',
+		fontWeight: '600',
+	},
+	remainingText: {
 		fontSize: 13,
 		color: '#9CA3AF',
-		lineHeight: 20,
 		textAlign: 'center',
-		marginTop: 6,
-	},
-	indicatorContainer: {
-		flexDirection: 'row',
-		justifyContent: 'center',
-		alignItems: 'center',
-		paddingVertical: 16,
-		gap: 8,
-	},
-	indicatorDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: '#D1D5DB',
-	},
-	indicatorDotActive: {
-		width: 24,
-		backgroundColor: '#3B82F6',
+		marginTop: 12,
 	},
 	emptyContainer: {
 		padding: 48,
@@ -641,6 +538,7 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.08,
 		shadowRadius: 12,
 		elevation: 10,
+		marginTop: 'auto',
 	},
 	actionHint: {
 		fontSize: 12,
@@ -651,7 +549,7 @@ const styles = StyleSheet.create({
 	actionRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		gap: 12,
+		gap: 10,
 	},
 	actionButton: {
 		flex: 1,
@@ -660,15 +558,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderWidth: 2,
 		borderColor: 'transparent',
-	},
-	actionButtonActive: {
-		borderColor: '#FFFFFF',
-		transform: [{ scale: 1.05 }],
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 8,
 	},
 	actionButtonText: {
 		fontSize: 15,
@@ -680,19 +569,5 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		opacity: 0.8,
 		marginTop: 2,
-	},
-
-	dragHintContainer: {
-		marginTop: 16,
-		paddingVertical: 8,
-		paddingHorizontal: 16,
-		backgroundColor: '#EBF5FF',
-		borderRadius: 8,
-		alignItems: 'center',
-	},
-	dragHintText: {
-		fontSize: 13,
-		color: '#3B82F6',
-		fontWeight: '600',
 	},
 });
