@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "word": "ubiquitous",
+    "phonetic": "/juːˈbɪkwɪtəs/",
+    "meaning": "无处不在的；普遍的",
+    "created_at": "2026-04-23T16:07:17.192555",
+    "example": "Smartphones have become ubiquitous.",
+    "example_translation": "智能手机已经变得无处不在。"
+  },
+  {
+    "id": 2,
+    "word": "resilient",
+    "phonetic": "/rɪˈzɪliənt/",
+    "meaning": "有弹性的；适应力强的",
+    "created_at": "2026-04-23T16:07:17.192555",
+    "example": "Children are often very resilient.",
+    "example_translation": "孩子们通常很有适应力。"
+  }
+]
