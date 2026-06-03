@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
       return;
     }
     
-    res.json({ data: data as Word[] });
+    res.json(data as Word[]);
   } catch (err) {
     console.error('Error fetching words:', err);
     res.status(500).json({ error: 'Internal server error' });

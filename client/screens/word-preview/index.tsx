@@ -53,6 +53,7 @@ export default function WordPreviewScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [modalCategory, setModalCategory] = useState<string | null>(null);
 
   // Drag visual state
@@ -76,13 +77,15 @@ export default function WordPreviewScreen() {
   const fetchData = useCallback(async () => {
     try {
       setRefreshing(true);
-      const res = await fetchWithRetry(`/api/words?table=${TABLE}`);
+      setError(null);
+      const res = await fetchWithRetry(`/api/v1/words?table=${TABLE}`);
       const data = (await res.json()) || [];
       setAllWords(data);
       setQueue(data);
       setStatus({ known: [], fuzzy: [], unknown: [] });
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "加载失败，请检查网络连接");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -96,6 +99,24 @@ export default function WordPreviewScreen() {
       fetchData();
     }
   }, [fetchData]);
+
+  const loadMockData = useCallback(() => {
+    const mock: Word[] = [
+      { id: 1, word: "abandon", phonetic: "/əˈbændən/", meaning: "v. 放弃，遗弃" },
+      { id: 2, word: "ability", phonetic: "/əˈbɪləti/", meaning: "n. 能力，才能" },
+      { id: 3, word: "absolute", phonetic: "/ˈæbsəluːt/", meaning: "adj. 绝对的，完全的" },
+      { id: 4, word: "academic", phonetic: "/ˌækəˈdemɪk/", meaning: "adj. 学术的，理论的" },
+      { id: 5, word: "accept", phonetic: "/əkˈsept/", meaning: "v. 接受，认可" },
+      { id: 6, word: "access", phonetic: "/ˈækses/", meaning: "n. 进入，通道" },
+      { id: 7, word: "accident", phonetic: "/ˈæksɪdənt/", meaning: "n. 事故，意外" },
+      { id: 8, word: "accurate", phonetic: "/ˈækjərət/", meaning: "adj. 精确的，准确的" },
+      { id: 9, word: "achieve", phonetic: "/əˈtʃiːv/", meaning: "v. 达到，实现" },
+    ];
+    setAllWords(mock);
+    setQueue(mock);
+    setStatus({ known: [], fuzzy: [], unknown: [] });
+    setError(null);
+  }, []);
 
   const classify = useCallback((word: Word, category: string) => {
     setQueue((prev) => prev.filter((w) => w.id !== word.id));
@@ -423,18 +444,39 @@ export default function WordPreviewScreen() {
 
           {currentCards.length === 0 ? (
             <View className="flex-1 items-center justify-center px-8">
-              <FontAwesome6
-                name="circle-check"
-                size={64}
-                color="#22c55e"
-              />
-              <Text className="text-xl font-bold text-gray-800 mt-4">
-                分类完成
-              </Text>
-              <Text className="text-gray-500 text-center mt-2">
-                已会 {status.known.length} · 模糊 {status.fuzzy.length} · 不会{" "}
-                {status.unknown.length}
-              </Text>
+              {error ? (
+                <>
+                  <FontAwesome6
+                    name="triangle-exclamation"
+                    size={48}
+                    color="#ef4444"
+                  />
+                  <Text className="text-base text-red-500 text-center mt-4">
+                    {error}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={fetchData}
+                    className="mt-4 bg-blue-500 px-6 py-3 rounded-xl"
+                  >
+                    <Text className="text-white font-semibold">重试</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <FontAwesome6
+                    name="circle-check"
+                    size={64}
+                    color="#22c55e"
+                  />
+                  <Text className="text-xl font-bold text-gray-800 mt-4">
+                    分类完成
+                  </Text>
+                  <Text className="text-gray-500 text-center mt-2">
+                    已会 {status.known.length} · 模糊 {status.fuzzy.length} · 不会{" "}
+                    {status.unknown.length}
+                  </Text>
+                </>
+              )}
             </View>
           ) : (
             <>
