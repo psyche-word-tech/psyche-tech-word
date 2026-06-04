@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, Component } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,34 @@ import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetchWithRetry } from "@/utils/apiClient";
 import { useSafeRouter } from "@/hooks/useSafeRouter";
+
+// Error boundary to catch any render errors
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: string }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message + "\n" + (error.stack || "") };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[ErrorBoundary]", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20, backgroundColor: "#f3f4f6" }}>
+          <Text style={{ color: "#EF4444", fontSize: 16, fontWeight: "700" }}>页面渲染出错</Text>
+          <Text style={{ color: "#374151", fontSize: 12, marginTop: 12, textAlign: "center" }}>{this.state.error}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { Screen } from "@/components/Screen";
 import { FontAwesome6 } from "@expo/vector-icons";
 
@@ -37,7 +65,7 @@ type WordStatus = {
   unknown: Word[];
 };
 
-export default function WordPreviewScreen() {
+function WordPreviewContent() {
   const params = useLocalSearchParams();
   const router = useSafeRouter();
   const insets = useSafeAreaInsets();
@@ -650,5 +678,13 @@ export default function WordPreviewScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+export default function WordPreviewScreen() {
+  return (
+    <ErrorBoundary>
+      <_WordPreviewScreen />
+    </ErrorBoundary>
   );
 }
