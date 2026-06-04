@@ -106,7 +106,8 @@ function WordPreviewContent() {
     try {
       setRefreshing(true);
       setError(null);
-      const res = await fetchWithRetry(`/api/v1/words?table=${TABLE}`);
+      const tableName = TABLE || 'words_b';
+      const res = await fetchWithRetry(`/api/v1/user-words/category/${tableName}`);
       const data = (await res.json()) || [];
       setAllWords(data);
       setQueue(data);
@@ -684,7 +685,7 @@ function WordPreviewContent() {
 export default function WordPreviewScreen() {
   return (
     <ErrorBoundary>
-      <_WordPreviewScreen />
+      <WordPreviewContent />
     </ErrorBoundary>
   );
 }

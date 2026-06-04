@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 // 线上生产环境地址（兜底）
-const PROD_API_URL = 'https://word-voyage-api-production.up.railway.app';
+const PROD_API_URL = 'https://psyche-tech-word-production.up.railway.app';
 
 function isValidApiUrl(url: string | undefined): url is string {
   return !!url && !url.includes('localhost') && !url.includes('railway.app');

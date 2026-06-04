@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://word-voyage-api-production.up.railway.app/api/:splat"
+  to = "https://psyche-tech-word-production.up.railway.app/api/:splat"
   status = 200
   force = true
 

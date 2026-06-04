@@ -4,11 +4,11 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://word-voyage-api-production.up.railway.app/api/v1/:path*"
+      "destination": "https://psyche-tech-word-production.up.railway.app/api/v1/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://word-voyage-api-production.up.railway.app/api/:path*"
+      "destination": "https://psyche-tech-word-production.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",

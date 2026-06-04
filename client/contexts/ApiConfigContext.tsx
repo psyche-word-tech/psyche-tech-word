@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-const PROD_API_URL = 'https://word-voyage-api-production.up.railway.app';
+const PROD_API_URL = 'https://psyche-tech-word-production.up.railway.app';
 
 interface ApiConfigContextType {
   apiBaseUrl: string;
